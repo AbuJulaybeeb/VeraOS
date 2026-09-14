@@ -14,13 +14,13 @@
 
 **"Never trust autonomous agent self-reports. Cryptographically verify them."**
 
-[Explore Live Demo](https://github.com/k-deejah/VeraOS) · [Grant Proposal](#grant-proposal--project-abstract) · [Architecture](#system-architecture) · [Getting Started](#quickstart--local-development)
+[Explore Live Demo](https://github.com/k-deejah/VeraOS) ·  [Architecture](#system-architecture) · [Getting Started](#quickstart--local-development)
 
 ---
 
 </div>
 
-## Grant Proposal & Project Abstract
+## Project 
 
 ### Executive Summary
 
@@ -122,7 +122,7 @@ VeraOS operates a 5-stage deterministic verification pipeline:
 
 ---
 
-## Core Frontend Capabilities & "Vibecoded" UX
+## Core Frontend Capabilities
 
 The VeraOS frontend is an ultra-high-performance, componentized, reactive web application built to feel like high-density mission-control telemetry:
 
@@ -138,9 +138,9 @@ The VeraOS frontend is an ultra-high-performance, componentized, reactive web ap
 
 ---
 
-## Grant Alignment & Public Good Impact
+##   Public Good Impact
 
-| Grant Criteria | VeraOS Implementation & Deliverables |
+|  Criteria | VeraOS Implementation & Deliverables |
 | :--- | :--- |
 | **Decentralized AI Safety** | Prevents autonomous agents from executing unverified financial actions, draining treasuries, or falsifying task completion. |
 | **Ecosystem Public Good** | Standardized verification schemas published on Ethereum Attestation Service (EAS) on Base, usable by any agent framework. |
