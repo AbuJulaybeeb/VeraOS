@@ -24,7 +24,7 @@
 
 ### Executive Summary
 
-As Large Language Model (LLM) agents and multi-agent swarms graduate from conversational toys to autonomous economic actors—delegated with smart contract private keys (ERC-4337), corporate treasury credentials, API keys, and automated infrastructure—the decentralized ecosystem faces an existential security failure: **The Self-Reporting Fallacy**.
+As Large Language Model (LLM) agents and multi-agent swarms graduate from conversational toys to autonomous economic actorsdelegated with smart contract private keys (ERC-4337), corporate treasury credentials, API keys, and automated infrastructurethe decentralized ecosystem faces an existential security failure: **The Self-Reporting Fallacy**.
 
 Today, autonomous agents verify their own work simply by hallucinating that they performed it. When an agent reports: *"I completed the audit, verified the contracts, and sent the 5 USDC bounty"*, downstream orchestrators and smart contracts have zero cryptographic guarantee that:
 1. The invariant conditions were genuinely met.
