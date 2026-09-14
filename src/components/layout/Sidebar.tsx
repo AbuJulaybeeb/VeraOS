@@ -171,27 +171,29 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </Link>
 
         {/* Network status indicator */}
-        <div className="p-space-sm rounded-xl bg-surface-container-low flex flex-col gap-1 border border-white/5">
+        <div className="p-space-sm rounded-xl bg-surface-container-low flex flex-col gap-1.5 border border-white/5 shadow-inner">
           <div className="flex items-center justify-between">
-            <span className="font-label-caps text-label-caps uppercase tracking-wider text-outline">
-              Network
+            <span className="font-label-caps text-label-caps uppercase tracking-wider text-outline flex items-center gap-1.5">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+              </span>
+              Telemetry Live
             </span>
-            <span className="font-code-sm text-code-sm text-secondary">
-              14ms
+            <span className="font-code-sm text-code-sm text-secondary font-mono">
+              12ms
             </span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-secondary-container" />
-            <span className="font-code-sm text-code-sm text-on-surface truncate">
-              Base Mainnet · Demo
-            </span>
+          <div className="flex items-center justify-between font-code-sm text-code-sm text-on-surface">
+            <span className="truncate text-xs text-on-surface-variant font-mono">Base Mainnet</span>
+            <span className="text-[10px] text-emerald-400 font-mono">99.98%</span>
           </div>
         </div>
 
-        {/* Appearance Theme Switcher */}
+        {/* Appearance & Sound Controls */}
         <div className="flex items-center justify-between px-space-sm py-1.5 rounded-xl bg-surface-container-low border border-white/5">
           <div className="flex items-center gap-1.5 text-xs text-on-surface-variant font-medium">
-            <span className="material-symbols-outlined text-[16px]">palette</span>
+            <span className="material-symbols-outlined text-[16px]">tune</span>
             <span>Theme Mode</span>
           </div>
           <ThemeToggle />
