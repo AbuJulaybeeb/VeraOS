@@ -127,10 +127,9 @@ VeraOS operates a 5-stage deterministic verification pipeline:
 The VeraOS frontend is an ultra-high-performance, componentized, reactive web application built to feel like high-density mission-control telemetry:
 
 * **Dual-Theme High-Contrast Aesthetic**:
-  * **Obsidian Charcoal (Default)**: Deep `#121318` technical surfaces with warm amber highlights (`#ff5708`) and cyber emerald accents (`#4ade80`).
+  * **Obsidian Charcoal (Default)**: Deep `#121318` technical surfaces with warm amber highlights (`#ff5708`) and verified emerald accents (`#4ade80`).
   * **Brutalist Black & White**: Crisp `#ffffff` and `#000000` monochrome theme engineered for surgical clarity and audit visibility.
-* **Web Audio Tactile Synthesizer**: Pure client-side Web Audio API synthesizer (`src/lib/sound.ts`) delivering crisp cyber clicks, harmonic success chimes, and alert pings on user interactions.
-* **Live Network Radar**: Real-time heartbeat beacon monitoring Base Mainnet block synchronization and sub-15ms latency telemetry.
+* **Network & RPC Health Telemetry**: Active status monitoring Base Mainnet block synchronization and sub-15ms RPC latency.
 * **Global Command Palette (`⌘K` / `Ctrl+K`)**: Instant search and navigation across verifications, invariant breaches, registered agents, and SDK documentation.
 * **Live Notification Center**: Real-time telemetry feed delivering push alerts on invariant violations and onchain EAS attestation confirmations.
 * **Multi-Attempt Correction State Machine**: Interactive timeline displaying Attempt 1 (FAILED) → Invariant Diffs → Autonomous Remediation Directives → Attempt 2 (PASSED with Merkle proof).
@@ -178,10 +177,11 @@ gantt
 
 * **Frontend Framework**: React 19 + TypeScript 5.9
 * **Build Engine & Bundler**: Vite 8.3 + Rolldown (sub-2.5s production build, zero warnings)
-* **Styling & Design System**: Tailwind CSS with custom CSS variables, `@tailwindcss/vite`, dynamic CSS variable theming
+* **Styling & Design System**: Tailwind CSS with custom CSS variables, dynamic CSS variable theming
 * **Icons & Typography**: Material Symbols Outlined, Lucide Icons, JetBrains Mono, Geist & Inter typography
 * **Attestation & Oracles**: Ethereum Attestation Service (EAS), Base JSON-RPC, TLS-Notary Proofs
-* **Audio Synthesis**: Native Web Audio API (zero external sound dependencies)
+* **State Management**: Reactive React Context with structured LocalStorage persistence
+
 
 ---
 

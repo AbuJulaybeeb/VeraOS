@@ -1,6 +1,5 @@
 import React from "react";
 import { cn } from "../../lib/utils";
-import { playCyberClick } from "../../lib/sound";
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: "primary" | "secondary" | "outline" | "ghost" | "danger";
@@ -19,43 +18,36 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       icon,
       children,
       disabled,
-      onClick,
       ...props
     },
     ref
   ) => {
     const baseStyles =
-      "inline-flex items-center justify-center font-headline-sm transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-primary-container/40 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.97] select-none";
+      "inline-flex items-center justify-center font-headline-sm transition-colors focus:outline-none focus:ring-2 focus:ring-primary-container/40 disabled:opacity-50 disabled:pointer-events-none select-none";
 
     const variantStyles = {
       primary:
-        "bg-primary-container hover:bg-secondary-container text-on-primary font-semibold shadow-[0_0_22px_rgba(255,87,8,0.38)] hover:shadow-[0_0_30px_rgba(238,152,0,0.55)] border border-primary-container/40 active:brightness-95",
+        "bg-primary-container hover:bg-[#e04c05] text-on-primary font-semibold border border-primary-container/40 shadow-sm",
       secondary:
-        "bg-surface-container hover:bg-surface-container-high text-on-surface border border-white/5 hover:border-white/10 active:brightness-95",
+        "bg-surface-container hover:bg-surface-container-high text-on-surface border border-white/5 hover:border-white/10",
       outline:
-        "bg-transparent hover:bg-surface-container text-on-surface border border-white/15 hover:border-white/25 active:brightness-95",
+        "bg-transparent hover:bg-surface-container text-on-surface border border-white/15 hover:border-white/25",
       ghost:
-        "bg-transparent hover:bg-surface-container text-on-surface-variant hover:text-on-surface active:brightness-95",
+        "bg-transparent hover:bg-surface-container text-on-surface-variant hover:text-on-surface",
       danger:
-        "bg-error-container/60 hover:bg-error-container text-on-error-container border border-error/30 font-semibold active:brightness-95",
+        "bg-error-container/60 hover:bg-error-container text-on-error-container border border-error/30 font-semibold",
     };
 
     const sizeStyles = {
-      sm: "text-body-sm px-3 py-1.5 rounded gap-1.5",
+      sm: "text-body-sm px-3 py-1.5 rounded-md gap-1.5",
       md: "text-body-md px-4 py-2 rounded-lg gap-2",
       lg: "text-headline-sm px-6 py-3 rounded-lg gap-2.5",
-    };
-
-    const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-      playCyberClick();
-      if (onClick) onClick(e);
     };
 
     return (
       <button
         ref={ref}
         disabled={disabled || loading}
-        onClick={handleClick}
         className={cn(baseStyles, variantStyles[variant], sizeStyles[size], className)}
         {...props}
       >
@@ -71,3 +63,4 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 );
 
 Button.displayName = "Button";
+
