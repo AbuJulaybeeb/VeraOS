@@ -68,24 +68,42 @@ export async function handleApiRequest(
     if (pathname === "/v1/verify" && req.method === "POST") {
       const body = await parseJsonBody<VerificationRequest>(req);
 
-      if (!body.task || typeof body.task !== "string") {
+      // Support both { task, worker } and { taskSpec, workerOutput }
+      const rawBody = body as any;
+      const taskStr = typeof rawBody.task === "string" 
+        ? rawBody.task 
+        : (rawBody.taskSpec?.description || rawBody.taskSpec?.title || (typeof rawBody.taskSpec === "string" ? rawBody.taskSpec : null));
+      const workerOutputStr = typeof rawBody.worker?.output === "string"
+        ? rawBody.worker.output
+        : (rawBody.workerOutput?.rawOutput || (typeof rawBody.workerOutput === "string" ? rawBody.workerOutput : null));
+
+      if (!taskStr) {
         sendJson(res, 400, {
           error: "Invalid request",
-          message: "Field 'task' is required and must be a string.",
+          message: "Field 'task' (or 'taskSpec.description') is required and must be a string.",
         });
         return true;
       }
 
-      if (!body.worker?.output || typeof body.worker.output !== "string") {
+      if (!workerOutputStr) {
         sendJson(res, 400, {
           error: "Invalid request",
-          message: "Field 'worker.output' is required and must be a string.",
+          message: "Field 'worker.output' (or 'workerOutput.rawOutput') is required and must be a string.",
         });
         return true;
       }
+
+      const normalizedRequest: VerificationRequest = {
+        task: taskStr,
+        worker: {
+          output: workerOutputStr,
+          workerId: rawBody.worker?.workerId || rawBody.workerOutput?.workerId || "worker-agent",
+        },
+        metadata: rawBody.metadata || rawBody.taskSpec?.metadata,
+      };
 
       // Execute real deterministic verification pipeline
-      const record: VerificationRecord = await verificationPipeline.run(body);
+      const record: VerificationRecord = await verificationPipeline.run(normalizedRequest);
 
       // Persist in repository
       await defaultRepository.create(record);
