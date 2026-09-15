@@ -8,7 +8,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue)](https://www.typescriptlang.org/)
 [![Stellar](https://img.shields.io/badge/Stellar-Testnet%20%7C%20Soroban%20RPC-black?logo=stellar)](https://developers.stellar.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
-[![Drips Wave](https://img.shields.io/badge/Drips%20Wave-Stellar%20Program-orange)](https://drips.network)
+
 
 Autonomous AI agents are increasingly entrusted with high-stakes actions: settling payments, dispatching bounties, deploying liquidity, and executing Soroban smart contracts on Stellar. However, agents self-report their success. When an agent reports *"Payment of 5 USDC executed successfully"*, systems have historically trusted that claim at face value. 
 
@@ -171,18 +171,11 @@ See [`docs/API_REFERENCE.md`](./docs/API_REFERENCE.md) for complete endpoint sch
 
 ---
 
-## 7. Drips Wave & Contributor Roadmap
+## 7.  Contributor Roadmap
 
-VeraOS actively participates in the **Stellar Wave Program** on [Drips](https://drips.network). We offer curated, rewarded tasks for open-source contributors:
+VeraOS actively participates in the **Stellar Wave Program** . We offer curated, rewarded tasks for open-source contributors:
 
-| Issue | Title | Complexity | Points |
-| :--- | :--- | :--- | :--- |
-| **Wave Task 1** | Persistent SQLite / PostgreSQL Repository Adapter | Medium | 25 pts |
-| **Wave Task 2** | Asynchronous Telegram Completion Webhook Alerts | Medium | 25 pts |
-| **Wave Task 3** | Onchain Soroban Attestation Registry Contract in Rust | High | 50 pts |
-| **Wave Task 4** | Multi-Operation Stellar Transaction Verification | Medium | 25 pts |
-| **Wave Task 5** | Evidence Dossier CSV / JSON Export in Web Dashboard | Trivial | 10 pts |
-| **Wave Task 6** | Soroban Smart Contract Event Parser | High | 50 pts |
+
 
 Check out [`docs/CONTRIBUTOR_ROADMAP.md`](./docs/CONTRIBUTOR_ROADMAP.md) to claim an issue!
 
