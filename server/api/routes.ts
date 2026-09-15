@@ -97,9 +97,8 @@ export async function handleApiRequest(
         task: taskStr,
         worker: {
           output: workerOutputStr,
-          workerId: rawBody.worker?.workerId || rawBody.workerOutput?.workerId || "worker-agent",
+          id: rawBody.worker?.workerId || rawBody.worker?.id || rawBody.workerOutput?.workerId || "worker-agent",
         },
-        metadata: rawBody.metadata || rawBody.taskSpec?.metadata,
       };
 
       // Execute real deterministic verification pipeline

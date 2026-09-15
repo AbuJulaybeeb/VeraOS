@@ -1,6 +1,6 @@
 import type { Requirement, WorkerClaim, Evidence, CheckStatus } from "../../types/domain.ts";
 import type { EvidenceProvider, EvidenceResult, VerificationContext } from "./provider.ts";
-import { stellarProvider } from "./stellarProvider.ts";
+import { stellarRpcProvider } from "./stellarRpcProvider.ts";
 
 
 
@@ -260,8 +260,8 @@ export class DeterministicProvider implements EvidenceProvider {
           };
         }
 
-        // Transaction hash was provided -> Query Stellar Provider
-        const stellarVerification = await stellarProvider.verifyPayment(
+        // Transaction hash was provided -> Query Stellar RPC Provider
+        const stellarVerification = await stellarRpcProvider.verifyPayment(
           txHash,
           expectedAmount,
           expectedToken,
@@ -271,15 +271,17 @@ export class DeterministicProvider implements EvidenceProvider {
         evidenceItems.push({
           id: `ev_stellar_tx_${requirement.id}`,
           type: "blockchain",
-          source: "stellar_horizon_testnet",
+          source: "stellar_rpc",
           claim: `Payment transaction ${txHash}`,
           value: {
             txHash,
             amount: stellarVerification.amount,
             asset: stellarVerification.assetCode,
+            difference: stellarVerification.difference,
             successful: stellarVerification.successful,
             sourceAccount: stellarVerification.sourceAccount,
             destinationAccount: stellarVerification.destinationAccount,
+            ledger: stellarVerification.ledger,
             ledgerTimestamp: stellarVerification.ledgerTimestamp,
             explorerUrl: stellarVerification.explorerUrl,
           },
@@ -297,7 +299,7 @@ export class DeterministicProvider implements EvidenceProvider {
             expected: `${expectedAmount} ${expectedToken}`,
             observed: "Transaction does not exist on Stellar ledger",
             evidence: evidenceItems,
-            explanation: `Stellar transaction hash ${txHash} could not be found on Horizon testnet.`,
+            explanation: `Expected: ${expectedAmount} ${expectedToken}\nObserved: None (Tx ${txHash} not found)\nDifference: -${expectedAmount} ${expectedToken}`,
           };
         }
 
@@ -311,23 +313,31 @@ export class DeterministicProvider implements EvidenceProvider {
           };
         }
 
+        const diff = stellarVerification.difference !== undefined
+          ? stellarVerification.difference
+          : (stellarVerification.amount - expectedAmount);
+        const diffStr = diff >= 0 ? `+${diff.toFixed(1)}` : `${diff.toFixed(1)}`;
+
         if (stellarVerification.amount < expectedAmount) {
           const deficit = (expectedAmount - stellarVerification.amount).toFixed(2);
+          const failureExplanation = `Expected: ${expectedAmount} ${expectedToken}\nObserved: ${stellarVerification.amount} ${stellarVerification.assetCode}\nDifference: ${diffStr} ${expectedToken}\nPayment mismatch: Expected ${expectedAmount} ${expectedToken}, but observed receipt shows ${stellarVerification.amount} ${stellarVerification.assetCode} (Deficit: ${deficit} ${expectedToken}).`;
           return {
             status: "failed",
             expected: `${expectedAmount} ${expectedToken}`,
             observed: `${stellarVerification.amount} ${stellarVerification.assetCode}`,
             evidence: evidenceItems,
-            explanation: `Payment mismatch: Expected ${expectedAmount} ${expectedToken}, but observed receipt shows ${stellarVerification.amount} ${stellarVerification.assetCode} (Deficit: ${deficit} ${expectedToken}).`,
+            explanation: failureExplanation,
           };
         }
+
+        const passExplanation = `Expected: ${expectedAmount} ${expectedToken}\nObserved: ${stellarVerification.amount} ${stellarVerification.assetCode}\nDifference: ${diffStr} ${expectedToken}\nPayment verified on Stellar: Confirmed transfer of ${stellarVerification.amount} ${stellarVerification.assetCode} on ledger.`;
 
         return {
           status: "passed",
           expected: `${expectedAmount} ${expectedToken}`,
           observed: `${stellarVerification.amount} ${stellarVerification.assetCode}`,
           evidence: evidenceItems,
-          explanation: `Payment verified on Stellar: Confirmed transfer of ${stellarVerification.amount} ${stellarVerification.assetCode} on ledger.`,
+          explanation: passExplanation,
         };
       }
 

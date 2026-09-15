@@ -6,12 +6,13 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "test": "node --test server/tests/engine.test.ts server/tests/stellar.test.ts",
+    "test": "node --test server/tests/engine.test.ts server/tests/stellar.test.ts server/tests/stellarRpc.test.ts",
     "server": "node server/api/server.ts",
     "lint": "oxlint",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@stellar/stellar-sdk": "^17.1.0",
     "clsx": "^2.1.1",
     "lucide-react": "^1.46.0",
     "react": "^19.2.8",
