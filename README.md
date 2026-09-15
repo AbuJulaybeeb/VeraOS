@@ -173,7 +173,7 @@ See [`docs/API_REFERENCE.md`](./docs/API_REFERENCE.md) for complete endpoint sch
 
 ## 7.  Contributor Roadmap
 
-VeraOS actively participates in the **Stellar Wave Program** . We offer curated, rewarded tasks for open-source contributors:
+We offer curated, rewarded tasks for open-source contributors:
 
 
 
@@ -187,7 +187,7 @@ Check out [`docs/CONTRIBUTOR_ROADMAP.md`](./docs/CONTRIBUTOR_ROADMAP.md) to clai
 - [Stellar RPC & Horizon Integration](./docs/STELLAR_INTEGRATION.md)
 - [Telegram Bot Guide](./docs/TELEGRAM_BOT.md)
 - [REST API Reference](./docs/API_REFERENCE.md)
-- [Contributor Roadmap & Wave Tasks](./docs/CONTRIBUTOR_ROADMAP.md)
+- [Contributor Roadmap ](./docs/CONTRIBUTOR_ROADMAP.md)
 - [Demo Script & Video Narration](./docs/DEMO_SCRIPT.md)
 
 ---
