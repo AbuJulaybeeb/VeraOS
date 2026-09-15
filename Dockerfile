@@ -26,4 +26,4 @@ COPY --from=builder /app/server ./server
 
 EXPOSE 3001
 
-CMD ["node", "server/api/server.ts"]
+CMD ["npm", "run", "server"]

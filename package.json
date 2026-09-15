@@ -6,9 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "test": "node --test server/tests/engine.test.ts server/tests/stellar.test.ts server/tests/stellarRpc.test.ts server/tests/telegram.test.ts",
-    "server": "node server/api/server.ts",
-    "bot": "node server/telegram/runner.ts",
+    "test": "tsx --test server/tests/engine.test.ts server/tests/stellar.test.ts server/tests/stellarRpc.test.ts server/tests/telegram.test.ts",
+    "server": "tsx server/api/server.ts",
+    "bot": "tsx server/telegram/runner.ts",
     "lint": "oxlint",
     "preview": "vite preview"
   },
@@ -19,7 +19,8 @@
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-router-dom": "^7.18.3",
-    "tailwind-merge": "^3.7.0"
+    "tailwind-merge": "^3.7.0",
+    "tsx": "^4.23.13"
   },
   "devDependencies": {
     "@types/node": "^24.13.3",
