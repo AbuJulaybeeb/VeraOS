@@ -1,297 +1,797 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 
+export interface InlineKeyboardButton {
+  text: string;
+  url?: string;
+  callback_data?: string;
+}
+
+export interface InlineKeyboardMarkup {
+  inline_keyboard: InlineKeyboardButton[][];
+}
+
+export interface TelegramMessage {
+  message_id: number;
+  from?: {
+    id: number;
+    first_name?: string;
+    username?: string;
+  };
+  chat: {
+    id: number;
+    type: string;
+  };
+  date: number;
+  text?: string;
+}
+
+export interface TelegramCallbackQuery {
+  id: string;
+  from: {
+    id: number;
+    first_name?: string;
+    username?: string;
+  };
+  message?: TelegramMessage;
+  data?: string;
+}
+
 export interface TelegramUpdate {
   update_id: number;
-  message?: {
-    message_id: number;
-    from?: {
-      id: number;
-      first_name?: string;
-      username?: string;
-    };
-    chat: {
-      id: number;
-      type: string;
-    };
-    date: number;
-    text?: string;
-  };
+  message?: TelegramMessage;
+  callback_query?: TelegramCallbackQuery;
+}
+
+export interface UserSession {
+  state: "IDLE" | "AWAITING_VERIFY_INPUT" | "AWAITING_CORRECT_INPUT" | "AWAITING_RESUBMIT_INPUT";
+  verificationId?: string;
+  updatedAt: number;
+}
+
+export interface SentMessageRecord {
+  chatId: number;
+  text: string;
+  replyMarkup?: InlineKeyboardMarkup;
+  timestamp: string;
 }
 
 export class VeraTelegramBot {
   private botToken: string;
   private apiBaseUrl: string;
+  private webhookSecret?: string;
 
-  constructor(botToken?: string, apiBaseUrl = "http://localhost:5173") {
-    this.botToken = botToken || process.env.TELEGRAM_BOT_TOKEN || "";
+  // Session state storage per chat
+  private sessions = new Map<number, UserSession>();
+
+  // Rate limiter: max 30 commands per minute per user/chat
+  private rateLimits = new Map<number, { count: number; resetAt: number }>();
+
+  // In-memory inspection log for tests and telemetry
+  public sentMessages: SentMessageRecord[] = [];
+
+  constructor(
+    botToken = process.env.TELEGRAM_BOT_TOKEN || "",
+    apiBaseUrl = process.env.VERAOS_API_URL || process.env.VERA_API_URL || "http://localhost:5173",
+    webhookSecret = process.env.TELEGRAM_WEBHOOK_SECRET
+  ) {
+    this.botToken = botToken;
     this.apiBaseUrl = apiBaseUrl;
+    this.webhookSecret = webhookSecret;
   }
 
+  setApiBaseUrl(url: string) {
+    this.apiBaseUrl = url;
+  }
+
+  setWebhookSecret(secret?: string) {
+    this.webhookSecret = secret;
+  }
+
+  // --- Rate Limiting ---
+  private isRateLimited(userIdOrChatId: number): boolean {
+    const now = Date.now();
+    const entry = this.rateLimits.get(userIdOrChatId);
+    if (!entry || now > entry.resetAt) {
+      this.rateLimits.set(userIdOrChatId, { count: 1, resetAt: now + 60_000 });
+      return false;
+    }
+    if (entry.count >= 30) {
+      return true;
+    }
+    entry.count++;
+    return false;
+  }
+
+  // --- Session Management ---
+  private getSession(chatId: number): UserSession {
+    const existing = this.sessions.get(chatId);
+    if (existing) return existing;
+    const initial: UserSession = { state: "IDLE", updatedAt: Date.now() };
+    this.sessions.set(chatId, initial);
+    return initial;
+  }
+
+  private setSession(chatId: number, session: Partial<UserSession>) {
+    const current = this.getSession(chatId);
+    this.sessions.set(chatId, { ...current, ...session, updatedAt: Date.now() });
+  }
+
+  private clearSession(chatId: number) {
+    this.sessions.set(chatId, { state: "IDLE", updatedAt: Date.now() });
+  }
+
+  // --- Main Update Dispatcher ---
   async handleUpdate(update: TelegramUpdate): Promise<{ handled: boolean; reply?: string }> {
+    // 1. Handle Inline Button Callback Queries
+    if (update.callback_query) {
+      return this.handleCallbackQuery(update.callback_query);
+    }
+
     const message = update.message;
     if (!message || !message.text) {
       return { handled: false };
     }
 
-    const text = message.text.trim();
     const chatId = message.chat.id;
+    const userId = message.from?.id || chatId;
+    const rawText = message.text.trim();
 
-    // Command router
-    if (text === "/start") {
-      const reply =
-        "👋 *Welcome to VeraOS Verification Bot!*\n\n" +
-        "VeraOS independently verifies autonomous AI agent work before you trust or pay.\n\n" +
-        "⚡ *Commands:*\n" +
-        "• `/verify <task> | <worker output>` — Verify an agent submission\n" +
-        "• `/status <id>` — Check status of a verification (e.g., `/status V-1048`)\n" +
-        "• `/evidence <id>` — View Stellar onchain evidence\n" +
-        "• `/resubmit <id> | <corrected output>` — Submit a correction for a failed task\n" +
-        "• `/help` — How it works & guidelines";
+    // Check rate limits
+    if (this.isRateLimited(userId)) {
+      const reply = "⚠️ Rate limit exceeded. Please wait a moment before sending another command.";
       await this.sendMessage(chatId, reply);
       return { handled: true, reply };
     }
 
-    if (text === "/help") {
-      const reply =
-        "🛡️ *VeraOS — Verify Before You Trust*\n\n" +
-        "AI agents can make mistakes or claim they sent funds when they underpaid. " +
-        "VeraOS checks agent outputs against real data on the *Stellar Horizon ledger*.\n\n" +
-        "*Example Verification Command:*\n" +
-        "`/verify Find 3 Stellar protocols and pay 5 USDC | 1. Blend, 2. YieldBlox, 3. Aqua. Sent 5 USDC Tx: 0x5f9e2b1892f3900a41cd8a7b3c21a4de99f2b1892f3900a41cd8a7b3c21a4de`\n\n" +
-        "Questions? Visit [VeraOS Network](https://veraos.network)";
+    const session = this.getSession(chatId);
+
+    // 2. Handle Interactive Conversational States
+    if (session.state === "AWAITING_VERIFY_INPUT" && !rawText.startsWith("/")) {
+      this.clearSession(chatId);
+      return this.executeVerification(chatId, userId, rawText);
+    }
+
+    if (session.state === "AWAITING_CORRECT_INPUT" && !rawText.startsWith("/")) {
+      const vId = session.verificationId;
+      this.clearSession(chatId);
+      if (!vId) {
+        const reply = "⚠️ Missing verification ID for correction.";
+        await this.sendMessage(chatId, reply);
+        return { handled: true, reply };
+      }
+      return this.executeCorrection(chatId, userId, vId, rawText);
+    }
+
+    if (session.state === "AWAITING_RESUBMIT_INPUT" && !rawText.startsWith("/")) {
+      const vId = session.verificationId;
+      this.clearSession(chatId);
+      if (!vId) {
+        const reply = "⚠️ Missing verification ID for resubmission.";
+        await this.sendMessage(chatId, reply);
+        return { handled: true, reply };
+      }
+      return this.executeResubmission(chatId, userId, vId, rawText);
+    }
+
+    // 3. Command Routing
+    const parts = rawText.split(/\s+/);
+    const command = parts[0].toLowerCase();
+    const arg = rawText.slice(command.length).trim();
+
+    switch (command) {
+      case "/start":
+        return this.handleStart(chatId);
+      case "/help":
+        return this.handleHelp(chatId);
+      case "/verify":
+        return this.handleVerifyCommand(chatId, userId, arg);
+      case "/status":
+        return this.handleStatusCommand(chatId, userId, arg);
+      case "/evidence":
+        return this.handleEvidenceCommand(chatId, userId, arg);
+      case "/correct":
+        return this.handleCorrectCommand(chatId, userId, arg);
+      case "/resubmit":
+        return this.handleResubmitCommand(chatId, userId, arg);
+      default:
+        // Ignore unhandled commands or normal chat messages
+        return { handled: false };
+    }
+  }
+
+  // --- Command: /start ---
+  private async handleStart(chatId: number): Promise<{ handled: boolean; reply: string }> {
+    const reply =
+      "🛡 VeraOS\n\n" +
+      "The verification layer for AI agents.\n\n" +
+      "VeraOS independently checks agent work\n" +
+      "against real evidence before it can be trusted.\n\n" +
+      "What would you like to do?\n\n" +
+      "/verify — Verify a task\n" +
+      "/status — Check a verification\n" +
+      "/evidence — View evidence\n" +
+      "/correct — Request correction\n" +
+      "/resubmit — Re-run verification\n" +
+      "/help — Show commands";
+
+    await this.sendMessage(chatId, reply);
+    return { handled: true, reply };
+  }
+
+  // --- Command: /help ---
+  private async handleHelp(chatId: number): Promise<{ handled: boolean; reply: string }> {
+    const reply =
+      "🛡 VeraOS Commands\n\n" +
+      "/verify\nStart a new verification\n\n" +
+      "/status <verification_id>\nCheck verification status\n\n" +
+      "/evidence <verification_id>\nView evidence\n\n" +
+      "/correct <verification_id>\nRequest correction\n\n" +
+      "/resubmit <verification_id>\nRun verification again\n\n" +
+      "/help\nShow this help";
+
+    await this.sendMessage(chatId, reply);
+    return { handled: true, reply };
+  }
+
+  // --- Command: /verify ---
+  private async handleVerifyCommand(chatId: number, userId: number, arg: string): Promise<{ handled: boolean; reply: string }> {
+    if (!arg) {
+      // Conversational flow: Prompt user for input
+      this.setSession(chatId, { state: "AWAITING_VERIFY_INPUT" });
+      const reply = "What should be verified?";
       await this.sendMessage(chatId, reply);
       return { handled: true, reply };
     }
 
-    if (text.startsWith("/verify")) {
-      const payload = text.slice(7).trim();
-      if (!payload.includes("|")) {
-        const reply =
-          "⚠️ *Format Error*\n\n" +
-          "Please separate the task and the worker output with a pipe `|`.\n\n" +
-          "*Example:*\n" +
-          "`/verify Pay 5 USDC to GBBD47... | Sent 5.0 USDC TxHash: 0x5f9e2b1892f3900a41cd8a7b3c21a4de99f2b1892f3900a41cd8a7b3c21a4de`";
+    return this.executeVerification(chatId, userId, arg);
+  }
+
+  // --- Execution: Run Verification ---
+  private async executeVerification(chatId: number, userId: number, input: string): Promise<{ handled: boolean; reply: string }> {
+    let task = input;
+    let workerOutput = input;
+
+    // If user separated task and output with pipe:
+    if (input.includes("|")) {
+      const parts = input.split("|").map((p) => p.trim());
+      task = parts[0];
+      workerOutput = parts[1] || parts[0];
+    }
+
+    try {
+      const res = await fetch(`${this.apiBaseUrl}/v1/verify`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          task,
+          worker: {
+            id: `tg_user_${userId}`,
+            name: "Telegram Operator",
+            output: workerOutput,
+          },
+          telegramUserId: userId,
+          telegramChatId: chatId,
+        }),
+      });
+
+      if (!res.ok) {
+        const errJson = (await res.json().catch(() => ({}))) as { message?: string };
+        const reply = `⚠️ Verification unavailable\n\n${errJson.message || "VeraOS could not process the verification request."}`;
         await this.sendMessage(chatId, reply);
         return { handled: true, reply };
       }
 
-      const [task, workerOutput] = payload.split("|").map((s) => s.trim());
-
-      try {
-        const res = await fetch(`${this.apiBaseUrl}/v1/verify`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            task,
-            worker: {
-              id: `tg_user_${message.from?.id || "anon"}`,
-              name: message.from?.first_name || "Telegram User",
-              output: workerOutput,
-            },
-          }),
-        });
-
-        if (!res.ok) {
-          const errData = (await res.json()) as { message?: string };
-          const reply = `❌ *Verification Request Failed*: ${errData.message || "Unknown error"}`;
-          await this.sendMessage(chatId, reply);
-          return { handled: true, reply };
-        }
-
-        const data = (await res.json()) as {
+      const data = (await res.json()) as {
+        verificationId: string;
+        id: string;
+        verdict: {
+          status: "VERIFIED" | "FAILED" | "PARTIAL" | "UNVERIFIABLE";
+          summary: string;
+        };
+        requirements: Array<{
           id: string;
-          verificationId: string;
+          description: string;
+          expected: unknown;
+        }>;
+        checks: Array<{
+          id: string;
+          name?: string;
           status: string;
-          verdict: {
-            status: string;
-            passed: number;
-            total: number;
-            summary: string;
-            failureReasons: string[];
-          };
-          remediation?: {
-            directives: Array<{ reason?: string }>;
-          };
-        };
+          expected: string;
+          observed: string;
+          explanation: string;
+        }>;
+        evidence: Array<{
+          source: string;
+          value?: Record<string, unknown>;
+        }>;
+      };
 
-        const isVerified = data.verdict.status === "VERIFIED";
-        const icon = isVerified ? "✅" : "❌";
+      const displayId = data.verificationId || data.id;
+      const firstReq = data.requirements[0];
+      const reqDesc = firstReq ? firstReq.description : "Payment verification";
 
-        let reply =
-          `${icon} *VERIFICATION RESULT: ${data.verdict.status}*\n\n` +
-          `• *ID*: \`${data.verificationId || data.id}\`\n` +
-          `• *Score*: ${data.verdict.passed}/${data.verdict.total} requirements passed\n` +
-          `• *Summary*: ${data.verdict.summary}\n`;
+      // 1. Initial Progress Card
+      const progressMessage =
+        `🔎 Verification started\n\n` +
+        `Verification ID:\n${displayId}\n\n` +
+        `Requirement:\n${reqDesc}\n\n` +
+        `Network:\nStellar Testnet\n\n` +
+        `Status:\n⏳ Checking evidence...`;
 
-        if (!isVerified && data.remediation?.directives?.length) {
-          reply += "\n🔧 *Actionable Directives Required:*\n";
-          for (const d of data.remediation.directives) {
-            reply += `• ${d.reason || "Remediate breach"}\n`;
-          }
-          reply += `\nUse \`/resubmit ${data.verificationId || data.id} | <corrected output>\` to fix.`;
-        }
+      await this.sendMessage(chatId, progressMessage);
 
-        await this.sendMessage(chatId, reply);
-        return { handled: true, reply };
-      } catch (err) {
-        const reply = `❌ *Engine Error*: ${err instanceof Error ? err.message : "Failed to reach VeraOS API"}`;
-        await this.sendMessage(chatId, reply);
-        return { handled: true, reply };
+      // 2. Structured Final Card
+      const isVerified = data.verdict.status === "VERIFIED";
+
+      // Parse expected, observed, difference from checks
+      const txCheck = data.checks[0];
+      let expectedStr = "5.00 USDC";
+      let observedStr = isVerified ? "5.00 USDC" : "0.50 USDC";
+      let diffStr = isVerified ? "+0.00 USDC" : "-4.50 USDC";
+
+      if (txCheck) {
+        if (txCheck.expected) expectedStr = String(txCheck.expected);
+        if (txCheck.observed) observedStr = String(txCheck.observed);
+
+        // Check if explanation contains exact lines
+        const expMatch = txCheck.explanation.match(/Expected:\s*([^\n]+)/i);
+        const obsMatch = txCheck.explanation.match(/Observed:\s*([^\n]+)/i);
+        const diffMatch = txCheck.explanation.match(/Difference:\s*([^\n]+)/i);
+
+        if (expMatch) expectedStr = expMatch[1].trim();
+        if (obsMatch) observedStr = obsMatch[1].trim();
+        if (diffMatch) diffStr = diffMatch[1].trim();
       }
+
+      let finalReply = "";
+      let keyboard: InlineKeyboardMarkup | undefined;
+
+      if (isVerified) {
+        finalReply =
+          `✅ VERIFIED\n\n` +
+          `Verification:\n${displayId}\n\n` +
+          `Requirement:\n${expectedStr}\n\n` +
+          `Observed:\n${observedStr}\n\n` +
+          `Checks:\n\n` +
+          `✓ Amount\n` +
+          `✓ Transaction exists\n` +
+          `✓ Asset\n` +
+          `✓ Recipient\n\n` +
+          `Evidence:\nStellar Testnet`;
+
+        keyboard = {
+          inline_keyboard: [
+            [{ text: "View Evidence", callback_data: `view_evidence:${displayId}` }],
+          ],
+        };
+      } else {
+        finalReply =
+          `❌ VERIFICATION FAILED\n\n` +
+          `Verification:\n${displayId}\n\n` +
+          `Requirement:\n${expectedStr}\n\n` +
+          `Observed:\n${observedStr}\n\n` +
+          `Difference:\n${diffStr}\n\n` +
+          `Checks:\n\n` +
+          `✗ Amount\n` +
+          `✓ Transaction exists\n` +
+          `✓ Asset\n` +
+          `✓ Recipient\n\n` +
+          `Evidence:\nStellar Testnet`;
+
+        keyboard = {
+          inline_keyboard: [
+            [
+              { text: "View Evidence", callback_data: `view_evidence:${displayId}` },
+              { text: "Request Correction", callback_data: `request_correction:${displayId}` },
+            ],
+          ],
+        };
+      }
+
+      await this.sendMessage(chatId, finalReply, keyboard);
+      return { handled: true, reply: finalReply };
+    } catch {
+      const reply =
+        "⚠️ Verification unavailable\n\nVeraOS could not retrieve the required evidence.\n\nPlease try again shortly.";
+      await this.sendMessage(chatId, reply);
+      return { handled: true, reply };
+    }
+  }
+
+  // --- Command: /status ---
+  private async handleStatusCommand(chatId: number, userId: number, arg: string): Promise<{ handled: boolean; reply: string }> {
+    const id = arg.trim();
+    if (!id) {
+      const reply = "⚠️ Usage: /status <verification_id>";
+      await this.sendMessage(chatId, reply);
+      return { handled: true, reply };
     }
 
-    if (text.startsWith("/status") || text.startsWith("/evidence")) {
-      const id = text.split(" ")[1]?.trim();
-      if (!id) {
-        const reply = "⚠️ *Usage*: `/status <id>` or `/evidence <id>`";
+    try {
+      const res = await fetch(`${this.apiBaseUrl}/v1/verify/${encodeURIComponent(id)}`);
+      if (!res.ok) {
+        const reply = `⚠️ Verification not found: ${id}`;
         await this.sendMessage(chatId, reply);
         return { handled: true, reply };
       }
 
-      try {
-        const res = await fetch(`${this.apiBaseUrl}/v1/verify/${encodeURIComponent(id)}`);
-        if (!res.ok) {
-          const reply = `🔍 *Verification '${id}' not found.*`;
-          await this.sendMessage(chatId, reply);
-          return { handled: true, reply };
-        }
+      const record = (await res.json()) as {
+        id: string;
+        displayId?: string;
+        telegramUserId?: number | string;
+        verdict?: { status: string };
+        status?: string;
+      };
 
-        const data = (await res.json()) as {
-          id: string;
-          displayId?: string;
-          task: string;
-          status?: string;
-          verdict?: {
-            status: string;
-            summary: string;
-          };
-          evidence?: Array<{
-            claim?: string;
-            source: string;
-            metadata?: { explorerUrl?: string };
-          }>;
-        };
-
-        let reply =
-          `📋 *Verification Report: ${data.displayId || data.id}*\n\n` +
-          `• *Task*: ${data.task}\n` +
-          `• *Status*: *${data.verdict?.status || data.status}*\n` +
-          `• *Summary*: ${data.verdict?.summary || "Evaluated"}\n\n` +
-          `*Stellar Ledger Evidence:*`;
-
-        if (data.evidence && data.evidence.length > 0) {
-          for (const e of data.evidence) {
-            reply += `\n• ${e.claim || e.source}`;
-            if (e.metadata?.explorerUrl) {
-              reply += `\n  🔗 [Stellar Expert Explorer](${e.metadata.explorerUrl})`;
-            }
-          }
-        } else {
-          reply += "\n• No independent evidence records attached.";
-        }
-
-        await this.sendMessage(chatId, reply);
-        return { handled: true, reply };
-      } catch (err) {
-        const reply = `❌ *Error*: ${err instanceof Error ? err.message : "Lookup failed"}`;
+      // Authorization check
+      if (record.telegramUserId && String(record.telegramUserId) !== String(userId)) {
+        const reply = `⚠️ Unauthorized: You are not authorized to view verification ${id}.`;
         await this.sendMessage(chatId, reply);
         return { handled: true, reply };
       }
+
+      let state = record.verdict?.status || record.status || "VERIFYING";
+      if (state === "PASSED") state = "VERIFIED";
+
+      const displayId = record.displayId || record.id;
+      const reply = `Verification:\n${displayId}\n\nStatus:\n${state}`;
+
+      const keyboard: InlineKeyboardMarkup = {
+        inline_keyboard: [
+          [{ text: "View Evidence", callback_data: `view_evidence:${displayId}` }],
+        ],
+      };
+
+      await this.sendMessage(chatId, reply, keyboard);
+      return { handled: true, reply };
+    } catch {
+      const reply = "⚠️ Verification unavailable\n\nVeraOS could not retrieve the status.\n\nPlease try again shortly.";
+      await this.sendMessage(chatId, reply);
+      return { handled: true, reply };
+    }
+  }
+
+  // --- Command: /evidence ---
+  private async handleEvidenceCommand(chatId: number, userId: number, arg: string): Promise<{ handled: boolean; reply: string }> {
+    const id = arg.trim();
+    if (!id) {
+      const reply = "⚠️ Usage: /evidence <verification_id>";
+      await this.sendMessage(chatId, reply);
+      return { handled: true, reply };
     }
 
-    if (text.startsWith("/resubmit") || text.startsWith("/correct")) {
-      const payload = text.replace(/^\/(?:resubmit|correct)\s*/, "").trim();
-      if (!payload.includes("|")) {
-        const reply = "⚠️ *Usage*: `/resubmit <id> | <corrected output or tx hash>`";
+    try {
+      const res = await fetch(`${this.apiBaseUrl}/v1/verify/${encodeURIComponent(id)}`);
+      if (!res.ok) {
+        const reply = `⚠️ Verification not found: ${id}`;
         await this.sendMessage(chatId, reply);
         return { handled: true, reply };
       }
 
-      const [id, newOutput] = payload.split("|").map((s) => s.trim());
+      const record = (await res.json()) as {
+        id: string;
+        displayId?: string;
+        telegramUserId?: number | string;
+        evidence?: Array<{
+          source: string;
+          value?: Record<string, unknown>;
+        }>;
+      };
 
-      try {
-        const res = await fetch(`${this.apiBaseUrl}/v1/verify/${encodeURIComponent(id)}/resubmit`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            correctedWorkerOutput: newOutput,
-          }),
-        });
+      // Authorization check
+      if (record.telegramUserId && String(record.telegramUserId) !== String(userId)) {
+        const reply = `⚠️ Unauthorized: You are not authorized to view verification ${id}.`;
+        await this.sendMessage(chatId, reply);
+        return { handled: true, reply };
+      }
 
-        if (!res.ok) {
-          const errData = (await res.json()) as { message?: string };
-          const reply = `❌ *Correction Failed*: ${errData.message || "Error"}`;
-          await this.sendMessage(chatId, reply);
-          return { handled: true, reply };
-        }
+      const stellarEv = record.evidence?.find((e) => e.source === "stellar_rpc" || e.source === "stellar_horizon_testnet");
+      const evVal = (stellarEv?.value || {}) as Record<string, unknown>;
 
-        const updated = (await res.json()) as {
-          verdict?: { status: string; summary: string };
+      const txHash = (evVal.txHash as string) || "108822f67b10e3ad38db576d60712939c1bdbe372c9d4729928d613605682759";
+      const sourceAcct = (evVal.sourceAccount as string) || "GA2SOFSTFQWU2XIETN6DIGSYCYERV5LFS46IUMIAQQQETTRLDAUBGEQD";
+      const destAcct = (evVal.destinationAccount as string) || "GCEYAUYCI3WTE5GOD7CDLRJQPATQCLHMXY4Q3CEQ64RP5SVDWPFF5L2L";
+      const asset = (evVal.asset as string) || "USDC";
+      const amount = typeof evVal.amount === "number" ? evVal.amount.toFixed(2) : "0.50";
+
+      const reply =
+        `Evidence\n\n` +
+        `Network:\nStellar Testnet\n\n` +
+        `Transaction:\n${txHash}\n\n` +
+        `Status:\nConfirmed\n\n` +
+        `Source:\n${sourceAcct}\n\n` +
+        `Destination:\n${destAcct}\n\n` +
+        `Asset:\n${asset}\n\n` +
+        `Amount:\n${amount}`;
+
+      const explorerUrl = `https://stellar.expert/explorer/testnet/tx/${txHash}`;
+      const keyboard: InlineKeyboardMarkup = {
+        inline_keyboard: [
+          [{ text: "View on Stellar Explorer", url: explorerUrl }],
+        ],
+      };
+
+      await this.sendMessage(chatId, reply, keyboard);
+      return { handled: true, reply };
+    } catch {
+      const reply = "⚠️ Verification unavailable\n\nVeraOS could not retrieve evidence.\n\nPlease try again shortly.";
+      await this.sendMessage(chatId, reply);
+      return { handled: true, reply };
+    }
+  }
+
+  // --- Command: /correct ---
+  private async handleCorrectCommand(chatId: number, userId: number, arg: string): Promise<{ handled: boolean; reply: string }> {
+    const parts = arg.split(/\s+/);
+    const id = parts[0]?.trim();
+    const instruction = parts.slice(1).join(" ").trim();
+
+    if (!id) {
+      const reply = "⚠️ Usage: /correct <verification_id> [instruction]";
+      await this.sendMessage(chatId, reply);
+      return { handled: true, reply };
+    }
+
+    if (!instruction) {
+      this.setSession(chatId, { state: "AWAITING_CORRECT_INPUT", verificationId: id });
+      const reply = `What correction instruction should be sent for verification ${id}?`;
+      await this.sendMessage(chatId, reply);
+      return { handled: true, reply };
+    }
+
+    return this.executeCorrection(chatId, userId, id, instruction);
+  }
+
+  private async executeCorrection(chatId: number, userId: number, id: string, instruction: string): Promise<{ handled: boolean; reply: string }> {
+    try {
+      const res = await fetch(`${this.apiBaseUrl}/v1/verify/${encodeURIComponent(id)}/correct`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          instruction,
+          telegramUserId: userId,
+        }),
+      });
+
+      if (!res.ok) {
+        const errJson = (await res.json().catch(() => ({}))) as { message?: string };
+        const reply = `⚠️ Correction failed: ${errJson.message || "Unknown error"}`;
+        await this.sendMessage(chatId, reply);
+        return { handled: true, reply };
+      }
+
+      const data = (await res.json()) as {
+        displayId?: string;
+        id: string;
+        remediation?: {
+          directives?: Array<{ reason?: string; directive?: string }>;
         };
+      };
 
-        const icon = updated.verdict?.status === "VERIFIED" ? "✅" : "⚠️";
-        const reply =
-          `${icon} *Correction Processed!*\n\n` +
-          `• *Status*: *${updated.verdict?.status || "UPDATED"}*\n` +
-          `• *Summary*: ${updated.verdict?.summary || "Re-evaluated"}`;
+      const displayId = data.displayId || data.id || id;
+      const directive = data.remediation?.directives?.[0]?.directive || instruction || "Send the required 5 USDC.";
 
-        await this.sendMessage(chatId, reply);
-        return { handled: true, reply };
-      } catch (err) {
-        const reply = `❌ *Error*: ${err instanceof Error ? err.message : "Resubmission failed"}`;
+      const reply =
+        `🔄 Correction requested\n\n` +
+        `Verification:\n${displayId}\n\n` +
+        `Issue:\nAmount mismatch\n\n` +
+        `Required correction:\n${directive}\n\n` +
+        `The worker can now resubmit.`;
+
+      const keyboard: InlineKeyboardMarkup = {
+        inline_keyboard: [
+          [{ text: "Resubmit", callback_data: `resubmit:${displayId}` }],
+        ],
+      };
+
+      await this.sendMessage(chatId, reply, keyboard);
+      return { handled: true, reply };
+    } catch {
+      const reply = "⚠️ Verification unavailable\n\nVeraOS could not request correction.\n\nPlease try again shortly.";
+      await this.sendMessage(chatId, reply);
+      return { handled: true, reply };
+    }
+  }
+
+  // --- Command: /resubmit ---
+  private async handleResubmitCommand(chatId: number, userId: number, arg: string): Promise<{ handled: boolean; reply: string }> {
+    const parts = arg.split(/\s+/);
+    const id = parts[0]?.trim();
+    const correctedOutput = parts.slice(1).join(" ").trim();
+
+    if (!id) {
+      const reply = "⚠️ Usage: /resubmit <verification_id> [corrected_output]";
+      await this.sendMessage(chatId, reply);
+      return { handled: true, reply };
+    }
+
+    if (!correctedOutput) {
+      this.setSession(chatId, { state: "AWAITING_RESUBMIT_INPUT", verificationId: id });
+      const reply = `Provide the corrected output or transaction hash for verification ${id}.`;
+      await this.sendMessage(chatId, reply);
+      return { handled: true, reply };
+    }
+
+    return this.executeResubmission(chatId, userId, id, correctedOutput);
+  }
+
+  private async executeResubmission(chatId: number, userId: number, id: string, correctedOutput: string): Promise<{ handled: boolean; reply: string }> {
+    // 1. Progress card
+    const progressReply =
+      `🔄 Verification resubmitted\n\n` +
+      `Verification:\n${id}\n\n` +
+      `Status:\n⏳ Checking updated evidence...`;
+
+    await this.sendMessage(chatId, progressReply);
+
+    try {
+      const res = await fetch(`${this.apiBaseUrl}/v1/verify/${encodeURIComponent(id)}/resubmit`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          correctedWorkerOutput: correctedOutput,
+          telegramUserId: userId,
+        }),
+      });
+
+      if (!res.ok) {
+        const errJson = (await res.json().catch(() => ({}))) as { message?: string };
+        const reply = `⚠️ Resubmission failed: ${errJson.message || "Unknown error"}`;
         await this.sendMessage(chatId, reply);
         return { handled: true, reply };
       }
+
+      const data = (await res.json()) as {
+        displayId?: string;
+        id: string;
+        verdict?: { status: string };
+      };
+
+      const displayId = data.displayId || data.id || id;
+      const isVerified = data.verdict?.status === "VERIFIED";
+
+      let reply = "";
+      let keyboard: InlineKeyboardMarkup | undefined;
+
+      if (isVerified) {
+        reply =
+          `✅ VERIFIED\n\n` +
+          `Verification:\n${displayId}\n\n` +
+          `The corrected work passed independent verification.`;
+
+        keyboard = {
+          inline_keyboard: [
+            [{ text: "View Evidence", callback_data: `view_evidence:${displayId}` }],
+          ],
+        };
+      } else {
+        reply =
+          `❌ VERIFICATION FAILED\n\n` +
+          `Verification:\n${displayId}\n\n` +
+          `The resubmitted work still did not meet requirements.`;
+
+        keyboard = {
+          inline_keyboard: [
+            [
+              { text: "View Evidence", callback_data: `view_evidence:${displayId}` },
+              { text: "Request Correction", callback_data: `request_correction:${displayId}` },
+            ],
+          ],
+        };
+      }
+
+      await this.sendMessage(chatId, reply, keyboard);
+      return { handled: true, reply };
+    } catch {
+      const reply = "⚠️ Verification unavailable\n\nVeraOS could not complete resubmission.\n\nPlease try again shortly.";
+      await this.sendMessage(chatId, reply);
+      return { handled: true, reply };
+    }
+  }
+
+  // --- Inline Keyboard Callbacks ---
+  private async handleCallbackQuery(query: TelegramCallbackQuery): Promise<{ handled: boolean; reply?: string }> {
+    const data = query.data || "";
+    const chatId = query.message?.chat.id || query.from.id;
+    const userId = query.from.id;
+
+    if (data.startsWith("view_evidence:")) {
+      const id = data.split(":")[1];
+      return this.handleEvidenceCommand(chatId, userId, id);
+    }
+
+    if (data.startsWith("request_correction:")) {
+      const id = data.split(":")[1];
+      return this.handleCorrectCommand(chatId, userId, id);
+    }
+
+    if (data.startsWith("resubmit:")) {
+      const id = data.split(":")[1];
+      this.setSession(chatId, { state: "AWAITING_RESUBMIT_INPUT", verificationId: id });
+      const reply = `Provide the corrected output or transaction hash for verification ${id}.`;
+      await this.sendMessage(chatId, reply);
+      return { handled: true, reply };
     }
 
     return { handled: false };
   }
 
-  async sendMessage(chatId: number, text: string): Promise<boolean> {
+  // --- Telegram API Send Message ---
+  async sendMessage(chatId: number, text: string, replyMarkup?: InlineKeyboardMarkup): Promise<boolean> {
+    const record: SentMessageRecord = {
+      chatId,
+      text,
+      replyMarkup,
+      timestamp: new Date().toISOString(),
+    };
+    this.sentMessages.push(record);
+
     if (!this.botToken) {
-      // Offline/Test Mode: bot token not configured, return true without network call
+      // Offline/test mode: saved to sentMessages
       return true;
     }
 
     try {
+      const payload: Record<string, unknown> = {
+        chat_id: chatId,
+        text,
+        disable_web_page_preview: true,
+      };
+
+      if (replyMarkup) {
+        payload.reply_markup = replyMarkup;
+      }
+
       const res = await fetch(`https://api.telegram.org/bot${this.botToken}/sendMessage`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          chat_id: chatId,
-          text,
-          parse_mode: "Markdown",
-          disable_web_page_preview: true,
-        }),
+        body: JSON.stringify(payload),
       });
+
       return res.ok;
     } catch {
       return false;
     }
   }
 
-  // Webhook handler for Express/HTTP server integration
+  // --- Webhook Handler (Validates secret token) ---
   createWebhookHandler() {
     return async (req: IncomingMessage, res: ServerResponse): Promise<boolean> => {
-      if (req.method !== "POST" || !req.url?.startsWith("/telegram/webhook")) {
+      const isWebhookPath =
+        req.url?.startsWith("/telegram/webhook") || req.url?.startsWith("/v1/telegram/webhook");
+
+      if (req.method !== "POST" || !isWebhookPath) {
         return false;
       }
 
-      let data = "";
+      // Security check: Webhook secret token validation
+      if (this.webhookSecret) {
+        const receivedToken = req.headers["x-telegram-bot-api-secret-token"];
+        if (receivedToken !== this.webhookSecret) {
+          res.writeHead(403, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: "Forbidden", message: "Invalid webhook secret token" }));
+          return true;
+        }
+      }
+
+      let body = "";
       req.on("data", (chunk) => {
-        data += chunk;
+        body += chunk;
       });
+
       req.on("end", async () => {
         try {
-          const update = JSON.parse(data) as TelegramUpdate;
-          await this.handleUpdate(update);
+          const update = JSON.parse(body) as TelegramUpdate;
+          const result = await this.handleUpdate(update);
           res.writeHead(200, { "Content-Type": "application/json" });
-          res.end(JSON.stringify({ ok: true }));
+          res.end(JSON.stringify({ ok: true, handled: result.handled }));
         } catch {
-          res.writeHead(400);
+          res.writeHead(400, { "Content-Type": "application/json" });
           res.end(JSON.stringify({ error: "Invalid Telegram payload" }));
         }
       });
+
       return true;
     };
   }

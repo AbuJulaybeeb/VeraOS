@@ -103,6 +103,8 @@ export interface VerificationRequest {
     name?: string;
     output: string;
   };
+  telegramUserId?: number | string;
+  telegramChatId?: number | string;
   options?: {
     evidenceSources?: string[];
     maxAttempts?: number;
@@ -127,6 +129,8 @@ export interface VerificationRecord {
   maxAttempts: number;
   createdAt: string;
   completedAt?: string;
+  telegramUserId?: number | string;
+  telegramChatId?: number | string;
 
   // Frontend compatibility fields (adapted for existing UI views)
   displayId?: string;

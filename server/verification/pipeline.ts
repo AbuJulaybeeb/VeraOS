@@ -184,6 +184,8 @@ export class VerificationPipeline {
       maxAttempts,
       createdAt,
       completedAt: new Date().toISOString(),
+      telegramUserId: request.telegramUserId,
+      telegramChatId: request.telegramChatId,
 
       // Frontend compatibility mapping
       displayId,

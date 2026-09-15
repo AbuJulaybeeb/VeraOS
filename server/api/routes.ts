@@ -1,6 +1,7 @@
 import { IncomingMessage, ServerResponse } from "node:http";
 import { verificationPipeline } from "../verification/pipeline.ts";
 import { defaultRepository } from "../storage/memoryRepository.ts";
+import { veraTelegramBot } from "../telegram/bot.ts";
 import type { VerificationRequest, VerificationRecord } from "../types/domain.ts";
 
 
@@ -43,8 +44,13 @@ export async function handleApiRequest(
   req: IncomingMessage,
   res: ServerResponse
 ): Promise<boolean> {
-  const url = req.url ? new URL(req.url, `http://${req.headers.host || "localhost"}`) : null;
-  if (!url || !url.pathname.startsWith("/v1/verify")) {
+  if (!req.url) {
+    return false;
+  }
+  const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
+  const isVerify = url.pathname.startsWith("/v1/verify");
+  const isWebhook = url.pathname.startsWith("/telegram/webhook") || url.pathname.startsWith("/v1/telegram/webhook");
+  if (!isVerify && !isWebhook) {
     return false;
   }
 
@@ -62,6 +68,14 @@ export async function handleApiRequest(
   const pathname = url.pathname;
 
   try {
+    // ----------------------------------------------------
+    // POST /telegram/webhook or /v1/telegram/webhook
+    // ----------------------------------------------------
+    if ((pathname === "/telegram/webhook" || pathname === "/v1/telegram/webhook") && req.method === "POST") {
+      const handler = veraTelegramBot.createWebhookHandler();
+      return handler(req, res);
+    }
+
     // ----------------------------------------------------
     // POST /v1/verify
     // ----------------------------------------------------
@@ -99,6 +113,8 @@ export async function handleApiRequest(
           output: workerOutputStr,
           id: rawBody.worker?.workerId || rawBody.worker?.id || rawBody.workerOutput?.workerId || "worker-agent",
         },
+        telegramUserId: rawBody.telegramUserId,
+        telegramChatId: rawBody.telegramChatId,
       };
 
       // Execute real deterministic verification pipeline
@@ -163,6 +179,54 @@ export async function handleApiRequest(
       }
 
       sendJson(res, 200, record);
+      return true;
+    }
+
+    // ----------------------------------------------------
+    // GET /v1/verify/:verificationId/evidence
+    // ----------------------------------------------------
+    const evidenceMatch = pathname.match(/^\/v1\/verify\/([^/]+)\/evidence$/);
+    if (evidenceMatch && req.method === "GET") {
+      const id = decodeURIComponent(evidenceMatch[1]);
+      const record = await defaultRepository.get(id);
+
+      if (!record) {
+        sendJson(res, 404, {
+          error: "Not Found",
+          message: `Verification with ID '${id}' was not found.`,
+        });
+        return true;
+      }
+
+      sendJson(res, 200, {
+        verificationId: record.displayId || record.id,
+        id: record.id,
+        evidence: record.evidence,
+      });
+      return true;
+    }
+
+    // ----------------------------------------------------
+    // GET /v1/verify/:verificationId/checks
+    // ----------------------------------------------------
+    const checksMatch = pathname.match(/^\/v1\/verify\/([^/]+)\/checks$/);
+    if (checksMatch && req.method === "GET") {
+      const id = decodeURIComponent(checksMatch[1]);
+      const record = await defaultRepository.get(id);
+
+      if (!record) {
+        sendJson(res, 404, {
+          error: "Not Found",
+          message: `Verification with ID '${id}' was not found.`,
+        });
+        return true;
+      }
+
+      sendJson(res, 200, {
+        verificationId: record.displayId || record.id,
+        id: record.id,
+        checks: record.checks,
+      });
       return true;
     }
 
