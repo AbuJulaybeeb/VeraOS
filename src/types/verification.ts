@@ -32,6 +32,8 @@ export interface VerificationAttempt {
   evidence: IndependentEvidence[];
   remediationDirectives?: RemediationDirective[];
   rawTraceJson?: string;
+  stellarTxHash?: string;
+  ledgerNumber?: number;
   easUid?: string;
   blockNumber?: number;
 }

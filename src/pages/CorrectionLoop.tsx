@@ -204,20 +204,25 @@ export const CorrectionLoop: React.FC = () => {
           <p className="font-body-md text-body-md text-on-surface">
             {activeAttempt.detailedReason}
           </p>
-          {activeAttempt.easUid && (
+          {(activeAttempt.stellarTxHash || activeAttempt.easUid) && (
             <div className="mt-2 pt-2 border-t border-white/5 flex items-center justify-between text-code-sm">
               <span className="text-secondary font-medium">
                 Stellar Transaction Proof:
               </span>
-              <a
-                href={`https://stellar.expert/explorer/testnet/tx/${activeAttempt.easUid}`}
-                target="_blank"
-                rel="noreferrer"
-                className="font-mono text-primary font-semibold hover:underline flex items-center gap-1"
-              >
-                <span>{activeAttempt.easUid.slice(0, 16)}...</span>
-                <span className="material-symbols-outlined text-[14px]">open_in_new</span>
-              </a>
+              {(() => {
+                const tx = activeAttempt.stellarTxHash || activeAttempt.easUid || "";
+                return (
+                  <a
+                    href={`https://stellar.expert/explorer/testnet/tx/${tx}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-mono text-primary font-semibold hover:underline flex items-center gap-1"
+                  >
+                    <span>{tx.slice(0, 16)}...</span>
+                    <span className="material-symbols-outlined text-[14px]">open_in_new</span>
+                  </a>
+                );
+              })()}
             </div>
           )}
         </div>
