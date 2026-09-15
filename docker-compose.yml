@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - NODE_ENV=production
+      - STELLAR_NETWORK=testnet
+      - STELLAR_RPC_URL=https://soroban-testnet.stellar.org
+      - STELLAR_HORIZON_URL=https://horizon-testnet.stellar.org
+      - VERAOS_API_URL=http://app:3001
+    restart: unless-stopped
+
+  bot:
+    build: .
+    command: ["node", "server/telegram/runner.ts"]
+    environment:
+      - VERAOS_API_URL=http://app:3001
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+    depends_on:
+      - app
+    restart: unless-stopped
