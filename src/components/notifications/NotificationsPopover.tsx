@@ -114,7 +114,7 @@ export const NotificationsPopover: React.FC<NotificationsPopoverProps> = ({
 
         {/* Footer */}
         <div className="p-2.5 bg-surface-container-lowest border-t border-white/5 flex items-center justify-between text-[11px] font-code-sm text-outline">
-          <span>Base Node Cluster 8453</span>
+          <span>Stellar Horizon Testnet Cluster</span>
           <span className="text-secondary font-medium">Auto-poll Active</span>
         </div>
       </div>

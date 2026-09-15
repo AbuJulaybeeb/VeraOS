@@ -48,7 +48,7 @@ export const TaskSpecCard: React.FC<TaskSpecCardProps> = ({ record }) => {
             Invariant B: Ecosystem
           </span>
           <span className="font-headline-sm text-headline-sm font-semibold text-on-surface">
-            Base L2 (8453)
+            {record.network || "Stellar Testnet"}
           </span>
           <span className="font-code-sm text-code-sm text-outline">
             Canonical deployment

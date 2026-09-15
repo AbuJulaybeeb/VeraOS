@@ -3,9 +3,9 @@ import type { EvidenceProvider, EvidenceResult, VerificationContext } from "./pr
 
 
 /**
- * WebProvider (Extension Point for Milestone 2)
- * Will perform TLS-Notary session proofs and authoritative web oracle lookups.
- * NOT implemented in P0 in accordance with instructions.
+ * WebProvider (Extension Point for future roadmap)
+ * Will perform authoritative web oracle and external API lookups.
+ * Scaffolded only; unconnected in current release.
  */
 export class WebProvider implements EvidenceProvider {
   name = "WebProvider";
@@ -22,9 +22,9 @@ export class WebProvider implements EvidenceProvider {
     return {
       status: "unverifiable",
       expected: requirement.expected,
-      observed: "Web Oracle / TLS-Notary provider not connected in P0",
+      observed: "Web Oracle provider not connected in current release",
       evidence: [],
-      explanation: "Independent Web Oracle / TLS-Notary verification is scheduled for Milestone 2. Currently unconnected.",
+      explanation: "Independent Web Oracle verification is scheduled for future roadmap. Currently unconnected.",
     };
   }
 }

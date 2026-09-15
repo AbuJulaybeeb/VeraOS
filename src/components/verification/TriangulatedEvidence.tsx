@@ -16,22 +16,22 @@ export const TriangulatedEvidence: React.FC<TriangulatedEvidenceProps> = ({ reco
 
   const handleOpenOraclePayload = () => {
     setModalContent({
-      title: "TLS-Notary Session Proof Payload",
+      title: "Web Oracle Proof Payload",
       body: JSON.stringify(
         {
-          session_id: "tls_notary_base_8453_98f1",
-          verifier: "VeraOS TLS Witness Node #4",
+          session_id: "stellar_oracle_receipt_testnet",
+          verifier: "VeraOS Witness Node #4",
           timestamp: new Date().toISOString(),
-          endpoint: "https://api.llama.fi/protocol/seamless-protocol",
+          endpoint: "https://api.llama.fi/protocol/blend-capital",
           server_signature: "0xfa399bf20199e8281023812903102381203",
           tls_version: "TLS 1.3",
           cipher_suite: "TLS_AES_256_GCM_SHA384",
           http_status: 200,
           extracted_body: {
-            slug: "seamless-protocol",
-            name: "Seamless Protocol",
+            slug: "blend-capital",
+            name: "Blend Capital",
             chainTvls: {
-              Base: isRemediated ? 214200000 : 8241900,
+              Stellar: isRemediated ? 18000000 : 8241900,
             },
           },
         },
@@ -51,7 +51,7 @@ export const TriangulatedEvidence: React.FC<TriangulatedEvidenceProps> = ({ reco
             agent: record.workerName,
             task: record.taskPrompt,
             attempt: record.currentAttempt,
-            invocations: ["search_base_lending_protocols", "evaluate_tvl", "dispatch_payout"],
+            invocations: ["search_stellar_protocols", "evaluate_tvl", "dispatch_payout"],
           },
           null,
           2
@@ -76,7 +76,7 @@ export const TriangulatedEvidence: React.FC<TriangulatedEvidenceProps> = ({ reco
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-space-md">
-        {/* Card 1: Base Blockchain Proof */}
+        {/* Card 1: Stellar Horizon Ledger Proof */}
         <div className="p-space-md rounded-xl bg-surface-container-low flex flex-col justify-between shadow-sm border border-white/5">
           <div>
             <div className="flex items-center justify-between mb-space-sm">
@@ -85,7 +85,7 @@ export const TriangulatedEvidence: React.FC<TriangulatedEvidenceProps> = ({ reco
                   account_balance_wallet
                 </span>
                 <span className="font-headline-sm text-headline-sm font-semibold text-on-surface">
-                  Base RPC Receipt
+                  Stellar Horizon Receipt
                 </span>
               </div>
               <span className="px-2 py-0.5 rounded bg-surface-container-high text-[#4ade80] font-label-caps text-label-caps border border-[#22c55e]/20">
@@ -99,16 +99,16 @@ export const TriangulatedEvidence: React.FC<TriangulatedEvidenceProps> = ({ reco
                 <span className="text-on-surface">{record.network}</span>
               </div>
               <div className="flex justify-between py-1 bg-surface-container/50 px-2 rounded">
-                <span className="text-outline">Block</span>
+                <span className="text-outline">Ledger</span>
                 <span className="text-on-surface">
-                  #{currentAttempt?.blockNumber || 21849201}
+                  #{currentAttempt?.blockNumber || 1048576}
                 </span>
               </div>
               <div className="flex flex-col py-1 bg-surface-container/50 px-2 rounded">
                 <span className="text-outline">Tx Hash</span>
                 <span className="text-primary truncate font-mono">
                   {isRemediated
-                    ? "0x91cc4421b8fa012984fe9823901bca019"
+                    ? "0x5f9e2b1892f3900a41cd8a7b3c21a4de99f2b1892f3900a41cd8a7b3c21a4de"
                     : "0x8a7b3c21a4de99f2b1892f3900a41cd"}
                 </span>
               </div>
@@ -162,7 +162,7 @@ export const TriangulatedEvidence: React.FC<TriangulatedEvidenceProps> = ({ reco
                 </span>
               </div>
               <span className="px-2 py-0.5 rounded bg-surface-container-high text-secondary font-label-caps text-label-caps border border-secondary/20">
-                TLS-NOTARY SIGNED
+                ORACLE SIGNED
               </span>
             </div>
 
@@ -178,12 +178,12 @@ export const TriangulatedEvidence: React.FC<TriangulatedEvidenceProps> = ({ reco
               <div className="flex flex-col py-1 bg-surface-container/50 px-2 rounded">
                 <span className="text-outline">Endpoint</span>
                 <span className="text-primary truncate font-mono">
-                  api.llama.fi/protocol/{isRemediated ? "aerodrome" : "seamless-protocol"}
+                  api.llama.fi/protocol/{isRemediated ? "blend-capital" : "aquarius"}
                 </span>
               </div>
               <div className="flex justify-between py-1 bg-surface-container/50 px-2 rounded">
                 <span className="text-outline">Chain Scope</span>
-                <span className="text-on-surface">Base Only</span>
+                <span className="text-on-surface">Stellar Testnet</span>
               </div>
               <div className="flex justify-between py-1 bg-surface-container/50 px-2 rounded">
                 <span className="text-outline">Live TVL</span>

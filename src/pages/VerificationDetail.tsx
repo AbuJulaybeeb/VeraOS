@@ -166,9 +166,9 @@ export const VerificationDetail: React.FC = () => {
       <ClaimsVsEvidence
         record={verification}
         onViewOracleProof={() =>
-          alert("DefiLlama TLS-Notary proof verified via independent oracle.")
+          alert("Web Oracle proof verified via independent witness.")
         }
-        onViewBaseScan={() => {
+        onViewExplorer={() => {
           const tx = "8a7b3c21a4de99f2b1892f3900a41cd";
           window.open(`https://stellar.expert/explorer/testnet/tx/${tx}`, "_blank");
         }}

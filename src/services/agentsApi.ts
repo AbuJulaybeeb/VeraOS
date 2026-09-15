@@ -52,7 +52,7 @@ export const agentsApi = {
       lastActive: "Just now",
       verifiedTxCount: 0,
       apiKeySnippet: `vera_live_${Math.random().toString(36).slice(2, 6)}...${Math.random().toString(36).slice(2, 6)}`,
-      attestationSchema: "EAS Base (0x9a4f...10cc)",
+      attestationSchema: "Stellar Horizon Testnet Receipt",
       capabilities: data.capabilities.length ? data.capabilities : ["custom_workflow"],
     };
 

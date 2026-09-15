@@ -182,7 +182,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </span>
           </div>
           <div className="flex items-center justify-between font-code-sm text-code-sm text-on-surface">
-            <span className="truncate text-xs text-on-surface-variant">Base Mainnet</span>
+            <span className="truncate text-xs text-on-surface-variant">Stellar Testnet</span>
             <span className="text-[10px] text-outline">Operational</span>
           </div>
         </div>

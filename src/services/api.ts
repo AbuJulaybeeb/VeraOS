@@ -1,4 +1,4 @@
-// Base API client utilities & simulation helpers
+// Core API client utilities & simulation helpers
 export const SIMULATED_LATENCY_MS = 250;
 
 export async function delay(ms = SIMULATED_LATENCY_MS): Promise<void> {

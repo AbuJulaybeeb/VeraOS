@@ -5,13 +5,13 @@ import { cn } from "../../lib/utils";
 interface ClaimsVsEvidenceProps {
   record: VerificationRecord;
   onViewOracleProof?: () => void;
-  onViewBaseScan?: () => void;
+  onViewExplorer?: () => void;
 }
 
 export const ClaimsVsEvidence: React.FC<ClaimsVsEvidenceProps> = ({
   record,
   onViewOracleProof,
-  onViewBaseScan,
+  onViewExplorer,
 }) => {
   const currentAttempt = record.attempts[record.attempts.length - 1];
   const invariants = currentAttempt?.invariants || [];
@@ -181,8 +181,7 @@ export const ClaimsVsEvidence: React.FC<ClaimsVsEvidenceProps> = ({
         </div>
 
         <p className="font-body-sm text-body-sm text-on-surface-variant mb-space-md">
-          Evaluated against Base blockchain JSON-RPC node & DefiLlama
-          cryptographically notarized TLS oracle feed.
+          Evaluated against Stellar Horizon testnet ledger & deterministic verification kernel.
         </p>
 
         {/* Checklist Items */}
@@ -204,7 +203,7 @@ export const ClaimsVsEvidence: React.FC<ClaimsVsEvidenceProps> = ({
                 </div>
                 <p className="font-body-sm text-body-sm text-outline mt-0.5">
                   Evidence: Parsed 3 valid protocol objects:{" "}
-                  {record.currentAttempt >= 2 ? "Aerodrome" : "Seamless"}, Moonwell, Overnight.
+                  {record.currentAttempt >= 2 ? "Blend" : "Aquarius"}, YieldBlox, Soroswap.
                 </p>
               </div>
             </div>
@@ -222,14 +221,14 @@ export const ClaimsVsEvidence: React.FC<ClaimsVsEvidenceProps> = ({
               <div>
                 <div className="flex items-center gap-2">
                   <span className="font-headline-sm text-headline-sm font-medium text-on-surface">
-                    Invariant 2: Ecosystem L2 Conformance
+                    Invariant 2: Stellar Network Conformance
                   </span>
                   <span className="px-1.5 py-0.2 rounded bg-surface-variant text-[#4ade80] font-label-caps text-label-caps">
                     PASSED
                   </span>
                 </div>
                 <p className="font-body-sm text-body-sm text-outline mt-0.5">
-                  Evidence: Verified canonical contract bytecode registered on Base chain ID 8453.
+                  Evidence: Verified ledger transactions confirmed on Stellar Testnet.
                 </p>
               </div>
             </div>
@@ -402,13 +401,13 @@ export const ClaimsVsEvidence: React.FC<ClaimsVsEvidenceProps> = ({
                   </div>
                   <p className="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
                     {inv5?.description ||
-                      "Decimal conversion check: verified against ERC-20 transfer event logs."}
+                      "Decimal conversion check: verified against Stellar Horizon payment operations."}
                   </p>
                 </div>
               </div>
 
               <button
-                onClick={onViewBaseScan}
+                onClick={onViewExplorer}
                 className="px-2 py-1 rounded bg-surface-container hover:bg-surface-container-high text-[#E08A3E] font-code-sm text-code-sm flex items-center gap-1 transition-colors shrink-0 border border-[#4A2B1D]"
               >
                 <span>View on Stellar Expert</span>

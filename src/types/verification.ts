@@ -43,7 +43,7 @@ export interface VerificationRecord {
   taskPrompt: string;
   workerId: string;
   workerName: string;
-  network: string; // e.g. "Base Fork 8453", "Base Mainnet"
+  network: string; // e.g. "Stellar Testnet", "Stellar Mainnet"
   chainId: number;
   createdAt: string;
   currentAttempt: number;

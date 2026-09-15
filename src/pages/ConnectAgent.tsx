@@ -55,13 +55,13 @@ export const ConnectAgent: React.FC = () => {
 // Initialize VeraOS Verification Client
 const vera = new VeraOS({
   apiKey: process.env.VERA_API_KEY, // vera_live_demo_984f...
-  network: 'base-mainnet'
+  network: 'stellar-testnet'
 });
 
 // Submit autonomous agent task & execution trace for verification
 const result = await vera.verify({
   taskId: 'task_001',
-  taskPrompt: 'Find 3 Base lending protocols with TVL > $10M and pay 5 USDC.',
+  taskPrompt: 'Find 3 Soroban lending protocols on Stellar with TVL > $10M and pay 5 USDC.',
   workerId: '${agentName || "my-agent"}',
   invariants: [
     { metric: 'tvl_threshold', operator: '>=', value: 10000000 },
@@ -75,7 +75,7 @@ if (!result.valid) {
   console.warn('VeraOS Breaches:', result.remediationDirectives);
   await myAgent.remediate(result.remediationDirectives);
 } else {
-  console.log('Verified on Stellar! TxHash:', result.easUid);
+  console.log('Verified on Stellar! Ledger TxHash:', result.txHash || result.id);
 }`;
 
   const pyCode = `import os

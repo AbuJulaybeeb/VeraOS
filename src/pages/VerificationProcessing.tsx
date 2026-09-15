@@ -27,12 +27,12 @@ const STEPS: StepItem[] = [
   {
     id: 4,
     label: "Running independent verification checks",
-    detail: "Querying Base JSON-RPC multi-node cluster & DefiLlama TLS-Notary sessions...",
+    detail: "Querying Stellar Horizon testnet ledger & Soroban RPC cluster...",
   },
   {
     id: 5,
-    label: "Synthesizing cryptographic verdict & EAS ticket",
-    detail: "Comparing claims vs independent evidence and assembling attestation...",
+    label: "Synthesizing deterministic verdict & ledger receipt",
+    detail: "Comparing claims vs independent evidence and assembling audit record...",
   },
 ];
 

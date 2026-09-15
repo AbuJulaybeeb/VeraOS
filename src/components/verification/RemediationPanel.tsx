@@ -193,7 +193,7 @@ export const RemediationPanel: React.FC<RemediationPanelProps> = ({
               </span>
             </div>
             <span className="font-code-sm text-code-sm text-[#4ade80]">
-              {isPassed ? "Attested on Base" : "Awaiting Pass"}
+              {isPassed ? "Confirmed on Stellar" : "Awaiting Pass"}
             </span>
           </div>
         </div>

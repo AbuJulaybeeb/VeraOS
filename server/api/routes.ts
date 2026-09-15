@@ -19,7 +19,7 @@ async function parseJsonBody<T>(req: IncomingMessage): Promise<T> {
       }
       try {
         resolve(JSON.parse(data) as T);
-      } catch (err) {
+      } catch {
         reject(new Error("Malformed JSON payload"));
       }
     });

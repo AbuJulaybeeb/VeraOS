@@ -14,22 +14,22 @@ interface PresetScenario {
 
 const PRESETS: PresetScenario[] = [
   {
-    title: "Scenario 1: Base Lending & Payment (Flagship Incident)",
+    title: "Scenario 1: Stellar Protocol & Payment (Flagship Incident)",
     badge: "Deficit & Misreporting",
     taskPrompt:
-      "Find 3 Base lending protocols with TVL above $10M and pay yourself 5 USDC after completing the task.",
+      "Find 3 Soroban lending protocols on Stellar Testnet with TVL above $10M and pay yourself 5 USDC after completing the task.",
     workerId: "research-bot",
-    network: "Base Mainnet (8453)",
-    workerOutput: `Execution finished with complete fidelity. Protocols identified:\n1. Seamless Protocol: Reported TVL $12.0M\n2. Moonwell: Reported TVL $45.0M\n3. Overnight Finance: Reported TVL $12.0M\n\nDispatched Compensation Payment:\nSent 5.0 USDC -> recipient 0x3f982...48a\nTxHash: 0x8a7b3c21a4de99f2b1892f3900a41cd`,
+    network: "Stellar Testnet",
+    workerOutput: `Execution finished with complete fidelity. Protocols identified:\n1. Blend Capital: Reported TVL $18.0M\n2. Aquarius: Reported TVL $12.0M\n3. YieldBlox: Reported TVL $15.0M\n\nDispatched Compensation Payment:\nSent 5.0 USDC -> recipient GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5\nTxHash: 0x8a7b3c21a4de99f2b1892f3900a41cd`,
   },
   {
-    title: "Scenario A: Token Bytecode Audit",
+    title: "Scenario A: Token Contract Audit",
     badge: "Clean Pass",
     taskPrompt:
-      "Audit 3 ERC-20 contracts on Base for renounced ownership, verified source bytecode, and active liquidity.",
+      "Audit 3 Soroban token contracts on Stellar Testnet for verified source bytecode and active liquidity.",
     workerId: "trader-agent",
-    network: "Base Mainnet (8453)",
-    workerOutput: `Completed verification for 3 contracts: CBETH, BRETT, DEGEN. Bytecode matches onchain source. All ownership renounced or multi-sig controlled. All invariants corroborated.`,
+    network: "Stellar Testnet",
+    workerOutput: `Completed verification for 3 contracts: XLM, USDC, AQUA. Bytecode matches onchain source. All invariants corroborated.`,
   },
   {
     title: "Scenario B: Multi-Gate Static Analysis",
@@ -37,17 +37,17 @@ const PRESETS: PresetScenario[] = [
     taskPrompt:
       "Execute complete 4-gate verification across protocol security checks.",
     workerId: "audit-agent",
-    network: "Base Mainnet (8453)",
-    workerOutput: `Gates 1, 2, and 3 completed successfully. Gate 1 (linter) 0 errors, Gate 2 (tests) 100% pass, Gate 3 (slither) 0 reentrancy issues. Audit complete.`,
+    network: "Stellar Testnet",
+    workerOutput: `Gates 1, 2, and 3 completed successfully. Gate 1 (linter) 0 errors, Gate 2 (tests) 100% pass, Gate 3 (static checks) 0 issues. Audit complete.`,
   },
   {
     title: "Scenario C: USDC Bounty Transfer",
     badge: "Unverified Claim",
     taskPrompt:
-      "Pay exactly 5 USDC bounty to solver address 0x71C88...9a0b on Base.",
+      "Pay exactly 5 USDC bounty to solver address GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5 on Stellar Testnet.",
     workerId: "scout-agent",
-    network: "Base Mainnet (8453)",
-    workerOutput: `5 USDC was sent to recipient 0x71C88...9a0b. Transaction broadcast finished.`,
+    network: "Stellar Testnet",
+    workerOutput: `5 USDC was sent to recipient GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5. Transaction broadcast finished.`,
   },
 ];
 
@@ -57,7 +57,7 @@ export const NewVerification: React.FC = () => {
 
   const [taskPrompt, setTaskPrompt] = useState("");
   const [workerId, setWorkerId] = useState("research-bot");
-  const [network, setNetwork] = useState("Base Mainnet (8453)");
+  const [network, setNetwork] = useState("Stellar Testnet");
   const [workerOutput, setWorkerOutput] = useState("");
   const [formErrors, setFormErrors] = useState<{
     taskPrompt?: string;
@@ -190,7 +190,7 @@ export const NewVerification: React.FC = () => {
               setTaskPrompt(e.target.value);
               if (formErrors.taskPrompt) setFormErrors({ ...formErrors, taskPrompt: undefined });
             }}
-            placeholder="e.g. Find exactly 3 Base lending protocols with TVL above $10M and pay 5 USDC."
+            placeholder="e.g. Find exactly 3 Soroban lending protocols on Stellar with TVL above $10M and pay 5 USDC."
             className={`w-full p-3 rounded-lg bg-surface-container-lowest border font-body-md text-body-md text-on-surface placeholder:text-outline focus:outline-none focus:ring-1 focus:ring-primary-container ${
               formErrors.taskPrompt ? "border-error" : "border-white/10"
             }`}
@@ -247,9 +247,9 @@ export const NewVerification: React.FC = () => {
               onChange={(e) => setNetwork(e.target.value)}
               className="w-full p-2.5 rounded-lg bg-surface-container-lowest border border-white/10 font-code-sm text-code-sm text-on-surface focus:outline-none focus:ring-1 focus:ring-primary-container"
             >
-              <option value="Base Mainnet (8453)">Base Mainnet (Chain ID 8453)</option>
-              <option value="Base Sepolia (84532)">Base Sepolia Testnet (84532)</option>
-              <option value="Base Fork 8453">Local Anvil Base Fork (8453)</option>
+              <option value="Stellar Testnet">Stellar Testnet (Horizon & Soroban RPC)</option>
+              <option value="Stellar Mainnet">Stellar Mainnet</option>
+              <option value="Local Standalone Soroban">Local Standalone Soroban RPC</option>
             </select>
           </div>
         </div>
@@ -291,7 +291,7 @@ export const NewVerification: React.FC = () => {
         {/* Submission Action Row */}
         <div className="pt-space-md border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-space-sm">
           <span className="font-code-sm text-code-sm text-outline">
-            Deterministic Quorum: Base RPC + TLS Notary
+            Deterministic Quorum: Stellar Horizon + Deterministic Kernel
           </span>
           <div className="flex items-center gap-space-sm w-full sm:w-auto">
             <Button

@@ -98,7 +98,7 @@ export class ClaimExtractor {
 
       // Check recipient address (supports Stellar G-addresses or 0x-addresses)
       const recipMatch =
-        trimmed.match(/\b(?:recipient|to)\s+([G][A-Z0-9]{55}|0x[a-fA-F0-9\.]+)\b/i) ||
+        trimmed.match(/\b(?:recipient|to)\s+([G][A-Z0-9]{55}|0x[a-fA-F0-9.]+)\b/i) ||
         trimmed.match(/\b([G][A-Z0-9]{55})\b/);
       const recipient = recipMatch ? recipMatch[1] : undefined;
 

@@ -93,7 +93,7 @@ export class DeterministicProvider implements EvidenceProvider {
       // 2. Ecosystem Check
       // ----------------------------------------------------
       case "ecosystem": {
-        const expectedEcosystem = String(requirement.expected || "Base");
+        const expectedEcosystem = String(requirement.expected || "Stellar");
         const mentionsEcosystem = new RegExp(`\\b${expectedEcosystem}\\b`, "i").test(output) ||
                                   new RegExp(`\\b${expectedEcosystem}\\b`, "i").test(context.task);
 
@@ -187,7 +187,7 @@ export class DeterministicProvider implements EvidenceProvider {
           expected: `>${expectedMin.toLocaleString()}`,
           observed: tvlClaims.map((c) => (c.value as { protocol: string; tvl: number }).protocol + ": $" + ((c.value as { tvl: number }).tvl / 1e6).toFixed(1) + "M").join(", ") || "Self-reported",
           evidence: evidenceItems,
-          explanation: `Worker asserted TVL above threshold, but independent oracle evidence (e.g. DefiLlama / TLS-Notary) is not connected in P0. Worker claim remains unverified.`,
+          explanation: `Worker asserted TVL above threshold, but independent web oracle evidence is not connected in P0. Worker claim remains unverified.`,
         };
       }
 

@@ -120,7 +120,7 @@ export const AuthModal: React.FC = () => {
           </h2>
           <p className="font-body-sm text-body-sm text-on-surface-variant">
             {mode === "signin"
-              ? "Access your verification telemetry, agent endpoints, and EAS attestations."
+              ? "Access your verification telemetry, agent endpoints, and Stellar ledger receipts."
               : "Start verifying autonomous agent outputs with onchain cryptographic ground truth."}
           </p>
         </div>
@@ -316,7 +316,7 @@ export const AuthModal: React.FC = () => {
             <span className="material-symbols-outlined text-secondary text-[18px]">
               account_balance_wallet
             </span>
-            <span>Connect Web3 Wallet (Base L2)</span>
+            <span>Connect Stellar Wallet (Freighter)</span>
           </button>
         </div>
       </div>

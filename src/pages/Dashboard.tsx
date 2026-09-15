@@ -40,7 +40,7 @@ export const Dashboard: React.FC = () => {
             </span>
           </div>
           <p className="font-body-md text-body-md text-on-surface-variant">
-            Deterministic evaluation stream of autonomous agent tasks against Base L2 ground truth and TLS oracles.
+            Deterministic evaluation stream of autonomous agent tasks against Stellar Horizon ledger ground truth and invariant kernel.
           </p>
         </div>
 

@@ -100,7 +100,7 @@ export const EvidenceExplorer: React.FC = () => {
         </div>
         <div className="flex items-center gap-2">
           <span className="px-2 py-1 rounded bg-surface-container font-code-sm text-code-sm text-outline">
-            Oracles: Base RPC + DefiLlama TLS
+            Evidence: Stellar Horizon + Invariant Kernel
           </span>
         </div>
       </div>

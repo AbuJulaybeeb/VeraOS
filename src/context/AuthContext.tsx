@@ -98,10 +98,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await new Promise((r) => setTimeout(r, 500));
     const walletUser: User = {
       id: `usr_wallet_${Date.now()}`,
-      name: "Base Wallet User",
-      email: "web3.agent@base.org",
-      role: "Attestation Prover",
-      walletAddress: "0x89bf2e91aa4c2810a9918230fec00281b378129031",
+      name: "Stellar Wallet User",
+      email: "agent@stellar.org",
+      role: "Verification Auditor",
+      walletAddress: "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5",
     };
     setUser(walletUser);
     setIsAuthModalOpen(false);

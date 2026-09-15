@@ -47,7 +47,7 @@ export const CorrectionLoop: React.FC = () => {
     setResubmittingStep("Resubmitting remediation patch to agent...");
     await new Promise((r) => setTimeout(r, 600));
 
-    setResubmittingStep("Re-running independent verification checks on Base...");
+    setResubmittingStep("Re-running independent verification checks on Stellar Horizon...");
     await new Promise((r) => setTimeout(r, 700));
 
     await resubmit({
@@ -247,12 +247,12 @@ export const CorrectionLoop: React.FC = () => {
                   onChange={(e) => setSelectedProtocol(e.target.value)}
                   className="p-2.5 rounded-lg bg-surface-container-lowest border border-white/10 font-code-sm text-code-sm text-on-surface focus:outline-none focus:ring-1 focus:ring-primary-container"
                 >
-                  <option value="Aerodrome">Aerodrome Finance ($214M TVL - Verified)</option>
-                  <option value="Aave">Aave v3 Base ($64M TVL - Verified)</option>
-                  <option value="Moonwell">Moonwell Scale ($45M TVL - Verified)</option>
+                  <option value="Blend">Blend Capital ($18M TVL - Verified)</option>
+                  <option value="Aquarius">Aquarius Stellar ($12M TVL - Verified)</option>
+                  <option value="YieldBlox">YieldBlox Soroban ($15M TVL - Verified)</option>
                 </select>
                 <span className="text-[11px] text-outline">
-                  Replaces Seamless Protocol ($8.2M) which fell short of the $10M threshold.
+                  Replaces deficient protocol selection with verified Stellar protocol above $10M threshold.
                 </span>
               </div>
 

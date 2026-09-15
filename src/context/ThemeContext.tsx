@@ -72,7 +72,7 @@ export const useTheme = () => {
 };
 
 export const ThemeToggle: React.FC<{ className?: string }> = ({ className = "" }) => {
-  const { theme, toggleTheme, isLight } = useTheme();
+  const { toggleTheme, isLight } = useTheme();
 
   return (
     <button

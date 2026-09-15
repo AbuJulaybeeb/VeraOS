@@ -14,7 +14,7 @@ export const initialAgents: Agent[] = [
     lastActive: "2m ago",
     verifiedTxCount: 19,
     apiKeySnippet: "vera_live_89bf...2e91",
-    attestationSchema: "EAS Base (0x9a4f...10cc)",
+    attestationSchema: "Stellar Horizon Testnet Receipt",
     capabilities: ["defi_research", "protocol_discovery", "payout_dispatch"],
   },
   {
@@ -30,7 +30,7 @@ export const initialAgents: Agent[] = [
     lastActive: "14m ago",
     verifiedTxCount: 45,
     apiKeySnippet: "vera_live_41c8...a812",
-    attestationSchema: "EAS Base (0x9a4f...10cc)",
+    attestationSchema: "Stellar Horizon Testnet Receipt",
     capabilities: ["token_swap", "slippage_guard", "smart_contract_audit"],
   },
   {
@@ -46,7 +46,7 @@ export const initialAgents: Agent[] = [
     lastActive: "31m ago",
     verifiedTxCount: 8,
     apiKeySnippet: "vera_live_90ab...31dd",
-    attestationSchema: "EAS Base (0x9a4f...10cc)",
+    attestationSchema: "Stellar Horizon Testnet Receipt",
     capabilities: ["bounty_hunting", "telemetry_scan"],
   },
   {
@@ -62,7 +62,7 @@ export const initialAgents: Agent[] = [
     lastActive: "Never",
     verifiedTxCount: 0,
     apiKeySnippet: "vera_live_0000...0000",
-    attestationSchema: "EAS Base (0x9a4f...10cc)",
+    attestationSchema: "Stellar Horizon Testnet Receipt",
     capabilities: ["formal_verification", "opcode_fuzzing"],
   },
 ];
