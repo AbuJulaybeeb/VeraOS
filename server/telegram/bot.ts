@@ -60,6 +60,12 @@ export class VeraTelegramBot {
   private apiBaseUrl: string;
   private webhookSecret?: string;
 
+  private isPolling = false;
+  private pollingAbortController: AbortController | null = null;
+  private botUsername: string | null = null;
+  private botInfo: { id: number; username?: string; first_name?: string } | null = null;
+  private lastUpdateId = 0;
+
   // Session state storage per chat
   private sessions = new Map<number, UserSession>();
 
@@ -85,6 +91,172 @@ export class VeraTelegramBot {
 
   setWebhookSecret(secret?: string) {
     this.webhookSecret = secret;
+  }
+
+  setBotToken(token: string) {
+    this.botToken = token;
+  }
+
+  isConfigured(): boolean {
+    return Boolean(this.botToken && this.botToken.trim().length > 0);
+  }
+
+  isPollingActive(): boolean {
+    return this.isPolling;
+  }
+
+  getBotUsername(): string | null {
+    return this.botUsername;
+  }
+
+  getBotInfo() {
+    return this.botInfo;
+  }
+
+  async getMe(): Promise<{ ok: boolean; result?: { id: number; is_bot: boolean; first_name: string; username?: string }; error?: string }> {
+    if (!this.botToken) {
+      return { ok: false, error: "TELEGRAM_BOT_TOKEN is not configured." };
+    }
+    try {
+      const res = await fetch(`https://api.telegram.org/bot${this.botToken}/getMe`);
+      const data = (await res.json()) as {
+        ok: boolean;
+        result?: { id: number; is_bot: boolean; first_name: string; username?: string };
+        description?: string;
+      };
+      if (data.ok && data.result) {
+        this.botInfo = data.result;
+        this.botUsername = data.result.username || null;
+        return { ok: true, result: data.result };
+      }
+      return { ok: false, error: data.description || `HTTP ${res.status}` };
+    } catch (err) {
+      return { ok: false, error: (err as Error).message };
+    }
+  }
+
+  async deleteWebhook(dropPendingUpdates = false): Promise<boolean> {
+    if (!this.botToken) return false;
+    try {
+      const res = await fetch(
+        `https://api.telegram.org/bot${this.botToken}/deleteWebhook?drop_pending_updates=${dropPendingUpdates}`
+      );
+      const data = (await res.json()) as { ok: boolean; description?: string };
+      return Boolean(data.ok);
+    } catch {
+      return false;
+    }
+  }
+
+  async startPolling(options?: { timeoutSeconds?: number }): Promise<boolean> {
+    if (this.isPolling) {
+      console.log("[Telegram Bot] Polling already active.");
+      return true;
+    }
+
+    if (!this.botToken) {
+      console.error("[Telegram Bot] Error: TELEGRAM_BOT_TOKEN is not configured.");
+      console.error("[Telegram Bot] Set TELEGRAM_BOT_TOKEN in your environment or .env file.");
+      return false;
+    }
+
+    const meRes = await this.getMe();
+    if (!meRes.ok || !meRes.result) {
+      console.error(`[Telegram Bot] Error: Failed to authenticate with Telegram Bot API: ${meRes.error}`);
+      return false;
+    }
+
+    console.log(
+      `[Telegram Bot] Connected as @${meRes.result.username || "unknown"} (${meRes.result.first_name}, ID: ${meRes.result.id})`
+    );
+
+    // Delete webhook to ensure Telegram sends updates via getUpdates
+    const webhookCleared = await this.deleteWebhook(false);
+    if (webhookCleared) {
+      console.log("[Telegram Bot] Webhook cleared; ready for getUpdates long-polling.");
+    }
+
+    this.isPolling = true;
+    this.pollingAbortController = new AbortController();
+    console.log("[Telegram Bot] Long polling started (listening for updates...)");
+
+    const timeout = options?.timeoutSeconds ?? 25;
+    this.runPollingLoop(timeout).catch((err) => {
+      console.error("[Telegram Bot] Fatal polling loop error:", err);
+      this.isPolling = false;
+    });
+
+    return true;
+  }
+
+  stopPolling(): void {
+    if (!this.isPolling) return;
+    this.isPolling = false;
+    if (this.pollingAbortController) {
+      this.pollingAbortController.abort();
+      this.pollingAbortController = null;
+    }
+    console.log("[Telegram Bot] Long polling stopped.");
+  }
+
+  private async runPollingLoop(timeoutSeconds: number): Promise<void> {
+    while (this.isPolling) {
+      try {
+        const offset = this.lastUpdateId > 0 ? this.lastUpdateId + 1 : 0;
+        const url = `https://api.telegram.org/bot${this.botToken}/getUpdates?offset=${offset}&timeout=${timeoutSeconds}&allowed_updates=["message","callback_query"]`;
+
+        const res = await fetch(url, { signal: this.pollingAbortController?.signal });
+
+        if (!res.ok) {
+          if (res.status === 409) {
+            console.warn("[Telegram Bot] 409 Conflict: another instance or webhook is active. Retrying in 5s...");
+            await new Promise((r) => setTimeout(r, 5000));
+            continue;
+          }
+          if (res.status === 401) {
+            console.error("[Telegram Bot] 401 Unauthorized: Telegram Bot token is invalid. Stopping polling.");
+            this.isPolling = false;
+            break;
+          }
+          console.warn(`[Telegram Bot] getUpdates returned status ${res.status}. Retrying in 3s...`);
+          await new Promise((r) => setTimeout(r, 3000));
+          continue;
+        }
+
+        const data = (await res.json()) as { ok: boolean; result: TelegramUpdate[]; description?: string };
+        if (data.ok && Array.isArray(data.result)) {
+          for (const update of data.result) {
+            if (!this.isPolling) break;
+            this.lastUpdateId = Math.max(this.lastUpdateId, update.update_id);
+
+            const sender = update.message?.from?.username
+              ? `@${update.message.from.username}`
+              : update.callback_query?.from?.username
+              ? `@${update.callback_query.from.username}`
+              : (update.message?.from?.id || update.callback_query?.from?.id || "unknown");
+
+            const summary = update.message?.text
+              ? update.message.text.split("\n")[0]
+              : update.callback_query?.data
+              ? `callback: ${update.callback_query.data}`
+              : "update";
+
+            console.log(`[Telegram Bot] Received update ${update.update_id} from ${sender}: ${summary}`);
+
+            try {
+              await this.handleUpdate(update);
+            } catch (updateErr) {
+              console.error(`[Telegram Bot] Error processing update ${update.update_id}:`, updateErr);
+            }
+          }
+        }
+      } catch (err) {
+        if (!this.isPolling) break;
+        if (err instanceof Error && err.name === "AbortError") break;
+        console.warn(`[Telegram Bot] Network or polling interruption (${(err as Error).message}). Retrying in 3s...`);
+        await new Promise((r) => setTimeout(r, 3000));
+      }
+    }
   }
 
   // --- Rate Limiting ---
@@ -204,10 +376,10 @@ export class VeraTelegramBot {
     const reply =
       "🛡 VeraOS\n\n" +
       "The verification layer for AI agents.\n\n" +
-      "VeraOS independently checks agent work\n" +
+      "I independently check agent work\n" +
       "against real evidence before it can be trusted.\n\n" +
-      "What would you like to do?\n\n" +
-      "/verify — Verify a task\n" +
+      "Commands:\n\n" +
+      "/verify — Start a verification\n" +
       "/status — Check a verification\n" +
       "/evidence — View evidence\n" +
       "/correct — Request correction\n" +
@@ -727,6 +899,9 @@ export class VeraTelegramBot {
     };
     this.sentMessages.push(record);
 
+    const firstLine = text.split("\n")[0] || "message";
+    console.log(`[Telegram Bot] Outgoing message to chat ${chatId}: ${firstLine}`);
+
     if (!this.botToken) {
       // Offline/test mode: saved to sentMessages
       return true;
@@ -749,8 +924,14 @@ export class VeraTelegramBot {
         body: JSON.stringify(payload),
       });
 
+      if (!res.ok) {
+        const errJson = (await res.json().catch(() => ({}))) as { description?: string; error_code?: number };
+        console.error(`[Telegram Bot] Failed to send message to chat ${chatId}: HTTP ${res.status}`, errJson.description || "");
+      }
+
       return res.ok;
-    } catch {
+    } catch (err) {
+      console.error(`[Telegram Bot] Network error sending message to chat ${chatId}:`, (err as Error).message);
       return false;
     }
   }

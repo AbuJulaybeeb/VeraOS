@@ -1,6 +1,10 @@
 import { createServer } from "node:http";
 import { handleApiRequest } from "./routes.ts";
+import { veraTelegramBot } from "../telegram/bot.ts";
 
+try {
+  process.loadEnvFile?.();
+} catch {}
 
 const PORT = parseInt(process.env.PORT || "3001", 10);
 
@@ -16,6 +20,11 @@ export function startServer(port = PORT) {
   server.listen(port, () => {
     console.log(`[VeraOS API] Verification Engine Server active on http://localhost:${port}`);
   });
+
+  if (process.env.TELEGRAM_BOT_TOKEN && !veraTelegramBot.isPollingActive()) {
+    veraTelegramBot.setApiBaseUrl(`http://localhost:${port}`);
+    veraTelegramBot.startPolling();
+  }
 
   return server;
 }

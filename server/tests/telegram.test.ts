@@ -383,3 +383,77 @@ test("Security: Shared repository confirmation (Telegram verification exists on 
   const getJson = (await getRes.json()) as { id: string; verdict: { status: string } };
   assert.equal(getJson.verdict.status, "VERIFIED");
 });
+
+// =========================================================================
+// PART 3: HEALTH ENDPOINT & POLLING LIFECYCLE TESTS
+// =========================================================================
+
+test("API: GET /health returns operational status and component info", async () => {
+  const res = await fetch(`http://localhost:${testPort}/health`);
+  assert.equal(res.status, 200);
+  const data = (await res.json()) as {
+    status: string;
+    version: string;
+    telegram: { configured: boolean; polling: boolean };
+    stellar: { network: string; rpcUrl: string };
+  };
+
+  assert.equal(data.status, "ok");
+  assert.equal(typeof data.version, "string");
+  assert.equal(typeof data.telegram.configured, "boolean");
+  assert.equal(typeof data.telegram.polling, "boolean");
+  assert.equal(data.stellar.network, "testnet");
+  assert.ok(data.stellar.rpcUrl.includes("stellar.org"));
+});
+
+test("Telegram Bot: /start returns exact VeraOS specification copy", async () => {
+  const update: TelegramUpdate = {
+    update_id: 12,
+    message: {
+      message_id: 112,
+      from: { id: 1002, first_name: "Tester" },
+      chat: { id: 1002, type: "private" },
+      date: Math.floor(Date.now() / 1000),
+      text: "/start",
+    },
+  };
+
+  const res = await bot.handleUpdate(update);
+  assert.equal(res.handled, true);
+  const expectedText =
+    "🛡 VeraOS\n\n" +
+    "The verification layer for AI agents.\n\n" +
+    "I independently check agent work\n" +
+    "against real evidence before it can be trusted.\n\n" +
+    "Commands:\n\n" +
+    "/verify — Start a verification\n" +
+    "/status — Check a verification\n" +
+    "/evidence — View evidence\n" +
+    "/correct — Request correction\n" +
+    "/resubmit — Re-run verification\n" +
+    "/help — Show commands";
+
+  assert.equal(res.reply, expectedText);
+});
+
+test("Telegram Bot Polling: Unconfigured bot gracefully handles getMe, webhook clear, and startPolling", async () => {
+  const unconfiguredBot = new VeraTelegramBot("", `http://localhost:${testPort}`);
+  assert.equal(unconfiguredBot.isConfigured(), false);
+  assert.equal(unconfiguredBot.isPollingActive(), false);
+  assert.equal(unconfiguredBot.getBotUsername(), null);
+
+  const meRes = await unconfiguredBot.getMe();
+  assert.equal(meRes.ok, false);
+  assert.equal(meRes.error, "TELEGRAM_BOT_TOKEN is not configured.");
+
+  const delWebhookRes = await unconfiguredBot.deleteWebhook();
+  assert.equal(delWebhookRes, false);
+
+  const startRes = await unconfiguredBot.startPolling();
+  assert.equal(startRes, false);
+  assert.equal(unconfiguredBot.isPollingActive(), false);
+
+  // Stop polling should be a safe no-op
+  unconfiguredBot.stopPolling();
+  assert.equal(unconfiguredBot.isPollingActive(), false);
+});

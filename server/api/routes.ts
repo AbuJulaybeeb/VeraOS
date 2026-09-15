@@ -50,7 +50,8 @@ export async function handleApiRequest(
   const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
   const isVerify = url.pathname.startsWith("/v1/verify");
   const isWebhook = url.pathname.startsWith("/telegram/webhook") || url.pathname.startsWith("/v1/telegram/webhook");
-  if (!isVerify && !isWebhook) {
+  const isHealth = url.pathname === "/health" || url.pathname === "/v1/health";
+  if (!isVerify && !isWebhook && !isHealth) {
     return false;
   }
 
@@ -68,6 +69,33 @@ export async function handleApiRequest(
   const pathname = url.pathname;
 
   try {
+    // ----------------------------------------------------
+    // GET /health or /v1/health
+    // ----------------------------------------------------
+    if ((pathname === "/health" || pathname === "/v1/health") && req.method === "GET") {
+      const isTelegramConfigured = veraTelegramBot.isConfigured();
+      const isPolling = veraTelegramBot.isPollingActive();
+      const botUsername = veraTelegramBot.getBotUsername();
+
+      sendJson(res, 200, {
+        status: "ok",
+        timestamp: new Date().toISOString(),
+        version: "0.2.0",
+        telegram: {
+          configured: isTelegramConfigured,
+          polling: isPolling,
+          botUsername: botUsername ? `@${botUsername}` : null,
+          webhookEnabled: Boolean(process.env.TELEGRAM_WEBHOOK_SECRET || process.env.TELEGRAM_WEBHOOK_URL),
+        },
+        stellar: {
+          network: process.env.STELLAR_NETWORK || "testnet",
+          rpcUrl: process.env.STELLAR_RPC_URL || "https://soroban-testnet.stellar.org",
+          horizonUrl: process.env.STELLAR_HORIZON_URL || "https://horizon-testnet.stellar.org",
+        },
+      });
+      return true;
+    }
+
     // ----------------------------------------------------
     // POST /telegram/webhook or /v1/telegram/webhook
     // ----------------------------------------------------

@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "test": "node --test server/tests/engine.test.ts server/tests/stellar.test.ts server/tests/stellarRpc.test.ts server/tests/telegram.test.ts",
     "server": "node server/api/server.ts",
+    "bot": "node server/telegram/runner.ts",
     "lint": "oxlint",
     "preview": "vite preview"
   },
