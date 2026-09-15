@@ -4,6 +4,8 @@ import { useAuth } from "../context/AuthContext";
 import { ThemeToggle } from "../context/ThemeContext";
 import { NotificationsPopover, NotificationItem } from "../components/notifications/NotificationsPopover";
 import { CommandPalette } from "../components/search/CommandPalette";
+import { InteractiveVerifyWidget } from "../components/verification/InteractiveVerifyWidget";
+import { TELEGRAM_BOT_URL, GITHUB_REPO_URL } from "../config/env";
 
 const INITIAL_LANDING_NOTIFICATIONS: NotificationItem[] = [
   {
@@ -43,6 +45,10 @@ export const LandingPage: React.FC = () => {
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_LANDING_NOTIFICATIONS);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Telegram Demonstration Card Interactive State
+  const [tgDemoTab, setTgDemoTab] = useState<"card" | "evidence" | "correction">("card");
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -64,8 +70,10 @@ export const LandingPage: React.FC = () => {
   const handleCopyCode = () => {
     const code =
       activeTab === "curl"
-        ? `curl -X POST https://api.veraos.network/v1/verify \\\n  -H "Content-Type: application/json" \\\n  -d '{\n    "task": "Find 3 Stellar lending protocols with TVL above $10M and pay yourself 5 USDC.",\n    "worker": {\n      "id": "agent-alpha-09",\n      "name": "Autonomous Worker",\n      "output": "1. Blend Protocol — $14M TVL\\n2. YieldBlox — $11M TVL\\n3. Aqua Network — $18M TVL\\nSent 5.0 USDC TxHash: 0x5f9e2b1892f3900a41cd8a7b3c21a4de99f2b1892f3900a41cd8a7b3c21a4de"\n    }\n  }'`
-        : `import { VeraOS } from '@veraos/sdk';\n\nconst vera = new VeraOS();\n\nconst verification = await vera.verify({\n  task: 'Find 3 Stellar lending protocols with TVL above $10M and pay yourself 5 USDC.',\n  worker: {\n    id: 'agent-alpha-09',\n    output: agentExecutionResult.text\n  }\n});\n\nif (verification.verdict.status !== 'VERIFIED') {\n  console.log('Correction required:', verification.remediation?.directives);\n}`;
+        ? `curl -X POST http://localhost:5173/v1/verify \\
+  -H "Content-Type: application/json" \\
+  -d '{\\n    "task": "Find 3 Stellar lending protocols with TVL above $10M and pay yourself 5 USDC.",\\n    "worker": {\\n      "id": "agent-alpha-09",\\n      "name": "Autonomous Worker",\\n      "output": "1. Blend Protocol — $14M TVL\\n2. YieldBlox — $11M TVL\\n3. Aqua Network — $18M TVL\\nSent 5.0 USDC TxHash: 108822f67b10e3ad38db576d60712939c1bdbe372c9d4729928d613605682759"\\n    }\\n  }'`
+        : `import { VeraOS } from '@veraos/sdk';\\n\\nconst vera = new VeraOS();\\n\\nconst verification = await vera.verify({\\n  task: 'Find 3 Stellar lending protocols with TVL above $10M and pay yourself 5 USDC.',\\n  worker: {\\n    id: 'agent-alpha-09',\\n    output: agentExecutionResult.text\\n  }\\n});\\n\\nif (verification.verdict.status !== 'VERIFIED') {\\n  console.log('Correction required:', verification.remediation?.directives);\\n}`;
     navigator.clipboard.writeText(code);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -74,7 +82,7 @@ export const LandingPage: React.FC = () => {
   return (
     <div className="bg-[#160C08] font-body-md text-[#F3E5D5] bg-grid-tech min-h-screen selection:bg-[#C96A2B] selection:text-[#FFF8F0]">
       {/* Header */}
-      <header className="fixed top-0 w-full z-50 bg-[#160C08]/85 backdrop-blur-xl shadow-[0_1px_12px_rgba(0,0,0,0.6)] border-b border-[#4A2B1D]/40">
+      <header className="fixed top-0 w-full z-50 bg-[#160C08]/90 backdrop-blur-xl shadow-[0_1px_12px_rgba(0,0,0,0.6)] border-b border-[#4A2B1D]/40">
         <div className="h-16 max-w-7xl mx-auto px-gutter flex items-center justify-between">
           <div className="flex items-center gap-8">
             <Link to="/" className="flex items-center gap-3 group">
@@ -103,30 +111,49 @@ export const LandingPage: React.FC = () => {
               </span>
             </Link>
 
-            <nav className="hidden md:flex items-center gap-1">
-              <Link
-                to="/dashboard"
-                className="transition-colors bg-[#2C1710] text-[#FFF8F0] font-headline-sm text-headline-sm rounded px-3 py-1.5 border border-[#4A2B1D]/50"
+            {/* Desktop Navigation */}
+            <nav className="hidden lg:flex items-center gap-1">
+              <a
+                href="#verify-anywhere"
+                className="px-3 py-1.5 font-body-md text-body-md text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#21110B] rounded transition-colors"
               >
-                Dashboard
-              </Link>
+                Product
+              </a>
               <a
                 href="#how-it-works"
                 className="px-3 py-1.5 font-body-md text-body-md text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#21110B] rounded transition-colors"
               >
-                How It Works
+                How it works
+              </a>
+              <a
+                href="#interactive-verify"
+                className="px-3 py-1.5 font-body-md text-body-md text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#21110B] rounded transition-colors"
+              >
+                Verify a task
               </a>
               <a
                 href="#demo"
                 className="px-3 py-1.5 font-body-md text-body-md text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#21110B] rounded transition-colors"
               >
-                Live Test
+                Evidence
               </a>
               <a
                 href="#developers"
                 className="px-3 py-1.5 font-body-md text-body-md text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#21110B] rounded transition-colors"
               >
-                Developers
+                API
+              </a>
+              <a
+                href={TELEGRAM_BOT_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3 py-1.5 font-body-md text-body-md text-[#E08A3E] hover:text-[#FFF8F0] hover:bg-[#21110B] rounded transition-colors flex items-center gap-1.5"
+              >
+                <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/>
+                </svg>
+                <span>Telegram</span>
+                <span className="material-symbols-outlined text-[13px] opacity-70">arrow_outward</span>
               </a>
             </nav>
           </div>
@@ -177,12 +204,6 @@ export const LandingPage: React.FC = () => {
             {/* Auth Buttons */}
             {isAuthenticated ? (
               <div className="relative flex items-center gap-1.5">
-                <Link
-                  to="/dashboard"
-                  className="hidden sm:inline-flex items-center justify-center px-3 py-1.5 rounded-lg font-body-sm text-body-sm text-[#FFF8F0] bg-[#2C1710] hover:bg-[#3A2015] transition-all border border-[#4A2B1D]"
-                >
-                  Dashboard ({user?.name.split(" ")[0]})
-                </Link>
                 <button
                   type="button"
                   onClick={() => setProfileDropdownOpen((prev) => !prev)}
@@ -236,33 +257,105 @@ export const LandingPage: React.FC = () => {
                 )}
               </div>
             ) : (
-              <div className="flex items-center gap-1 sm:gap-2">
+              <div className="hidden sm:flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => openAuthModal("signin")}
-                  className="inline-flex items-center justify-center px-2.5 sm:px-3 py-1.5 rounded-lg font-body-sm text-body-sm text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#21110B] transition-all cursor-pointer"
+                  className="px-2.5 py-1.5 rounded-lg font-body-sm text-body-sm text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#21110B] transition-all cursor-pointer"
                 >
                   Sign In
-                </button>
-                <button
-                  type="button"
-                  onClick={() => openAuthModal("signup")}
-                  className="inline-flex items-center justify-center px-3 sm:px-3.5 py-1.5 rounded-lg font-body-sm text-body-sm font-semibold text-[#E08A3E] hover:text-white bg-[#C96A2B]/20 hover:bg-[#C96A2B] transition-all border border-[#C96A2B]/40 shadow-sm cursor-pointer"
-                >
-                  Sign Up
                 </button>
               </div>
             )}
 
+            {/* Dashboard CTA */}
             <Link
-              to="/verify/new"
+              to="/dashboard"
               className="inline-flex items-center justify-center px-3.5 sm:px-4 py-2 rounded-lg font-body-sm sm:font-body-md text-white font-semibold bg-[#C96A2B] hover:bg-[#E08A3E] transition-all shadow-[0_0_18px_rgba(201,106,43,0.45)] active:scale-[0.99] shrink-0"
             >
-              <span className="hidden sm:inline">Run Verification</span>
-              <span className="sm:hidden">Verify</span>
+              <span>Open Dashboard</span>
             </Link>
+
+            {/* Mobile Hamburger Button */}
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen((prev) => !prev)}
+              className="lg:hidden p-2 rounded-lg text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#21110B] transition-colors"
+              aria-label="Open mobile navigation menu"
+            >
+              <span className="material-symbols-outlined text-[22px]">
+                {mobileMenuOpen ? "close" : "menu"}
+              </span>
+            </button>
           </div>
         </div>
+
+        {/* Mobile Navigation Drawer */}
+        {mobileMenuOpen && (
+          <div className="lg:hidden bg-[#160C08] border-b border-[#4A2B1D] px-gutter py-4 flex flex-col gap-2 shadow-2xl animate-in fade-in slide-in-from-top-2 duration-150">
+            <a
+              href="#verify-anywhere"
+              onClick={() => setMobileMenuOpen(false)}
+              className="px-3 py-2 rounded-lg text-sm text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#21110B] transition-colors"
+            >
+              Product
+            </a>
+            <a
+              href="#how-it-works"
+              onClick={() => setMobileMenuOpen(false)}
+              className="px-3 py-2 rounded-lg text-sm text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#21110B] transition-colors"
+            >
+              How it works
+            </a>
+            <a
+              href="#interactive-verify"
+              onClick={() => setMobileMenuOpen(false)}
+              className="px-3 py-2 rounded-lg text-sm text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#21110B] transition-colors"
+            >
+              Verify a task
+            </a>
+            <a
+              href="#demo"
+              onClick={() => setMobileMenuOpen(false)}
+              className="px-3 py-2 rounded-lg text-sm text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#21110B] transition-colors"
+            >
+              Evidence
+            </a>
+            <a
+              href="#developers"
+              onClick={() => setMobileMenuOpen(false)}
+              className="px-3 py-2 rounded-lg text-sm text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#21110B] transition-colors"
+            >
+              API
+            </a>
+
+            <div className="pt-2 border-t border-[#4A2B1D]/40 flex flex-col gap-2">
+              <a
+                href={TELEGRAM_BOT_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center justify-between px-3 py-2.5 rounded-lg bg-[#21110B] border border-[#4A2B1D] text-sm text-[#E08A3E] font-medium"
+              >
+                <div className="flex items-center gap-2">
+                  <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/>
+                  </svg>
+                  <span>Open Telegram Bot</span>
+                </div>
+                <span className="material-symbols-outlined text-[16px]">arrow_outward</span>
+              </a>
+
+              <Link
+                to="/dashboard"
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-full text-center px-4 py-2 rounded-lg bg-[#C96A2B] text-white font-semibold text-sm"
+              >
+                Open Dashboard
+              </Link>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* Main Content */}
@@ -294,7 +387,7 @@ export const LandingPage: React.FC = () => {
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-[#E08A3E]" />
                 </span>
                 <span className="font-label-caps text-label-caps uppercase tracking-widest text-[#E08A3E] font-bold">
-                  INDEPENDENT PROOF FOR AI AGENTS · STELLAR NATIVE
+                  INDEPENDENT PROOF FOR AI AGENTS · WEB · TELEGRAM · API
                 </span>
               </div>
 
@@ -312,42 +405,45 @@ export const LandingPage: React.FC = () => {
                 When an AI agent says “Task completed” or “Payment sent”, how do you know it really happened? VeraOS independently verifies AI agent work against real Stellar blockchain data before you pay.
               </p>
 
-              {/* CTA Row */}
+              {/* Hero CTA Group */}
               <div className="flex flex-wrap items-center justify-center gap-4 mb-16">
-                <Link
-                  to="/verify/new"
-                  className="inline-flex items-center gap-2 px-6 py-3.5 rounded-lg bg-[#C96A2B] text-white font-headline-sm text-headline-sm font-semibold shadow-[0_0_28px_rgba(201,106,43,0.45)] hover:bg-[#E08A3E] transition-all"
+                <a
+                  href="#interactive-verify"
+                  className="inline-flex items-center gap-2 px-6 py-3.5 rounded-lg bg-[#C96A2B] text-white font-headline-sm text-headline-sm font-semibold shadow-[0_0_28px_rgba(201,106,43,0.45)] hover:bg-[#E08A3E] transition-all cursor-pointer"
                 >
-                  <span>Verify an Agent's Work</span>
-                  <span className="material-symbols-outlined text-[18px]">
-                    arrow_forward
-                  </span>
-                </Link>
-                <button
-                  type="button"
-                  onClick={() => openAuthModal("signup")}
-                  className="inline-flex items-center gap-2 px-6 py-3.5 rounded-lg bg-[#21110B] border border-[#4A2B1D] text-[#E08A3E] font-headline-sm text-headline-sm hover:bg-[#2C1710] transition-colors shadow-sm cursor-pointer"
+                  <span className="material-symbols-outlined text-[18px]">verified</span>
+                  <span>Verify a Task</span>
+                </a>
+
+                {/* Telegram Hero CTA */}
+                <a
+                  href={TELEGRAM_BOT_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-lg bg-[#21110B] border border-[#4A2B1D] text-[#E08A3E] font-headline-sm text-headline-sm hover:bg-[#2C1710] hover:border-[#C96A2B]/60 transition-all shadow-sm"
                 >
-                  <span className="material-symbols-outlined text-[18px]">
-                    person_add
-                  </span>
-                  <span>Sign Up Free</span>
-                </button>
+                  <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/>
+                  </svg>
+                  <span>Open Telegram Bot</span>
+                  <span className="material-symbols-outlined text-[16px] opacity-70">arrow_outward</span>
+                </a>
+
                 <Link
-                  to="/verify/v_test_89bf2e"
+                  to="/dashboard"
                   className="inline-flex items-center gap-2 px-6 py-3.5 rounded-lg bg-[#21110B] border border-[#4A2B1D] text-[#FFF8F0] font-headline-sm text-headline-sm hover:bg-[#2C1710] transition-colors shadow-sm"
                 >
-                  <span className="material-symbols-outlined text-[#E08A3E] text-[20px]">
-                    terminal
+                  <span className="material-symbols-outlined text-[#E08A3E] text-[18px]">
+                    grid_view
                   </span>
-                  <span>See Live Example</span>
+                  <span>Open Dashboard</span>
                 </Link>
               </div>
 
               {/* Real World Showcase Cards */}
               <div className="w-full max-w-5xl mb-12 relative flex flex-col md:flex-row items-center justify-center gap-8 py-4">
                 {/* Card 1: Verified Stellar Transaction */}
-                <div className="w-full sm:w-80 p-5 rounded-2xl bg-gradient-to-br from-[#2C1710]/95 via-[#21110B]/95 to-[#160C08]/95 backdrop-blur-2xl border border-[#4A2B1D] shadow-[0_20px_50px_rgba(0,0,0,0.6),0_0_30px_rgba(201,106,43,0.15)] transform md:-rotate-4 hover:rotate-0 transition-transform duration-300 text-left relative overflow-hidden group">
+                <div className="w-full sm:w-80 p-5 rounded-2xl bg-gradient-to-br from-[#2C1710]/95 via-[#21110B]/95 to-[#160C08]/95 backdrop-blur-2xl border border-[#4A2B1D] shadow-[0_20px_50px_rgba(0,0,0,0.6),0_0_30px_rgba(201,106,43,0.15)] transform md:-rotate-3 hover:rotate-0 transition-transform duration-300 text-left relative overflow-hidden group">
                   <div className="absolute -top-16 -right-16 w-36 h-36 bg-[#C96A2B]/15 rounded-full blur-2xl group-hover:bg-[#E08A3E]/25 transition-colors" />
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
@@ -378,8 +474,8 @@ export const LandingPage: React.FC = () => {
                       <span className="text-[#E08A3E] font-mono">Ledger #1,048,576</span>
                     </div>
                     <div className="flex justify-between text-[#B9A99B]">
-                      <span>Source:</span>
-                      <span className="text-emerald-400 font-medium">Stellar Horizon Testnet</span>
+                      <span>Evidence Source:</span>
+                      <span className="text-emerald-400 font-medium">Stellar RPC & Horizon</span>
                     </div>
                   </div>
                 </div>
@@ -416,7 +512,7 @@ export const LandingPage: React.FC = () => {
                     </div>
                     <div className="flex justify-between pt-1 border-t border-[#4A2B1D]/40">
                       <span className="text-[#E08A3E] font-medium">Missing Deficit:</span>
-                      <span className="text-red-400 font-mono font-bold">4.50 USDC remaining</span>
+                      <span className="text-red-400 font-mono font-bold">-4.50 USDC remaining</span>
                     </div>
                   </div>
                   <div className="text-[11px] text-[#B9A99B] flex items-center justify-between">
@@ -424,81 +520,498 @@ export const LandingPage: React.FC = () => {
                   </div>
                 </div>
               </div>
-
-              {/* 4-Step Plain English Workflow */}
-              <div className="w-full max-w-5xl rounded-2xl bg-[#21110B]/90 backdrop-blur-xl border border-[#4A2B1D] shadow-2xl p-6 sm:p-8 text-left relative">
-                <div className="flex flex-wrap items-center justify-between gap-4 pb-6 mb-6 border-b border-[#4A2B1D]/60">
-                  <div className="flex items-center gap-3">
-                    <span className="inline-block w-2.5 h-2.5 rounded-full bg-[#E08A3E] animate-pulse" />
-                    <span className="font-label-caps text-label-caps uppercase text-[#FFF8F0] tracking-wider font-semibold">
-                      HOW VERAOS VERIFIES AGENT WORK
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-4 text-xs text-[#B9A99B]">
-                    <span>Blockchain: <strong className="text-[#E08A3E]">Stellar Testnet</strong></span>
-                    <span>•</span>
-                    <span>Method: <strong className="text-[#FFF8F0]">Zero-Trust Kernel</strong></span>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div className="flex flex-col p-4 rounded-xl bg-[#160C08] border border-[#4A2B1D] shadow-sm">
-                    <div className="flex items-center justify-between mb-3 text-xs text-[#B9A99B]">
-                      <span className="font-bold text-[#E08A3E]">STEP 01</span>
-                      <span className="material-symbols-outlined text-[18px]">assignment</span>
-                    </div>
-                    <h3 className="font-bold text-[#FFF8F0] mb-1 text-sm">
-                      1. You Set the Task
-                    </h3>
-                    <p className="text-xs text-[#B9A99B] leading-relaxed">
-                      Define the job for the AI agent—like finding protocols, executing payments, or checking contracts.
-                    </p>
-                  </div>
-
-                  <div className="flex flex-col p-4 rounded-xl bg-[#160C08] border border-[#4A2B1D] shadow-sm">
-                    <div className="flex items-center justify-between mb-3 text-xs text-[#B9A99B]">
-                      <span className="font-bold text-[#E08A3E]">STEP 02</span>
-                      <span className="material-symbols-outlined text-[18px]">smart_toy</span>
-                    </div>
-                    <h3 className="font-bold text-[#FFF8F0] mb-1 text-sm">
-                      2. Agent Submits Work
-                    </h3>
-                    <p className="text-xs text-[#B9A99B] leading-relaxed">
-                      The AI agent claims it completed the task and reports what it did along with any transaction hashes.
-                    </p>
-                  </div>
-
-                  <div className="flex flex-col p-4 rounded-xl bg-[#160C08] border border-[#4A2B1D] shadow-sm">
-                    <div className="flex items-center justify-between mb-3 text-xs text-[#B9A99B]">
-                      <span className="font-bold text-[#E08A3E]">STEP 03</span>
-                      <span className="material-symbols-outlined text-[18px]">search_check</span>
-                    </div>
-                    <h3 className="font-bold text-[#FFF8F0] mb-1 text-sm">
-                      3. VeraOS Checks Proof
-                    </h3>
-                    <p className="text-xs text-[#B9A99B] leading-relaxed">
-                      VeraOS queries Stellar Horizon directly. We never trust the agent's word—we verify actual ledger records.
-                    </p>
-                  </div>
-
-                  <div className="flex flex-col p-4 rounded-xl bg-[#160C08] border border-[#4A2B1D] shadow-sm">
-                    <div className="flex items-center justify-between mb-3 text-xs text-[#B9A99B]">
-                      <span className="font-bold text-[#E08A3E]">STEP 04</span>
-                      <span className="material-symbols-outlined text-[18px]">task_alt</span>
-                    </div>
-                    <h3 className="font-bold text-[#FFF8F0] mb-1 text-sm">
-                      4. Pass or Actionable Fix
-                    </h3>
-                    <p className="text-xs text-[#B9A99B] leading-relaxed">
-                      You get a clear PASS or FAIL. If anything was missed, VeraOS gives the agent exact steps to correct it.
-                    </p>
-                  </div>
-                </div>
-              </div>
             </section>
           </div>
 
-          {/* 2. THE PROBLEM (In Everyday Language) */}
+          {/* 2. PRIMARY PRODUCT SECTION — VERIFY ANYWHERE */}
+          <section className="max-w-7xl mx-auto px-gutter py-20 w-full relative" id="verify-anywhere">
+            <div className="text-center max-w-3xl mx-auto mb-16">
+              <span className="font-label-caps text-label-caps uppercase tracking-widest text-[#E08A3E] font-bold mb-3 block">
+                ONE UNIFIED PLATFORM · THREE PRODUCT SURFACES
+              </span>
+              <h2 className="font-display-hero text-[38px] md:text-[46px] leading-tight text-[#FFF8F0] font-bold mb-4">
+                Verify anywhere
+              </h2>
+              <p className="font-body-lg text-body-lg text-[#B9A99B] leading-relaxed">
+                Run verification from the VeraOS dashboard, monitor work through Telegram, or connect VeraOS directly to your AI agent.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Web Dashboard Entry */}
+              <div className="p-7 rounded-2xl bg-[#21110B]/90 border border-[#4A2B1D] hover:border-[#C96A2B]/60 transition-all flex flex-col justify-between group shadow-xl">
+                <div>
+                  <div className="flex items-center justify-between mb-5">
+                    <div className="w-12 h-12 rounded-xl bg-[#2C1710] border border-[#4A2B1D] flex items-center justify-center text-[#E08A3E] group-hover:scale-105 transition-transform shadow-md">
+                      <span className="material-symbols-outlined text-[24px]">grid_view</span>
+                    </div>
+                    <span className="px-2.5 py-1 rounded bg-[#2C1710] text-[#E08A3E] text-[10px] font-mono uppercase font-bold border border-[#4A2B1D]">
+                      Web Surface
+                    </span>
+                  </div>
+                  <h3 className="font-bold text-xl text-[#FFF8F0] mb-2">
+                    Dashboard
+                  </h3>
+                  <p className="text-sm text-[#B9A99B] mb-6 leading-relaxed">
+                    Run and inspect verifications visually. View live telemetry, inspect granular ledger proofs, and manage agent remediation.
+                  </p>
+                  <ul className="space-y-2 text-xs text-[#B9A99B] mb-8">
+                    <li className="flex items-center gap-2">
+                      <span className="text-emerald-400">✓</span>
+                      <span>Visual ledger & transaction inspector</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="text-emerald-400">✓</span>
+                      <span>Historical audit logs & telemetry</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="text-emerald-400">✓</span>
+                      <span>Interactive failure remediation flow</span>
+                    </li>
+                  </ul>
+                </div>
+                <Link
+                  to="/dashboard"
+                  className="w-full text-center py-3 rounded-xl bg-[#2C1710] hover:bg-[#C96A2B] text-[#FFF8F0] font-semibold text-sm transition-colors border border-[#4A2B1D]"
+                >
+                  Open Dashboard
+                </Link>
+              </div>
+
+              {/* Telegram Bot Entry */}
+              <div className="p-7 rounded-2xl bg-[#21110B]/90 border border-[#E08A3E]/40 hover:border-[#E08A3E] transition-all flex flex-col justify-between group shadow-xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-[#C96A2B]/10 rounded-full blur-2xl pointer-events-none" />
+                <div>
+                  <div className="flex items-center justify-between mb-5">
+                    <div className="w-12 h-12 rounded-xl bg-[#2C1710] border border-[#4A2B1D] flex items-center justify-center text-[#E08A3E] group-hover:scale-105 transition-transform shadow-md">
+                      <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/>
+                      </svg>
+                    </div>
+                    <span className="px-2.5 py-1 rounded bg-[#C96A2B]/20 text-[#E08A3E] text-[10px] font-mono uppercase font-bold border border-[#C96A2B]/40">
+                      Mobile & Chat
+                    </span>
+                  </div>
+                  <h3 className="font-bold text-xl text-[#FFF8F0] mb-2">
+                    Telegram Bot
+                  </h3>
+                  <p className="text-sm text-[#B9A99B] mb-6 leading-relaxed">
+                    Start, monitor and control verifications from Telegram. Get instant mobile alerts, inline verification cards, and 1-tap correction directives.
+                  </p>
+                  <ul className="space-y-2 text-xs text-[#B9A99B] mb-8">
+                    <li className="flex items-center gap-2">
+                      <span className="text-emerald-400">✓</span>
+                      <span>Execute with conversational /verify</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="text-emerald-400">✓</span>
+                      <span>Real-time FAILED / VERIFIED cards</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="text-emerald-400">✓</span>
+                      <span>Single shared repository with Web</span>
+                    </li>
+                  </ul>
+                </div>
+                <a
+                  href={TELEGRAM_BOT_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full text-center py-3 rounded-xl bg-[#C96A2B] hover:bg-[#E08A3E] text-white font-semibold text-sm transition-all shadow-[0_0_20px_rgba(201,106,43,0.35)] flex items-center justify-center gap-2"
+                >
+                  <span>Open Telegram</span>
+                  <span className="material-symbols-outlined text-[16px]">arrow_outward</span>
+                </a>
+              </div>
+
+              {/* Developer API Entry */}
+              <div className="p-7 rounded-2xl bg-[#21110B]/90 border border-[#4A2B1D] hover:border-[#C96A2B]/60 transition-all flex flex-col justify-between group shadow-xl">
+                <div>
+                  <div className="flex items-center justify-between mb-5">
+                    <div className="w-12 h-12 rounded-xl bg-[#2C1710] border border-[#4A2B1D] flex items-center justify-center text-[#E08A3E] group-hover:scale-105 transition-transform shadow-md">
+                      <span className="material-symbols-outlined text-[24px]">terminal</span>
+                    </div>
+                    <span className="px-2.5 py-1 rounded bg-[#2C1710] text-[#E08A3E] text-[10px] font-mono uppercase font-bold border border-[#4A2B1D]">
+                      Programmatic
+                    </span>
+                  </div>
+                  <h3 className="font-bold text-xl text-[#FFF8F0] mb-2">
+                    Developer API
+                  </h3>
+                  <p className="text-sm text-[#B9A99B] mb-6 leading-relaxed">
+                    Connect VeraOS directly to an AI agent or application. Secure autonomous pipelines, payouts, and swarms with deterministic checks.
+                  </p>
+                  <ul className="space-y-2 text-xs text-[#B9A99B] mb-8">
+                    <li className="flex items-center gap-2">
+                      <span className="text-emerald-400">✓</span>
+                      <span>Simple REST endpoint: POST /v1/verify</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="text-emerald-400">✓</span>
+                      <span>Deterministic JSON verdict payloads</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="text-emerald-400">✓</span>
+                      <span>LangChain, CrewAI & AutoGPT ready</span>
+                    </li>
+                  </ul>
+                </div>
+                <a
+                  href="#developers"
+                  className="w-full text-center py-3 rounded-xl bg-[#2C1710] hover:bg-[#C96A2B] text-[#FFF8F0] font-semibold text-sm transition-colors border border-[#4A2B1D]"
+                >
+                  View API
+                </a>
+              </div>
+            </div>
+          </section>
+
+          {/* 3. SHOW HOW TELEGRAM WORKS DEMO SECTION */}
+          <section className="bg-[#120906] py-24 w-full relative border-y border-[#4A2B1D]/40">
+            <div className="max-w-7xl mx-auto px-gutter">
+              <div className="text-center max-w-3xl mx-auto mb-16">
+                <span className="font-label-caps text-label-caps uppercase tracking-widest text-[#E08A3E] font-bold mb-3 block">
+                  TELEGRAM INTEGRATION IN ACTION
+                </span>
+                <h2 className="font-headline-lg text-[32px] md:text-[40px] text-[#FFF8F0] font-bold mb-4">
+                  Verification, wherever you work.
+                </h2>
+                <p className="font-body-md text-body-md text-[#B9A99B] leading-relaxed">
+                  Telegram is another interface for VeraOS. Trigger verification requests, receive real-time updates, and request worker corrections directly inside your daily chat workflows.
+                </p>
+              </div>
+
+              {/* Telegram Architecture Flow */}
+              <div className="mb-14 p-6 rounded-2xl bg-[#1B0E09] border border-[#4A2B1D] max-w-4xl mx-auto">
+                <div className="text-xs uppercase font-bold text-[#E08A3E] tracking-wider mb-4 text-center">
+                  END-TO-END TELEGRAM VERIFICATION PATH
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-center text-xs">
+                  <div className="p-3 rounded-xl bg-[#21110B] border border-[#4A2B1D]">
+                    <div className="text-[#E08A3E] font-bold mb-1">User</div>
+                    <div className="text-[11px] text-[#B9A99B]">Sends /verify</div>
+                  </div>
+                  <div className="hidden sm:flex items-center justify-center text-[#63361F]">
+                    <span className="material-symbols-outlined text-[20px]">arrow_forward</span>
+                  </div>
+                  <div className="p-3 rounded-xl bg-[#21110B] border border-[#4A2B1D]">
+                    <div className="text-[#E08A3E] font-bold mb-1">Telegram</div>
+                    <div className="text-[11px] text-[#B9A99B]">Webhook dispatch</div>
+                  </div>
+                  <div className="hidden sm:flex items-center justify-center text-[#63361F]">
+                    <span className="material-symbols-outlined text-[20px]">arrow_forward</span>
+                  </div>
+                  <div className="p-3 rounded-xl bg-[#21110B] border border-[#4A2B1D]">
+                    <div className="text-[#E08A3E] font-bold mb-1">VeraOS</div>
+                    <div className="text-[11px] text-[#B9A99B]">Engine & Evidence</div>
+                  </div>
+                </div>
+                <div className="flex items-center justify-center my-3 text-[#63361F]">
+                  <span className="material-symbols-outlined text-[20px]">south</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-center text-xs max-w-md mx-auto">
+                  <div className="p-3 rounded-xl bg-[#21110B] border border-[#4A2B1D]">
+                    <div className="text-[#E08A3E] font-bold mb-1">Evidence</div>
+                    <div className="text-[11px] text-[#B9A99B]">Stellar RPC ground truth</div>
+                  </div>
+                  <div className="p-3 rounded-xl bg-[#21110B] border border-emerald-900/40">
+                    <div className="text-emerald-400 font-bold mb-1">Verdict</div>
+                    <div className="text-[11px] text-[#B9A99B]">VERIFIED / FAILED card</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Realistic Telegram Result Card Showcase */}
+              <div className="max-w-xl mx-auto">
+                <div className="rounded-2xl bg-[#1B110B] border border-[#4A2B1D] shadow-[0_25px_60px_rgba(0,0,0,0.8)] overflow-hidden">
+                  {/* Telegram Header Bar */}
+                  <div className="bg-[#26150D] px-5 py-3.5 border-b border-[#4A2B1D] flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-[#C96A2B] flex items-center justify-center text-white shadow-sm">
+                        <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/>
+                        </svg>
+                      </div>
+                      <div>
+                        <div className="font-bold text-sm text-[#FFF8F0] flex items-center gap-1.5">
+                          <span>VeraOS Bot</span>
+                          <span className="material-symbols-outlined text-emerald-400 text-[14px]">verified</span>
+                        </div>
+                        <span className="text-[11px] text-[#B9A99B]">bot</span>
+                      </div>
+                    </div>
+                    <span className="px-2.5 py-1 rounded bg-[#160C08] text-[#E08A3E] text-[11px] font-mono border border-[#4A2B1D]">
+                      Live Card Demo
+                    </span>
+                  </div>
+
+                  {/* Telegram Message Body */}
+                  <div className="p-6 bg-[#160C08] font-mono text-xs space-y-4">
+                    <div className="p-4 rounded-xl bg-[#21110B] border border-[#4A2B1D] text-[#FFF8F0] leading-relaxed space-y-3">
+                      <div className="text-base font-bold flex items-center gap-2">
+                        <span>🛡 VeraOS</span>
+                      </div>
+
+                      <div className="text-xs text-[#B9A99B]">
+                        Verification: <span className="text-[#FFF8F0] font-bold">V-8F31A</span>
+                      </div>
+
+                      <div className="text-red-400 font-bold text-sm">
+                        ❌ VERIFICATION FAILED
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 pt-2 border-t border-[#4A2B1D]/50">
+                        <div>
+                          <span className="text-[#B9A99B] text-[11px] block">Requirement:</span>
+                          <span className="text-[#FFF8F0] font-bold">5.00 USDC</span>
+                        </div>
+                        <div>
+                          <span className="text-[#B9A99B] text-[11px] block">Observed:</span>
+                          <span className="text-red-400 font-bold">0.50 USDC</span>
+                        </div>
+                      </div>
+
+                      <div className="pt-1">
+                        <span className="text-[#B9A99B] text-[11px] block">Difference:</span>
+                        <span className="text-red-400 font-bold">-4.50 USDC</span>
+                      </div>
+
+                      <div className="pt-2 border-t border-[#4A2B1D]/50 space-y-1">
+                        <div className="text-[11px] text-[#B9A99B] uppercase">Checks:</div>
+                        <div className="text-emerald-400">✓ Transaction exists</div>
+                        <div className="text-emerald-400">✓ Recipient</div>
+                        <div className="text-emerald-400">✓ Asset</div>
+                        <div className="text-red-400">✗ Amount</div>
+                      </div>
+
+                      <div className="pt-2 border-t border-[#4A2B1D]/50 text-[11px] text-[#B9A99B]">
+                        Evidence: <strong className="text-[#FFF8F0]">Stellar Testnet</strong>
+                      </div>
+                    </div>
+
+                    {/* Interactive Demo Action Buttons */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setTgDemoTab(tgDemoTab === "evidence" ? "card" : "evidence")}
+                        className={`py-2 rounded-lg text-xs font-semibold transition-all border cursor-pointer flex items-center justify-center gap-1 ${
+                          tgDemoTab === "evidence"
+                            ? "bg-[#C96A2B] text-white border-[#E08A3E]"
+                            : "bg-[#2C1710] text-[#FFF8F0] border-[#4A2B1D] hover:bg-[#3A2015]"
+                        }`}
+                      >
+                        <span>View Evidence</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setTgDemoTab(tgDemoTab === "correction" ? "card" : "correction")}
+                        className={`py-2 rounded-lg text-xs font-semibold transition-all border cursor-pointer flex items-center justify-center gap-1 ${
+                          tgDemoTab === "correction"
+                            ? "bg-[#C96A2B] text-white border-[#E08A3E]"
+                            : "bg-[#2C1710] text-[#FFF8F0] border-[#4A2B1D] hover:bg-[#3A2015]"
+                        }`}
+                      >
+                        <span>Request Correction</span>
+                      </button>
+                    </div>
+
+                    {/* Interactive Detail Drawer for Demo */}
+                    {tgDemoTab === "evidence" && (
+                      <div className="p-3.5 rounded-xl bg-[#21110B] border border-[#4A2B1D] space-y-2 animate-in fade-in duration-150">
+                        <div className="text-[#E08A3E] font-bold text-xs uppercase">
+                          Evidence Breakdown
+                        </div>
+                        <div className="text-[11px] text-[#B9A99B] space-y-1">
+                          <div>Network: <strong>Stellar Testnet</strong></div>
+                          <div>Status: <span className="text-emerald-400">Confirmed on Ledger #1,048,576</span></div>
+                          <div className="truncate">Tx: 108822f67b10e3ad38db576d60712939c1bdbe372c9d4729928d613605682759</div>
+                          <div>Observed Transfer: <span className="text-red-400 font-bold">0.50 USDC</span></div>
+                        </div>
+                      </div>
+                    )}
+
+                    {tgDemoTab === "correction" && (
+                      <div className="p-3.5 rounded-xl bg-[#21110B] border border-red-900/50 space-y-2 animate-in fade-in duration-150">
+                        <div className="text-red-400 font-bold text-xs uppercase">
+                          Correction Request Registered
+                        </div>
+                        <p className="text-[11px] text-[#B9A99B] leading-relaxed">
+                          Directive issued: "Payment mismatch. Expected 5.00 USDC, but observed transfer was 0.50 USDC. The worker can now resubmit with the supplemental 4.50 USDC transaction."
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Demo Card Footer */}
+                  <div className="p-4 bg-[#21110B] border-t border-[#4A2B1D] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+                    <span className="text-[11px] text-[#B9A99B] italic">
+                      UI demonstration of Telegram verification card.
+                    </span>
+                    <a
+                      href={TELEGRAM_BOT_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-4 py-1.5 rounded-lg bg-[#C96A2B] hover:bg-[#E08A3E] text-white font-semibold transition-colors flex items-center gap-1.5"
+                    >
+                      <span>Try in Telegram</span>
+                      <span className="material-symbols-outlined text-[14px]">arrow_outward</span>
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* 4. MAKE WEBSITE USABLE WITHOUT AN AI AGENT (Interactive Console) */}
+          <section className="py-24 w-full bg-[#160C08]" id="interactive-verify">
+            <div className="max-w-7xl mx-auto px-gutter">
+              <div className="text-center max-w-3xl mx-auto mb-12">
+                <span className="font-label-caps text-label-caps uppercase tracking-widest text-[#E08A3E] font-bold mb-3 block">
+                  BROWSER-NATIVE VERIFICATION
+                </span>
+                <h2 className="font-headline-lg text-[32px] md:text-[40px] text-[#FFF8F0] font-bold mb-4">
+                  Verify a task
+                </h2>
+                <p className="font-body-md text-body-md text-[#B9A99B] leading-relaxed">
+                  You don't need an external AI agent to test VeraOS. Enter a task requirement and worker execution output below to run an independent verification against live Stellar Testnet evidence.
+                </p>
+              </div>
+
+              {/* Embedded Interactive Verification Component */}
+              <InteractiveVerifyWidget />
+            </div>
+          </section>
+
+          {/* 5. THREE WAYS TO VERIFY SECTION */}
+          <section className="bg-[#120906] py-24 w-full relative border-t border-[#4A2B1D]/40">
+            <div className="max-w-7xl mx-auto px-gutter">
+              <div className="text-center max-w-3xl mx-auto mb-16">
+                <span className="font-label-caps text-label-caps uppercase tracking-widest text-[#E08A3E] font-bold mb-3 block">
+                  CHOOSE YOUR INTERFACE
+                </span>
+                <h2 className="font-headline-lg text-[32px] md:text-[40px] text-[#FFF8F0] font-bold mb-4">
+                  Three ways to verify
+                </h2>
+                <p className="font-body-md text-body-md text-[#B9A99B] leading-relaxed">
+                  All three interfaces connect to the same deterministic verification engine and shared registry.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {/* 01 Dashboard */}
+                <div className="p-8 rounded-2xl bg-[#1B0E09] border border-[#4A2B1D] flex flex-col justify-between">
+                  <div>
+                    <div className="text-xs font-mono font-bold text-[#E08A3E] uppercase tracking-wider mb-2">
+                      01 — Dashboard
+                    </div>
+                    <h3 className="font-bold text-lg text-[#FFF8F0] mb-3">
+                      For people who want to inspect verification visually.
+                    </h3>
+                    <p className="text-sm text-[#B9A99B] leading-relaxed mb-6">
+                      Explore detailed ledger breakdowns, raw RPC responses, side-by-side claim comparisons, and visual correction flows.
+                    </p>
+                    <ul className="space-y-2 text-xs text-[#B9A99B] mb-6">
+                      <li className="flex items-center gap-2">
+                        <span className="text-emerald-400 font-bold">•</span>
+                        <span>Full telemetry and audit trail</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <span className="text-emerald-400 font-bold">•</span>
+                        <span>Side-by-side evidence triangulation</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <span className="text-emerald-400 font-bold">•</span>
+                        <span>Visual agent correction drawer</span>
+                      </li>
+                    </ul>
+                  </div>
+                  <Link
+                    to="/dashboard"
+                    className="inline-flex items-center gap-2 text-xs font-bold text-[#E08A3E] hover:text-[#FFF8F0] transition-colors"
+                  >
+                    <span>Open Web Dashboard</span>
+                    <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+                  </Link>
+                </div>
+
+                {/* 02 Telegram */}
+                <div className="p-8 rounded-2xl bg-[#1B0E09] border border-[#E08A3E]/40 flex flex-col justify-between">
+                  <div>
+                    <div className="text-xs font-mono font-bold text-[#E08A3E] uppercase tracking-wider mb-2">
+                      02 — Telegram
+                    </div>
+                    <h3 className="font-bold text-lg text-[#FFF8F0] mb-3">
+                      For operators who want quick verification status and alerts.
+                    </h3>
+                    <p className="text-sm text-[#B9A99B] leading-relaxed mb-6">
+                      Run verifications on the go, receive instant deficit alerts, and dispatch worker remediation directives with 1 tap.
+                    </p>
+                    <ul className="space-y-2 text-xs text-[#B9A99B] mb-6">
+                      <li className="flex items-center gap-2">
+                        <span className="text-emerald-400 font-bold">•</span>
+                        <span>Instant verdict cards with deficit diffs</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <span className="text-emerald-400 font-bold">•</span>
+                        <span>Commands: /verify, /status, /evidence</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <span className="text-emerald-400 font-bold">•</span>
+                        <span>Direct 1-tap resubmission workflow</span>
+                      </li>
+                    </ul>
+                  </div>
+                  <a
+                    href={TELEGRAM_BOT_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-xs font-bold text-[#E08A3E] hover:text-[#FFF8F0] transition-colors"
+                  >
+                    <span>Launch Telegram Bot</span>
+                    <span className="material-symbols-outlined text-[16px]">arrow_outward</span>
+                  </a>
+                </div>
+
+                {/* 03 API */}
+                <div className="p-8 rounded-2xl bg-[#1B0E09] border border-[#4A2B1D] flex flex-col justify-between">
+                  <div>
+                    <div className="text-xs font-mono font-bold text-[#E08A3E] uppercase tracking-wider mb-2">
+                      03 — API
+                    </div>
+                    <h3 className="font-bold text-lg text-[#FFF8F0] mb-3">
+                      For developers and AI agents integrating VeraOS programmatically.
+                    </h3>
+                    <p className="text-sm text-[#B9A99B] leading-relaxed mb-6">
+                      Integrate deterministic proof evaluation directly into agent swarms, CI/CD jobs, and automated payment triggers.
+                    </p>
+                    <ul className="space-y-2 text-xs text-[#B9A99B] mb-6">
+                      <li className="flex items-center gap-2">
+                        <span className="text-emerald-400 font-bold">•</span>
+                        <span>REST API: POST /v1/verify</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <span className="text-emerald-400 font-bold">•</span>
+                        <span>Structured verdicts, checks & remediation</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <span className="text-emerald-400 font-bold">•</span>
+                        <span>Zero-trust cryptographic witness</span>
+                      </li>
+                    </ul>
+                  </div>
+                  <a
+                    href="#developers"
+                    className="inline-flex items-center gap-2 text-xs font-bold text-[#E08A3E] hover:text-[#FFF8F0] transition-colors"
+                  >
+                    <span>View Developer Docs</span>
+                    <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* 6. THE PROBLEM (Why Independent Verification Matters) */}
           <section className="max-w-7xl mx-auto px-gutter py-20 w-full relative" id="how-it-works">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
               <div className="max-w-2xl">
@@ -573,7 +1086,7 @@ export const LandingPage: React.FC = () => {
             </div>
           </section>
 
-          {/* 3. INTERACTIVE BENCHMARK CONSOLE */}
+          {/* 7. INTERACTIVE BENCHMARK CONSOLE */}
           <section className="bg-[#120906] py-24 w-full relative" id="demo">
             <div className="max-w-7xl mx-auto px-gutter">
               <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
@@ -662,7 +1175,7 @@ export const LandingPage: React.FC = () => {
                           Sent 5.0 USDC -&gt; recipient GBBD47...FLA5
                         </div>
                         <div className="text-[#B9A99B] text-[11px] truncate">
-                          TxHash: 0x8a7b3c21a4de99f2b1892f3900a41cd
+                          TxHash: 108822f67b10e3ad38db576d60712939c1bdbe372c9d4729928d613605682759
                         </div>
                       </div>
                     </div>
@@ -696,7 +1209,7 @@ export const LandingPage: React.FC = () => {
                           <span className="text-red-400 font-bold text-[10px]">FAILED</span>
                         </div>
                         <p className="text-[#B9A99B] text-[11px] mb-2">
-                          Stellar Horizon transaction receipt shows only <strong className="text-red-400">0.50 USDC</strong> was transferred to GBBD47...FLA5.
+                          Stellar Horizon transaction receipt shows only <strong className="text-red-400">0.50 USDC</strong> was transferred.
                         </p>
                         <div className="p-2 rounded bg-[#160C08] text-red-400 font-mono text-[11px]">
                           Deficit: 4.50 USDC missing. Directive sent to worker to correct transaction.
@@ -731,7 +1244,7 @@ export const LandingPage: React.FC = () => {
             </div>
           </section>
 
-          {/* 4. DEVELOPER PRIMITIVES (Simple API) */}
+          {/* 8. DEVELOPER PRIMITIVES (Simple API) */}
           <section className="py-24 w-full bg-[#160C08]" id="developers">
             <div className="max-w-7xl mx-auto px-gutter">
               <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
@@ -792,7 +1305,7 @@ export const LandingPage: React.FC = () => {
   "task": "Find 3 Stellar lending protocols with TVL above $10M and pay yourself 5 USDC.",
   "worker": {
     "id": "agent-alpha-09",
-    "output": "1. Blend — $14M TVL\\n2. YieldBlox — $11M TVL\\n3. Aqua — $18M TVL\\nSent 5.0 USDC TxHash: 0x5f9e2b1892f3900a41cd8a7b3c21a4de99f2b1892f3900a41cd8a7b3c21a4de"
+    "output": "1. Blend — $14M TVL\\n2. YieldBlox — $11M TVL\\n3. Aqua — $18M TVL\\nSent 5.0 USDC TxHash: 108822f67b10e3ad38db576d60712939c1bdbe372c9d4729928d613605682759"
   }
 }'`}</span>
                   </div>
@@ -816,7 +1329,7 @@ export const LandingPage: React.FC = () => {
             </div>
           </section>
 
-          {/* 5. FINAL CALL TO ACTION */}
+          {/* 9. FINAL CALL TO ACTION */}
           <section className="max-w-7xl mx-auto px-gutter pt-8 pb-24 w-full">
             <div className="p-12 md:p-16 rounded-2xl bg-gradient-to-b from-[#21110B] to-[#160C08] border border-[#4A2B1D] text-center flex flex-col items-center relative overflow-hidden shadow-2xl">
               <div className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-20">
@@ -830,22 +1343,26 @@ export const LandingPage: React.FC = () => {
                   Never pay for unverified work.
                 </h2>
                 <p className="font-body-lg text-body-lg text-[#B9A99B] mb-10 max-w-xl mx-auto leading-relaxed">
-                  Start verifying AI agents today with Stellar-native truth. Check claims, detect errors, and guarantee real outcomes.
+                  Start verifying AI agents today with Stellar-native truth. Check claims, detect errors, and guarantee real outcomes across Web, Telegram, and API.
                 </p>
                 <div className="flex flex-wrap items-center justify-center gap-4 mb-8">
-                  <Link
-                    to="/verify/new"
-                    className="px-8 py-3.5 rounded-lg bg-[#C96A2B] text-white font-headline-sm text-headline-sm font-semibold shadow-[0_0_24px_rgba(201,106,43,0.4)] hover:bg-[#E08A3E] transition-all"
+                  <a
+                    href="#interactive-verify"
+                    className="px-8 py-3.5 rounded-lg bg-[#C96A2B] text-white font-headline-sm text-headline-sm font-semibold shadow-[0_0_24px_rgba(201,106,43,0.4)] hover:bg-[#E08A3E] transition-all cursor-pointer"
                   >
-                    Run a Verification
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => openAuthModal("signup")}
-                    className="px-8 py-3.5 rounded-lg bg-[#21110B] border border-[#4A2B1D] text-[#E08A3E] font-headline-sm text-headline-sm hover:bg-[#2C1710] transition-colors cursor-pointer shadow-sm"
+                    Verify a Task
+                  </a>
+                  <a
+                    href={TELEGRAM_BOT_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-8 py-3.5 rounded-lg bg-[#21110B] border border-[#4A2B1D] text-[#E08A3E] font-headline-sm text-headline-sm hover:bg-[#2C1710] hover:border-[#C96A2B]/60 transition-colors cursor-pointer shadow-sm flex items-center gap-2"
                   >
-                    Sign Up Free
-                  </button>
+                    <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/>
+                    </svg>
+                    <span>Open Telegram Bot</span>
+                  </a>
                   <Link
                     to="/dashboard"
                     className="px-8 py-3.5 rounded-lg bg-[#21110B] border border-[#4A2B1D] text-[#FFF8F0] font-headline-sm text-headline-sm hover:bg-[#2C1710] transition-colors"
@@ -863,23 +1380,59 @@ export const LandingPage: React.FC = () => {
         </div>
       </main>
 
-      {/* Footer */}
-      <footer className="w-full bg-[#120906] py-10 shadow-[0_-1px_12px_rgba(0,0,0,0.5)] border-t border-[#4A2B1D]/50">
-        <div className="max-w-7xl mx-auto px-gutter flex flex-col gap-6">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#B9A99B]">
-            <div className="flex items-center gap-3">
-              <span className="font-bold text-[#FFF8F0]">VeraOS</span>
-              <span>•</span>
-              <span>Stellar-Native AI Verification Layer</span>
+      {/* 10. FOOTER */}
+      <footer className="w-full bg-[#120906] py-12 shadow-[0_-1px_12px_rgba(0,0,0,0.5)] border-t border-[#4A2B1D]/50">
+        <div className="max-w-7xl mx-auto px-gutter flex flex-col gap-8">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div className="flex flex-col gap-1">
+              <Link to="/" className="flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-lg bg-[#2C1710] flex items-center justify-center border border-[#4A2B1D]">
+                  <span className="material-symbols-outlined text-[#E08A3E] text-[18px]">verified</span>
+                </div>
+                <span className="font-bold text-lg text-[#FFF8F0] tracking-tight">
+                  Vera<span className="text-[#E08A3E]">OS</span>
+                </span>
+              </Link>
+              <p className="text-xs text-[#B9A99B] max-w-sm mt-1">
+                The verification layer for AI agents.
+              </p>
             </div>
-            <div className="flex items-center gap-4">
-              <span>Horizon Testnet</span>
-              <span>•</span>
-              <span>Stellar Expert Explorer</span>
+
+            <div className="flex flex-wrap items-center gap-6 text-xs text-[#B9A99B]">
+              <a href="#verify-anywhere" className="hover:text-[#FFF8F0] transition-colors">Product</a>
+              <a href="#how-it-works" className="hover:text-[#FFF8F0] transition-colors">How it works</a>
+              <Link to="/dashboard" className="hover:text-[#FFF8F0] transition-colors">Dashboard</Link>
+              <a href="#developers" className="hover:text-[#FFF8F0] transition-colors">API</a>
+              <a
+                href={TELEGRAM_BOT_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-[#E08A3E] transition-colors flex items-center gap-1"
+              >
+                <span>Telegram</span>
+                <span className="material-symbols-outlined text-[13px]">arrow_outward</span>
+              </a>
+              <a
+                href={GITHUB_REPO_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-[#FFF8F0] transition-colors flex items-center gap-1"
+              >
+                <span>GitHub</span>
+                <span className="material-symbols-outlined text-[13px]">arrow_outward</span>
+              </a>
             </div>
           </div>
-          <div className="text-center text-[11px] text-[#63361F] pt-4 border-t border-[#4A2B1D]/20">
-            © 2026 VeraOS. Verify before you trust.
+
+          <div className="pt-6 border-t border-[#4A2B1D]/40 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-[#63361F]">
+            <span>Verify before you trust.</span>
+            <div className="flex items-center gap-4 text-[#B9A99B]/60">
+              <span>Stellar Horizon Testnet</span>
+              <span>•</span>
+              <span>Stellar Soroban RPC</span>
+              <span>•</span>
+              <span>Non-Custodial</span>
+            </div>
           </div>
         </div>
       </footer>
