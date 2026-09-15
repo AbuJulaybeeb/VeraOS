@@ -143,6 +143,12 @@ export const LandingPage: React.FC = () => {
               >
                 API
               </a>
+              <Link
+                to="/docs"
+                className="px-3 py-1.5 font-body-md text-body-md text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#21110B] rounded transition-colors"
+              >
+                Docs
+              </Link>
               <a
                 href={TELEGRAM_BOT_URL}
                 target="_blank"

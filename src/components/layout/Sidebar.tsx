@@ -154,6 +154,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Footer Info & User */}
       <div className="flex flex-col p-space-md gap-space-sm border-t border-white/5">
         <Link
+          to="/docs"
+          onClick={onCloseMobile}
+          className="flex items-center justify-between px-space-sm py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors"
+        >
+          <div className="flex items-center gap-space-sm">
+            <span className="material-symbols-outlined text-[18px]">
+              menu_book
+            </span>
+            <span className="font-body-sm text-body-sm font-medium">
+              Documentation
+            </span>
+          </div>
+          <span className="material-symbols-outlined text-[16px] text-outline">
+            arrow_outward
+          </span>
+        </Link>
+
+        <Link
           to="/"
           onClick={onCloseMobile}
           className="flex items-center justify-between px-space-sm py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors"

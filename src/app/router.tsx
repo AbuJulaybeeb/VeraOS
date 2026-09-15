@@ -29,6 +29,9 @@ const Agents = lazy(() =>
 const ConnectAgent = lazy(() =>
   import("../pages/ConnectAgent").then((m) => ({ default: m.ConnectAgent }))
 );
+const Docs = lazy(() =>
+  import("../pages/Docs").then((m) => ({ default: m.Docs }))
+);
 const NotFound = lazy(() =>
   import("../pages/NotFound").then((m) => ({ default: m.NotFound }))
 );
@@ -47,6 +50,16 @@ export const router = createBrowserRouter([
     element: (
       <Suspense fallback={<PageLoader />}>
         <LandingPage />
+      </Suspense>
+    ),
+  },
+
+  // Documentation Site
+  {
+    path: "/docs",
+    element: (
+      <Suspense fallback={<PageLoader />}>
+        <Docs />
       </Suspense>
     ),
   },
