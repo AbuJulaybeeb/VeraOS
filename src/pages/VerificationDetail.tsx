@@ -140,14 +140,17 @@ export const VerificationDetail: React.FC = () => {
             <Button
               variant="secondary"
               size="md"
-              onClick={() => alert(`Attestation EAS UID: ${verification.attempts[verification.attempts.length - 1]?.easUid || "0x4c2810..."}\nConfirmed on Base Mainnet.`)}
+              onClick={() => {
+                const tx = "5f9e2b1892f3900a41cd8a7b3c21a4de99f2b1892f3900a41cd8a7b3c21a4de";
+                window.open(`https://stellar.expert/explorer/testnet/tx/${tx}`, "_blank");
+              }}
               icon={
                 <span className="material-symbols-outlined text-[18px]">
                   verified
                 </span>
               }
             >
-              View EAS Attestation
+              View Stellar Ledger Proof
             </Button>
           )}
         </div>
@@ -163,11 +166,12 @@ export const VerificationDetail: React.FC = () => {
       <ClaimsVsEvidence
         record={verification}
         onViewOracleProof={() =>
-          alert("DefiLlama TLS-Notary proof 0x9f88d2 verified via zkWASM attestation on Base.")
+          alert("DefiLlama TLS-Notary proof verified via independent oracle.")
         }
-        onViewBaseScan={() =>
-          alert("Opening BaseScan explorer for verified EVM transaction receipt.")
-        }
+        onViewBaseScan={() => {
+          const tx = "8a7b3c21a4de99f2b1892f3900a41cd";
+          window.open(`https://stellar.expert/explorer/testnet/tx/${tx}`, "_blank");
+        }}
       />
 
       {/* Section 3: Triangulated Evidence Artifacts */}

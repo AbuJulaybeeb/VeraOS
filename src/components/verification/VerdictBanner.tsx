@@ -49,13 +49,13 @@ export const VerdictBanner: React.FC<VerdictBannerProps> = ({
         <div>
           <h3 className="font-headline-sm text-headline-sm font-bold text-on-surface">
             {isPassed
-              ? "Verdict: All Invariants Confirmed — Attestation Finalized on Base"
-              : "Verdict: 2 Invariant Conflicts Require Autonomous Correction"}
+              ? "Verdict: All Invariants Confirmed — Verified on Stellar Testnet"
+              : "Verdict: Invariant Conflicts Require Autonomous Correction"}
           </h3>
           <p className="font-body-sm text-body-sm text-on-surface-variant max-w-2xl mt-0.5">
             {isPassed
-              ? `Cryptographic proof committed to Base EAS registry at block #${record.attempts[record.attempts.length - 1]?.blockNumber || 21849201}. Smart contracts and downstream agents can query attestation.`
-              : "Seamless Protocol fails TVL requirement ($8.24M vs $10.0M threshold). In addition, compensation transaction contains a 90% deficit (transferred 0.5 USDC vs 5.0 USDC requested)."}
+              ? "Cryptographic proof confirmed on Stellar Horizon ledger. Smart contracts on Soroban and downstream agents can query verification state."
+              : (record.attempts[record.attempts.length - 1]?.detailedReason || "Payment or result requirements breached. Worker must correct deficits.")}
           </p>
         </div>
       </div>

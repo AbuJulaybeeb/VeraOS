@@ -3,28 +3,28 @@
 @tailwind utilities;
 
 :root {
-  /* Dark Obsidian Theme (Default) */
-  --color-background: #121318;
-  --color-on-background: #e3e1e9;
-  --color-surface: #121318;
-  --color-surface-container-lowest: #0d0e13;
-  --color-surface-container-low: #1a1b21;
-  --color-surface-container: #1e1f25;
-  --color-surface-container-high: #292a2f;
-  --color-surface-container-highest: #34343a;
-  --color-surface-dim: #121318;
-  --color-surface-bright: #38393f;
-  --color-surface-variant: #34343a;
-  --color-on-surface: #e3e1e9;
-  --color-on-surface-variant: #e5beb2;
-  --color-outline: #ac897e;
-  --color-outline-variant: #5c4037;
-  --color-primary: #ffb59c;
-  --color-primary-container: #ff5708;
-  --color-secondary: #ffb95f;
-  --color-secondary-container: #ee9800;
-  --color-inverse-surface: #e3e1e9;
-  --color-inverse-on-surface: #2f3036;
+  /* VeraOS Deep Brown & Warm Orange Theme (Stellar Native) */
+  --color-background: #160c08;
+  --color-on-background: #fff8f0;
+  --color-surface: #21110b;
+  --color-surface-container-lowest: #120906;
+  --color-surface-container-low: #1b0e09;
+  --color-surface-container: #21110b;
+  --color-surface-container-high: #2c1710;
+  --color-surface-container-highest: #3a2015;
+  --color-surface-dim: #160c08;
+  --color-surface-bright: #4a2819;
+  --color-surface-variant: #3a2015;
+  --color-on-surface: #f3e5d5;
+  --color-on-surface-variant: #b9a99b;
+  --color-outline: #4a2b1d;
+  --color-outline-variant: #351e14;
+  --color-primary: #c96a2b;
+  --color-primary-container: #e08a3e;
+  --color-secondary: #e6a15a;
+  --color-secondary-container: #63361f;
+  --color-inverse-surface: #f3e5d5;
+  --color-inverse-on-surface: #160c08;
 }
 
 html.light, [data-theme="light"] {

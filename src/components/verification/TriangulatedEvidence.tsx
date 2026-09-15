@@ -113,9 +113,9 @@ export const TriangulatedEvidence: React.FC<TriangulatedEvidenceProps> = ({ reco
                 </span>
               </div>
               <div className="flex flex-col py-1 bg-surface-container/50 px-2 rounded">
-                <span className="text-outline">Token Contract</span>
+                <span className="text-outline">Asset</span>
                 <span className="text-on-surface truncate font-mono">
-                  0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913 (USDC)
+                  USDC (Stellar Native Credit Asset)
                 </span>
               </div>
               <div className="flex justify-between py-1 bg-surface-container/50 px-2 rounded">
@@ -127,25 +127,22 @@ export const TriangulatedEvidence: React.FC<TriangulatedEvidenceProps> = ({ reco
                       : "text-error font-bold"
                   }
                 >
-                  {isRemediated ? "5,000,000 (5.0 USDC)" : "500,000 (0.5 USDC)"}
+                  {isRemediated ? "5.000000 USDC" : "0.500000 USDC (Deficit: 4.50 USDC)"}
                 </span>
               </div>
             </div>
           </div>
 
           <button
-            onClick={() =>
-              alert(
-                `BaseScan Query:\nTransaction: ${
-                  isRemediated
-                    ? "0x91cc4421b8fa012984fe9823901bca019"
-                    : "0x8a7b3c21a4de99f2b1892f3900a41cd"
-                }\nBlock: #${currentAttempt?.blockNumber || 21849201}\nStatus: Confirmed on Base`
-              )
-            }
-            className="mt-space-md w-full py-1.5 px-space-sm rounded bg-surface-container hover:bg-surface-container-high text-on-surface font-body-sm text-body-sm font-medium transition-colors flex items-center justify-center gap-1 border border-white/5"
+            onClick={() => {
+              const tx = isRemediated
+                ? "5f9e2b1892f3900a41cd8a7b3c21a4de99f2b1892f3900a41cd8a7b3c21a4de"
+                : "8a7b3c21a4de99f2b1892f3900a41cd";
+              window.open(`https://stellar.expert/explorer/testnet/tx/${tx}`, "_blank");
+            }}
+            className="mt-space-md w-full py-1.5 px-space-sm rounded bg-surface-container hover:bg-surface-container-high text-[#E08A3E] font-body-sm text-body-sm font-medium transition-colors flex items-center justify-center gap-1 border border-[#4A2B1D]"
           >
-            <span>View on BaseScan</span>
+            <span>View on Stellar Expert</span>
             <span className="material-symbols-outlined text-[16px]">
               open_in_new
             </span>

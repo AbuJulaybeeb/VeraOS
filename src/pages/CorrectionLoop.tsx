@@ -170,7 +170,7 @@ export const CorrectionLoop: React.FC = () => {
             Resubmit & Pass
           </h3>
           <p className="font-body-sm text-body-sm text-outline">
-            EAS onchain attestation committed once invariants pass.
+            Stellar onchain ledger proof committed once invariants pass.
           </p>
         </div>
       </div>
@@ -207,11 +207,17 @@ export const CorrectionLoop: React.FC = () => {
           {activeAttempt.easUid && (
             <div className="mt-2 pt-2 border-t border-white/5 flex items-center justify-between text-code-sm">
               <span className="text-secondary font-medium">
-                EAS Attestation UID:
+                Stellar Transaction Proof:
               </span>
-              <span className="font-mono text-primary font-semibold">
-                {activeAttempt.easUid}
-              </span>
+              <a
+                href={`https://stellar.expert/explorer/testnet/tx/${activeAttempt.easUid}`}
+                target="_blank"
+                rel="noreferrer"
+                className="font-mono text-primary font-semibold hover:underline flex items-center gap-1"
+              >
+                <span>{activeAttempt.easUid.slice(0, 16)}...</span>
+                <span className="material-symbols-outlined text-[14px]">open_in_new</span>
+              </a>
             </div>
           )}
         </div>

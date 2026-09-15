@@ -94,7 +94,7 @@ export const Dashboard: React.FC = () => {
             {passedCount}
           </span>
           <span className="font-code-sm text-code-sm text-outline">
-            EAS Base onchain UID
+            Stellar Ledger Verified
           </span>
         </div>
 

@@ -27,6 +27,21 @@ export const verificationApi = {
     status?: string;
     search?: string;
   }): Promise<VerificationRecord[]> {
+    try {
+      const params = new URLSearchParams();
+      if (filters?.status && filters.status !== "ALL") params.set("status", filters.status);
+      if (filters?.search) params.set("search", filters.search);
+      const res = await fetch(`/v1/verify?${params.toString()}`);
+      if (res.ok) {
+        const data = (await res.json()) as { verifications?: VerificationRecord[] };
+        if (Array.isArray(data.verifications) && data.verifications.length > 0) {
+          return data.verifications;
+        }
+      }
+    } catch {
+      // fallback
+    }
+
     await delay(180);
     let list = getStoredVerifications();
 
@@ -49,6 +64,18 @@ export const verificationApi = {
   },
 
   async get(id: string): Promise<VerificationRecord | null> {
+    try {
+      const res = await fetch(`/v1/verify/${encodeURIComponent(id)}`);
+      if (res.ok) {
+        const record = (await res.json()) as VerificationRecord;
+        if (record && (record.id || record.displayId)) {
+          return record;
+        }
+      }
+    } catch {
+      // fallback
+    }
+
     await delay(150);
     const list = getStoredVerifications();
     const found = list.find((item) => item.id === id || item.displayId === id);
@@ -56,6 +83,34 @@ export const verificationApi = {
   },
 
   async create(input: CreateVerificationInput): Promise<VerificationRecord> {
+    try {
+      const res = await fetch("/v1/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          task: input.taskPrompt,
+          worker: {
+            id: input.workerId || "worker-alpha-09",
+            name: input.workerName || "Autonomous Worker",
+            output: input.workerOutput,
+          },
+          options: {
+            maxAttempts: input.maxAttempts || 3,
+            evidenceSources: input.evidenceSources,
+          },
+        }),
+      });
+      if (res.ok) {
+        const data = (await res.json()) as { record?: VerificationRecord } & VerificationRecord;
+        const record = data.record || data;
+        const list = getStoredVerifications();
+        persistVerifications([record, ...list.filter((x) => x.id !== record.id)]);
+        return record;
+      }
+    } catch (err) {
+      console.warn("Backend /v1/verify unreachable, using local simulation fallback:", err);
+    }
+
     await delay(300);
     const list = getStoredVerifications();
     const nextNum = list.length + 1048;
@@ -200,6 +255,29 @@ export const verificationApi = {
       txHash?: string;
     }
   ): Promise<VerificationRecord> {
+    try {
+      const res = await fetch(`/v1/verify/${encodeURIComponent(id)}/resubmit`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          supplementalTxHash: patch?.txHash,
+          workerOutput: patch?.target
+            ? `Remediated target: ${patch.target}\nSupplemental Transfer: ${patch.supplementalAmount || 4.5} USDC TxHash: ${patch.txHash || "0x5f9e2b1892f3900a41cd8a7b3c21a4de99f2b1892f3900a41cd8a7b3c21a4de"}`
+            : undefined,
+        }),
+      });
+      if (res.ok) {
+        const record = (await res.json()) as VerificationRecord;
+        if (record && record.id) {
+          const list = getStoredVerifications();
+          persistVerifications(list.map((r) => (r.id === record.id || r.displayId === record.displayId ? record : r)));
+          return record;
+        }
+      }
+    } catch {
+      // fallback
+    }
+
     await delay(350);
     const list = getStoredVerifications();
     const index = list.findIndex((item) => item.id === id || item.displayId === id);
@@ -311,19 +389,19 @@ export const verificationApi = {
           id: `ev_base_reconciled_${nextAttemptNum}`,
           requirementId: "inv_usdc_payment",
           type: "ONCHAIN",
-          title: "Base RPC Receipt (Supplemental Payout)",
-          provider: "Base Node JSON-RPC (8453)",
-          proofType: "EVM Receipt & Event Log",
+          title: "Stellar Horizon Receipt (Supplemental Payout)",
+          provider: "Stellar Horizon Testnet",
+          proofType: "Stellar Ledger State",
           independent: true,
           status: "CONFIRMED",
           timestamp: new Date().toISOString(),
           isMock: true,
-          proofHash: patch?.txHash || "0x91cc4421b8fa012984fe9823901bca019",
-          explorerUrl: `https://basescan.org/tx/${patch?.txHash || "0x91cc4421b8fa012984fe9823901bca019"}`,
+          proofHash: patch?.txHash || "5f9e2b1892f3900a41cd8a7b3c21a4de99f2b1892f3900a41cd8a7b3c21a4de",
+          explorerUrl: `https://stellar.expert/explorer/testnet/tx/${patch?.txHash || "5f9e2b1892f3900a41cd8a7b3c21a4de99f2b1892f3900a41cd8a7b3c21a4de"}`,
           data: {
-            Chain: "Base (8453)",
-            Block: `#${21849201 + nextAttemptNum * 5}`,
-            SupplementalTx: patch?.txHash || "0x91cc4421b8fa012984fe9823901bca019",
+            Chain: "Stellar Testnet",
+            Ledger: `#${1048576 + nextAttemptNum * 5}`,
+            SupplementalTx: patch?.txHash || "5f9e2b1892f3900a41cd8a7b3c21a4de99f2b1892f3900a41cd8a7b3c21a4de",
             SupplementalTransferred: "4.500000 USDC",
             TotalReconciled: "5.000000 USDC",
             Status: "SUCCESS (Confirmed Reconciled)",

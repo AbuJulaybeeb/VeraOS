@@ -75,7 +75,7 @@ if (!result.valid) {
   console.warn('VeraOS Breaches:', result.remediationDirectives);
   await myAgent.remediate(result.remediationDirectives);
 } else {
-  console.log('Attested EAS UID:', result.easUid);
+  console.log('Verified on Stellar! TxHash:', result.easUid);
 }`;
 
   const pyCode = `import os
@@ -83,38 +83,30 @@ from veraos import VeraOS
 
 client = VeraOS(api_key=os.getenv("VERA_API_KEY"))
 
-# Submit autonomous agent trace for independent verification
+# Submit autonomous agent execution for independent Stellar verification
 verification = client.verify(
     task_id="task_001",
-    task_prompt="Find 3 Base lending protocols with TVL > $10M and pay 5 USDC.",
+    task_prompt="Find 3 Stellar lending protocols with TVL > $10M and pay 5 USDC.",
     worker_id="${agentName || "my-agent"}",
-    invariants=[
-        {"metric": "tvl_threshold", "operator": ">=", "value": 10000000},
-        {"metric": "exact_transfer", "asset": "USDC", "amount": 5.0}
-    ],
-    execution_trace=agent_output.trace
+    network="stellar-testnet",
+    execution_output=agent_output.text
 )
 
 if not verification.is_valid:
     # Trigger self-correction loop
     agent.apply_remediation(verification.remediation_directives)
 else:
-    print(f"Verified on Base! EAS UID: {verification.eas_uid}")`;
+    print(f"Verified on Stellar! Explorer: https://stellar.expert/explorer/testnet/tx/{verification.tx_hash}")`;
 
   const curlCode = `curl -X POST https://api.veraos.network/v1/verify \\
   -H "Authorization: Bearer ${demoApiKey}" \\
   -H "Content-Type: application/json" \\
   -d '{
-    "task_id": "task_001",
-    "network": "base-mainnet",
-    "worker_id": "${agentName || "my-agent"}",
-    "invariants": [
-      { "metric": "tvl_threshold", "operator": ">=", "value": 10000000 },
-      { "metric": "exact_transfer", "asset": "USDC", "amount": 5.0 }
-    ],
-    "agent_submission": {
-      "tx_hash": "0x8a7b3c2141cde049fa8102391039bc0912",
-      "protocols": ["Seamless", "Moonwell", "Overnight"]
+    "task": "Find 3 Stellar lending protocols with TVL > $10M and pay 5 USDC.",
+    "network": "stellar-testnet",
+    "worker": {
+      "id": "${agentName || "my-agent"}",
+      "output": "..."
     }
   }'`;
 

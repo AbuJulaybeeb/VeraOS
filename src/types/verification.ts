@@ -57,8 +57,11 @@ export interface VerificationRecord {
 export interface CreateVerificationInput {
   taskPrompt: string;
   workerId: string;
+  workerName?: string;
   workerOutput: string;
   network?: string;
+  maxAttempts?: number;
+  evidenceSources?: string[];
   declaredInvariants?: Array<{
     name: string;
     expected: string;

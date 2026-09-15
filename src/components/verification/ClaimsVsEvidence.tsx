@@ -409,9 +409,9 @@ export const ClaimsVsEvidence: React.FC<ClaimsVsEvidenceProps> = ({
 
               <button
                 onClick={onViewBaseScan}
-                className="px-2 py-1 rounded bg-surface-container hover:bg-surface-container-high text-primary-fixed font-code-sm text-code-sm flex items-center gap-1 transition-colors shrink-0"
+                className="px-2 py-1 rounded bg-surface-container hover:bg-surface-container-high text-[#E08A3E] font-code-sm text-code-sm flex items-center gap-1 transition-colors shrink-0 border border-[#4A2B1D]"
               >
-                <span>View on BaseScan</span>
+                <span>View on Stellar Expert</span>
                 <span className="material-symbols-outlined text-[14px]">
                   open_in_new
                 </span>

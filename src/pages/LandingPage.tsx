@@ -9,8 +9,8 @@ const INITIAL_LANDING_NOTIFICATIONS: NotificationItem[] = [
   {
     id: "notif_lp_1",
     type: "critical",
-    title: "Verification #V-1048: Invariant Breaches",
-    message: "Seamless Protocol TVL deficit (-$1.75M) and 90% compensation payout deficit.",
+    title: "Verification #V-1048: Payment Deficit",
+    message: "Worker claimed 5.0 USDC, but Stellar Horizon ledger recorded only 0.50 USDC (4.50 USDC missing).",
     time: "2m ago",
     path: "/verify/v_test_89bf2e",
     read: false,
@@ -18,8 +18,8 @@ const INITIAL_LANDING_NOTIFICATIONS: NotificationItem[] = [
   {
     id: "notif_lp_2",
     type: "success",
-    title: "EAS Attestation Confirmed",
-    message: "Token audit #V-00022 verified on Base Mainnet. UID 0x12a9bc... finalized.",
+    title: "Stellar Payment Verified",
+    message: "Transaction verified on Stellar Testnet. 5.00 USDC confirmed on ledger.",
     time: "14m ago",
     path: "/verify/v_test_pass_001",
     read: false,
@@ -27,8 +27,8 @@ const INITIAL_LANDING_NOTIFICATIONS: NotificationItem[] = [
   {
     id: "notif_lp_3",
     type: "warning",
-    title: "Unverified Bounty Claim",
-    message: "Worker ScoutAgent reported 5 USDC payment without independent Base receipt.",
+    title: "Missing Transaction Hash",
+    message: "Worker claimed bounty was sent, but gave no Stellar transaction hash.",
     time: "32m ago",
     path: "/verify/v_test_unver_003",
     read: false,
@@ -64,23 +64,23 @@ export const LandingPage: React.FC = () => {
   const handleCopyCode = () => {
     const code =
       activeTab === "curl"
-        ? `curl -X POST https://api.veraos.network/v1/verify \\\n  -H "Authorization: Bearer vera_live_9f828a1c" \\\n  -H "Content-Type: application/json" \\\n  -d '{\n    "task_id": "task_lend_usdc_004",\n    "network": "base-mainnet",\n    "invariants": [\n      { "metric": "tvl_threshold", "operator": ">=", "value": 10000000 },\n      { "metric": "exact_transfer", "asset": "USDC", "amount": 5.0 }\n    ],\n    "agent_submission": {\n      "tx_hash": "0x8a7b3c2141cde049fa8102391039bc0912",\n      "protocols": ["Seamless", "Moonwell", "Overnight"]\n    }\n  }'`
-        : `import { VeraOS } from '@veraos/sdk';\n\nconst vera = new VeraOS({ apiKey: process.env.VERA_API_KEY });\n\nconst verification = await vera.verify({\n  task: 'task_lend_usdc_004',\n  chainId: 8453, // Base Mainnet\n  invariants: [\n    { rule: 'tvl_threshold', min: 10_000_000 },\n    { rule: 'exact_payment', amount: 5.0, token: 'USDC' }\n  ],\n  executionTrace: agentResult.trace\n});\n\nif (!verification.valid) {\n  await agent.remediate(verification.remediationDirectives);\n}`;
+        ? `curl -X POST https://api.veraos.network/v1/verify \\\n  -H "Content-Type: application/json" \\\n  -d '{\n    "task": "Find 3 Stellar lending protocols with TVL above $10M and pay yourself 5 USDC.",\n    "worker": {\n      "id": "agent-alpha-09",\n      "name": "Autonomous Worker",\n      "output": "1. Blend Protocol — $14M TVL\\n2. YieldBlox — $11M TVL\\n3. Aqua Network — $18M TVL\\nSent 5.0 USDC TxHash: 0x5f9e2b1892f3900a41cd8a7b3c21a4de99f2b1892f3900a41cd8a7b3c21a4de"\n    }\n  }'`
+        : `import { VeraOS } from '@veraos/sdk';\n\nconst vera = new VeraOS();\n\nconst verification = await vera.verify({\n  task: 'Find 3 Stellar lending protocols with TVL above $10M and pay yourself 5 USDC.',\n  worker: {\n    id: 'agent-alpha-09',\n    output: agentExecutionResult.text\n  }\n});\n\nif (verification.verdict.status !== 'VERIFIED') {\n  console.log('Correction required:', verification.remediation?.directives);\n}`;
     navigator.clipboard.writeText(code);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
   return (
-    <div className="bg-surface font-body-md text-on-surface bg-grid-tech min-h-screen selection:bg-primary-container selection:text-on-primary-container">
+    <div className="bg-[#160C08] font-body-md text-[#F3E5D5] bg-grid-tech min-h-screen selection:bg-[#C96A2B] selection:text-[#FFF8F0]">
       {/* Header */}
-      <header className="fixed top-0 w-full z-50 bg-surface-container-lowest/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.4)] border-b border-white/5">
+      <header className="fixed top-0 w-full z-50 bg-[#160C08]/85 backdrop-blur-xl shadow-[0_1px_12px_rgba(0,0,0,0.6)] border-b border-[#4A2B1D]/40">
         <div className="h-16 max-w-7xl mx-auto px-gutter flex items-center justify-between">
           <div className="flex items-center gap-8">
             <Link to="/" className="flex items-center gap-3 group">
-              <div className="w-7 h-7 flex items-center justify-center bg-surface-container-high rounded transition-transform group-hover:scale-105 shadow-[0_0_12px_rgba(255,87,8,0.25)]">
+              <div className="w-8 h-8 flex items-center justify-center bg-[#2C1710] rounded-lg transition-transform group-hover:scale-105 shadow-[0_0_16px_rgba(201,106,43,0.35)] border border-[#4A2B1D]">
                 <svg
-                  className="w-4 h-4 text-primary-container"
+                  className="w-4 h-4 text-[#E08A3E]"
                   fill="none"
                   stroke="currentColor"
                   strokeLinecap="round"
@@ -90,7 +90,7 @@ export const LandingPage: React.FC = () => {
                 >
                   <polygon
                     fill="currentColor"
-                    fillOpacity="0.15"
+                    fillOpacity="0.2"
                     points="12 2 21 7.5 21 16.5 12 22 3 16.5 3 7.5 12 2"
                   />
                   <polyline points="12 2 12 12 21 7.5" />
@@ -98,61 +98,60 @@ export const LandingPage: React.FC = () => {
                   <line x1="12" x2="12" y1="12" y2="22" />
                 </svg>
               </div>
-              <span className="font-headline-sm text-headline-sm text-on-surface tracking-tight font-bold">
-                Vera<span className="text-primary-container">OS</span>
+              <span className="font-headline-sm text-headline-sm text-[#FFF8F0] tracking-tight font-bold">
+                Vera<span className="text-[#E08A3E]">OS</span>
               </span>
             </Link>
 
             <nav className="hidden md:flex items-center gap-1">
               <Link
                 to="/dashboard"
-                className="transition-colors bg-surface-container-high text-on-surface font-headline-sm text-headline-sm rounded px-3 py-1.5"
+                className="transition-colors bg-[#2C1710] text-[#FFF8F0] font-headline-sm text-headline-sm rounded px-3 py-1.5 border border-[#4A2B1D]/50"
               >
                 Dashboard
               </Link>
               <a
                 href="#how-it-works"
-                className="px-3 py-1.5 font-body-md text-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low rounded transition-colors"
+                className="px-3 py-1.5 font-body-md text-body-md text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#21110B] rounded transition-colors"
               >
                 How It Works
               </a>
               <a
+                href="#demo"
+                className="px-3 py-1.5 font-body-md text-body-md text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#21110B] rounded transition-colors"
+              >
+                Live Test
+              </a>
+              <a
                 href="#developers"
-                className="px-3 py-1.5 font-body-md text-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low rounded transition-colors"
+                className="px-3 py-1.5 font-body-md text-body-md text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#21110B] rounded transition-colors"
               >
                 Developers
               </a>
-              <Link
-                to="/agents/connect"
-                className="px-3 py-1.5 font-body-md text-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low rounded transition-colors"
-              >
-                Connect Agent
-              </Link>
             </nav>
           </div>
 
-          <div className="flex items-center gap-space-xs sm:gap-space-sm">
+          <div className="flex items-center gap-3">
             {/* Search Button */}
             <button
               type="button"
               onClick={() => setSearchOpen(true)}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-surface-container text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors text-left cursor-pointer"
-              title="Search telemetry and traces (⌘K)"
-              aria-label="Search"
+              className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#21110B] border border-[#4A2B1D] text-xs text-[#B9A99B] hover:text-[#FFF8F0] hover:border-[#C96A2B]/60 transition-all cursor-pointer shadow-sm"
+              title="Quick Search (Ctrl+K or Cmd+K)"
             >
-              <span className="material-symbols-outlined text-[18px]">search</span>
-              <span className="hidden md:inline font-body-sm text-body-sm text-on-surface-variant">Search</span>
-              <span className="hidden lg:inline font-code-sm text-code-sm px-1.5 py-0.5 rounded bg-surface-container-lowest text-outline border border-white/5">
+              <span className="material-symbols-outlined text-[16px]">search</span>
+              <span>Search verifications...</span>
+              <kbd className="px-1.5 py-0.5 rounded bg-[#2C1710] text-[10px] text-[#B9A99B] border border-[#4A2B1D]">
                 ⌘K
-              </span>
+              </kbd>
             </button>
 
-            {/* Notifications Button & Popover */}
+            {/* Notifications Button */}
             <div className="relative">
               <button
                 type="button"
                 onClick={() => setNotifOpen((prev) => !prev)}
-                className="relative p-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors cursor-pointer"
+                className="relative p-2 rounded-lg text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#21110B] transition-colors cursor-pointer"
                 title="Notifications"
                 aria-label="Notifications"
               >
@@ -160,7 +159,7 @@ export const LandingPage: React.FC = () => {
                   notifications
                 </span>
                 {unreadCount > 0 && (
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-primary-container shadow-[0_0_8px_rgba(255,87,8,0.7)] animate-pulse" />
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#C96A2B] shadow-[0_0_8px_rgba(201,106,43,0.8)] animate-pulse" />
                 )}
               </button>
 
@@ -172,7 +171,7 @@ export const LandingPage: React.FC = () => {
               />
             </div>
 
-            {/* Theme Toggle (Dark / White Theme) */}
+            {/* Theme Toggle */}
             <ThemeToggle />
 
             {/* Auth Buttons */}
@@ -180,17 +179,17 @@ export const LandingPage: React.FC = () => {
               <div className="relative flex items-center gap-1.5">
                 <Link
                   to="/dashboard"
-                  className="hidden sm:inline-flex items-center justify-center px-3 py-1.5 rounded-lg font-body-sm text-body-sm text-on-surface bg-surface-container hover:bg-surface-container-high transition-all border border-white/5"
+                  className="hidden sm:inline-flex items-center justify-center px-3 py-1.5 rounded-lg font-body-sm text-body-sm text-[#FFF8F0] bg-[#2C1710] hover:bg-[#3A2015] transition-all border border-[#4A2B1D]"
                 >
                   Dashboard ({user?.name.split(" ")[0]})
                 </Link>
                 <button
                   type="button"
                   onClick={() => setProfileDropdownOpen((prev) => !prev)}
-                  className="w-8 h-8 rounded-full bg-primary hover:ring-2 hover:ring-primary-container flex items-center justify-center transition-all cursor-pointer"
-                  title={`${user?.name} (Click to switch or manage account)`}
+                  className="w-8 h-8 rounded-full bg-[#C96A2B] hover:ring-2 hover:ring-[#E08A3E] flex items-center justify-center transition-all cursor-pointer text-white"
+                  title={`${user?.name} (Account)`}
                 >
-                  <span className="material-symbols-outlined text-on-primary text-[18px]">
+                  <span className="material-symbols-outlined text-[18px]">
                     person
                   </span>
                 </button>
@@ -201,22 +200,22 @@ export const LandingPage: React.FC = () => {
                       className="fixed inset-0 z-40"
                       onClick={() => setProfileDropdownOpen(false)}
                     />
-                    <div className="absolute right-0 top-11 w-60 rounded-2xl bg-surface-container border border-white/10 shadow-2xl z-50 p-2.5 flex flex-col gap-1.5 animate-in fade-in zoom-in-95 duration-150">
-                      <div className="p-2 rounded-lg bg-surface-container-low flex flex-col">
-                        <span className="font-semibold text-on-surface text-xs">
+                    <div className="absolute right-0 top-11 w-60 rounded-2xl bg-[#21110B] border border-[#4A2B1D] shadow-2xl z-50 p-2.5 flex flex-col gap-1.5 animate-in fade-in zoom-in-95 duration-150">
+                      <div className="p-2 rounded-lg bg-[#160C08] flex flex-col">
+                        <span className="font-semibold text-[#FFF8F0] text-xs">
                           {user?.name}
                         </span>
-                        <span className="text-[11px] text-outline font-code-sm truncate">
+                        <span className="text-[11px] text-[#B9A99B] truncate">
                           {user?.email}
                         </span>
-                        <span className="text-[10px] text-secondary font-code-sm mt-0.5">
+                        <span className="text-[10px] text-[#E08A3E] mt-0.5">
                           {user?.role}
                         </span>
                       </div>
                       <Link
                         to="/dashboard"
                         onClick={() => setProfileDropdownOpen(false)}
-                        className="px-2.5 py-1.5 rounded-lg text-xs text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors flex items-center gap-2"
+                        className="px-2.5 py-1.5 rounded-lg text-xs text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#2C1710] transition-colors flex items-center gap-2"
                       >
                         <span className="material-symbols-outlined text-[16px]">grid_view</span>
                         <span>Open Dashboard</span>
@@ -225,20 +224,9 @@ export const LandingPage: React.FC = () => {
                         type="button"
                         onClick={() => {
                           setProfileDropdownOpen(false);
-                          openAuthModal("signup");
-                        }}
-                        className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors flex items-center gap-2"
-                      >
-                        <span className="material-symbols-outlined text-[16px]">person_add</span>
-                        <span>Sign Up New Account</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setProfileDropdownOpen(false);
                           logout();
                         }}
-                        className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs text-error hover:bg-error-container/20 transition-colors flex items-center gap-2"
+                        className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs text-red-400 hover:bg-red-950/30 transition-colors flex items-center gap-2"
                       >
                         <span className="material-symbols-outlined text-[16px]">logout</span>
                         <span>Sign Out</span>
@@ -252,14 +240,14 @@ export const LandingPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => openAuthModal("signin")}
-                  className="inline-flex items-center justify-center px-2.5 sm:px-3 py-1.5 rounded-lg font-body-sm text-body-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-all cursor-pointer"
+                  className="inline-flex items-center justify-center px-2.5 sm:px-3 py-1.5 rounded-lg font-body-sm text-body-sm text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#21110B] transition-all cursor-pointer"
                 >
                   Sign In
                 </button>
                 <button
                   type="button"
                   onClick={() => openAuthModal("signup")}
-                  className="inline-flex items-center justify-center px-3 sm:px-3.5 py-1.5 rounded-lg font-body-sm text-body-sm font-semibold text-[#ffb95f] hover:text-white bg-primary-container/20 hover:bg-primary-container transition-all border border-[#ffb95f]/40 shadow-sm cursor-pointer"
+                  className="inline-flex items-center justify-center px-3 sm:px-3.5 py-1.5 rounded-lg font-body-sm text-body-sm font-semibold text-[#E08A3E] hover:text-white bg-[#C96A2B]/20 hover:bg-[#C96A2B] transition-all border border-[#C96A2B]/40 shadow-sm cursor-pointer"
                 >
                   Sign Up
                 </button>
@@ -268,9 +256,9 @@ export const LandingPage: React.FC = () => {
 
             <Link
               to="/verify/new"
-              className="inline-flex items-center justify-center px-3.5 sm:px-4 py-2 rounded-lg font-body-sm sm:font-body-md text-on-primary font-semibold bg-primary-container hover:bg-secondary-container transition-all shadow-[0_0_16px_rgba(255,87,8,0.35)] active:scale-[0.99] shrink-0"
+              className="inline-flex items-center justify-center px-3.5 sm:px-4 py-2 rounded-lg font-body-sm sm:font-body-md text-white font-semibold bg-[#C96A2B] hover:bg-[#E08A3E] transition-all shadow-[0_0_18px_rgba(201,106,43,0.45)] active:scale-[0.99] shrink-0"
             >
-              <span className="hidden sm:inline">Run a Verification</span>
+              <span className="hidden sm:inline">Run Verification</span>
               <span className="sm:hidden">Verify</span>
             </Link>
           </div>
@@ -278,59 +266,59 @@ export const LandingPage: React.FC = () => {
       </header>
 
       {/* Main Content */}
-      <main className="w-full pt-16 bg-surface min-h-[calc(100vh-280px)]">
+      <main className="w-full pt-16 bg-[#160C08] min-h-[calc(100vh-280px)]">
         <div className="flex flex-col w-full">
-          {/* Top Ambient Glow & Kinetic Ribbon Canvas with 3D Wave Asset */}
+          {/* Top Ambient Glow & Kinetic Warm Waves */}
           <div className="relative w-full overflow-hidden">
-            {/* Background 3D Ribbon Wave Graphic Asset */}
-            <div className="absolute -top-12 md:-top-16 inset-x-0 w-full h-[880px] md:h-[980px] pointer-events-none z-0 flex items-center justify-center opacity-85">
+            {/* Background Warm Molten Wave Graphic Asset */}
+            <div className="absolute -top-12 md:-top-16 inset-x-0 w-full h-[880px] md:h-[980px] pointer-events-none z-0 flex items-center justify-center opacity-75">
               <img
-                alt="VeraOS Kinetic Ambient Glow"
-                className="w-full h-full object-cover object-center filter saturate-125 brightness-105 select-none pointer-events-none mix-blend-screen"
+                alt="VeraOS Warm Molten Wave Ambient"
+                className="w-full h-full object-cover object-center filter saturate-125 sepia-50 brightness-95 select-none pointer-events-none mix-blend-screen"
                 src="https://lh3.googleusercontent.com/aida-public/AB6AXuBHzUnl7SYnEo2kdag-1WKSnWYqNEthZg_UhSXS95ugxx52YdIgdEkKpfktXgy63SGLK-Ey2IGElxVEXaUJmBoox4HznZZ5R9jbgyahDa8x6K79hVeu9Nn6Ch25mYFIIDtillGQ-yMJoPylSKDPlW85HunDazhJRH5iOTbrplCWxP3vP187Hy-YlSqkTEwlB91E-u0RTmBMZXIGJ7LWdI7QqoMrZSeiHd274Gvemuwni0emQbDhYYMSrw"
               />
-              <div className="absolute inset-0 bg-gradient-to-b from-surface via-transparent to-surface opacity-90" />
-              <div className="absolute inset-0 bg-gradient-to-r from-surface via-transparent to-surface opacity-60" />
+              <div className="absolute inset-0 bg-gradient-to-b from-[#160C08] via-transparent to-[#160C08] opacity-95" />
+              <div className="absolute inset-0 bg-gradient-to-r from-[#160C08] via-transparent to-[#160C08] opacity-70" />
             </div>
 
-            {/* Secondary atmospheric glow flares */}
-            <div className="pointer-events-none absolute -top-40 right-[-10%] w-[980px] h-[780px] opacity-35 mix-blend-screen blur-[100px] bg-gradient-to-br from-primary-container via-secondary to-tertiary-container" />
-            <div className="pointer-events-none absolute top-72 left-[-15%] w-[680px] h-[520px] opacity-25 mix-blend-screen blur-[110px] bg-gradient-to-tr from-primary via-on-primary-fixed-variant to-secondary-container" />
+            {/* Secondary warm molten glow flares */}
+            <div className="pointer-events-none absolute -top-40 right-[-10%] w-[980px] h-[780px] opacity-25 mix-blend-screen blur-[120px] bg-gradient-to-br from-[#C96A2B] via-[#E08A3E] to-[#3A2015]" />
+            <div className="pointer-events-none absolute top-72 left-[-15%] w-[680px] h-[520px] opacity-20 mix-blend-screen blur-[130px] bg-gradient-to-tr from-[#E6A15A] via-[#C96A2B] to-[#21110B]" />
 
             {/* 1. HERO SECTION */}
-            <section className="relative z-10 max-w-7xl mx-auto px-gutter pt-12 pb-24 flex flex-col items-center text-center">
+            <section className="relative z-10 max-w-7xl mx-auto px-gutter pt-14 pb-20 flex flex-col items-center text-center">
               {/* Eyebrow Pill */}
-              <div className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-surface-container-high/90 backdrop-blur-md border border-white/10 shadow-[0_0_24px_rgba(255,87,8,0.25)] mb-8">
+              <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-[#21110B]/90 backdrop-blur-md border border-[#4A2B1D] shadow-[0_0_24px_rgba(201,106,43,0.2)] mb-8">
                 <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-container opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-primary-container" />
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#C96A2B] opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#E08A3E]" />
                 </span>
-                <span className="font-label-caps text-label-caps uppercase tracking-widest text-primary font-bold">
-                  AI AGENT VERIFICATION INFRASTRUCTURE · v2.4 KERNEL DEPLOYED
+                <span className="font-label-caps text-label-caps uppercase tracking-widest text-[#E08A3E] font-bold">
+                  INDEPENDENT PROOF FOR AI AGENTS · STELLAR NATIVE
                 </span>
               </div>
 
               {/* Main Headline */}
-              <h1 className="font-display-hero text-display-hero md:text-[68px] md:leading-[74px] text-on-surface tracking-tight max-w-4xl mx-auto font-bold mb-6 drop-shadow-[0_4px_30px_rgba(0,0,0,0.8)]">
+              <h1 className="font-display-hero text-display-hero md:text-[68px] md:leading-[74px] text-[#FFF8F0] tracking-tight max-w-4xl mx-auto font-bold mb-6 drop-shadow-[0_4px_30px_rgba(0,0,0,0.8)]">
                 Verify before you{" "}
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#ffb59c] via-[#ffb95f] to-[#ff5708] drop-shadow-[0_0_28px_rgba(255,87,8,0.45)]">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FFF8F0] via-[#E08A3E] to-[#C96A2B] drop-shadow-[0_0_28px_rgba(201,106,43,0.45)]">
                   trust
                 </span>
                 .
               </h1>
 
-              {/* Subtitle */}
-              <p className="font-body-lg text-body-lg text-on-surface-variant max-w-2xl mx-auto mb-10 text-balance drop-shadow-sm">
-                VeraOS independently verifies the work of autonomous AI agents using cryptographic ground truth, onchain state, and web evidence before results are committed.
+              {/* Plain English Subtitle */}
+              <p className="font-body-lg text-body-lg text-[#B9A99B] max-w-2xl mx-auto mb-10 text-balance leading-relaxed">
+                When an AI agent says “Task completed” or “Payment sent”, how do you know it really happened? VeraOS independently verifies AI agent work against real Stellar blockchain data before you pay.
               </p>
 
               {/* CTA Row */}
               <div className="flex flex-wrap items-center justify-center gap-4 mb-16">
                 <Link
                   to="/verify/new"
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-primary-container text-on-primary font-headline-sm text-headline-sm font-semibold shadow-[0_0_28px_rgba(255,87,8,0.45)] hover:bg-secondary-container hover:shadow-[0_0_36px_rgba(238,152,0,0.5)] transition-all"
+                  className="inline-flex items-center gap-2 px-6 py-3.5 rounded-lg bg-[#C96A2B] text-white font-headline-sm text-headline-sm font-semibold shadow-[0_0_28px_rgba(201,106,43,0.45)] hover:bg-[#E08A3E] transition-all"
                 >
-                  <span>Run a Verification</span>
+                  <span>Verify an Agent's Work</span>
                   <span className="material-symbols-outlined text-[18px]">
                     arrow_forward
                   </span>
@@ -338,7 +326,7 @@ export const LandingPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => openAuthModal("signup")}
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-surface-container-high/90 backdrop-blur-md border border-[#ffb95f]/40 text-[#ffb95f] font-headline-sm text-headline-sm hover:bg-[#ffb95f]/10 transition-colors shadow-sm cursor-pointer"
+                  className="inline-flex items-center gap-2 px-6 py-3.5 rounded-lg bg-[#21110B] border border-[#4A2B1D] text-[#E08A3E] font-headline-sm text-headline-sm hover:bg-[#2C1710] transition-colors shadow-sm cursor-pointer"
                 >
                   <span className="material-symbols-outlined text-[18px]">
                     person_add
@@ -347,827 +335,446 @@ export const LandingPage: React.FC = () => {
                 </button>
                 <Link
                   to="/verify/v_test_89bf2e"
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-surface-container-high/90 backdrop-blur-md border border-white/10 text-on-surface font-headline-sm text-headline-sm hover:bg-surface-variant transition-colors shadow-sm"
+                  className="inline-flex items-center gap-2 px-6 py-3.5 rounded-lg bg-[#21110B] border border-[#4A2B1D] text-[#FFF8F0] font-headline-sm text-headline-sm hover:bg-[#2C1710] transition-colors shadow-sm"
                 >
-                  <span className="material-symbols-outlined text-secondary text-[20px]">
+                  <span className="material-symbols-outlined text-[#E08A3E] text-[20px]">
                     terminal
                   </span>
-                  <span>Explore Demo</span>
+                  <span>See Live Example</span>
                 </Link>
               </div>
 
-              {/* Floating Glassmorphic Showcase Cards */}
+              {/* Real World Showcase Cards */}
               <div className="w-full max-w-5xl mb-12 relative flex flex-col md:flex-row items-center justify-center gap-8 py-4">
-                {/* Card 1: Verification Identity */}
-                <div className="w-full sm:w-80 p-5 rounded-2xl bg-gradient-to-br from-[#241c2c]/90 via-[#181922]/90 to-[#121318]/95 backdrop-blur-2xl border border-white/15 shadow-[0_20px_50px_rgba(0,0,0,0.6),0_0_30px_rgba(160,120,255,0.15)] transform md:-rotate-6 hover:rotate-0 transition-transform duration-300 text-left relative overflow-hidden group">
-                  <div className="absolute -top-16 -right-16 w-36 h-36 bg-tertiary-container/20 rounded-full blur-2xl group-hover:bg-primary-container/25 transition-colors" />
-                  <div className="flex items-center justify-between mb-5">
+                {/* Card 1: Verified Stellar Transaction */}
+                <div className="w-full sm:w-80 p-5 rounded-2xl bg-gradient-to-br from-[#2C1710]/95 via-[#21110B]/95 to-[#160C08]/95 backdrop-blur-2xl border border-[#4A2B1D] shadow-[0_20px_50px_rgba(0,0,0,0.6),0_0_30px_rgba(201,106,43,0.15)] transform md:-rotate-4 hover:rotate-0 transition-transform duration-300 text-left relative overflow-hidden group">
+                  <div className="absolute -top-16 -right-16 w-36 h-36 bg-[#C96A2B]/15 rounded-full blur-2xl group-hover:bg-[#E08A3E]/25 transition-colors" />
+                  <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
-                      <span className="material-symbols-outlined text-tertiary text-[22px]">
-                        contactless
+                      <span className="material-symbols-outlined text-[#E08A3E] text-[20px]">
+                        verified
                       </span>
-                      <span className="font-label-caps text-label-caps text-on-surface uppercase tracking-wider font-bold">
-                        VERA ATTESTED
+                      <span className="font-label-caps text-label-caps text-[#FFF8F0] uppercase tracking-wider font-bold">
+                        VERIFIED ON STELLAR
                       </span>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <div className="w-5 h-5 rounded-full bg-primary-container/80 -mr-2" />
-                      <div className="w-5 h-5 rounded-full bg-secondary/80 backdrop-blur-sm" />
+                    <span className="px-2 py-0.5 rounded bg-emerald-950/60 text-emerald-400 border border-emerald-800/40 text-[10px] font-bold">
+                      CONFIRMED
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-[#B9A99B] uppercase font-semibold mb-1">
+                    AGENT TASK
+                  </div>
+                  <div className="font-semibold text-sm text-[#FFF8F0] mb-3">
+                    Transfer 5.00 USDC to Worker
+                  </div>
+                  <div className="pt-2 border-t border-[#4A2B1D]/60 space-y-1.5 text-[11px]">
+                    <div className="flex justify-between text-[#B9A99B]">
+                      <span>Amount Verified:</span>
+                      <span className="text-[#FFF8F0] font-mono font-bold">5.00 USDC</span>
                     </div>
-                  </div>
-                  <div className="font-code-sm text-code-sm text-on-surface-variant mb-1">
-                    AGENT IDENTIFIER
-                  </div>
-                  <div className="font-headline-sm text-headline-sm text-on-surface font-mono font-semibold tracking-wide mb-4">
-                    ag_0x8453_9bf2
-                  </div>
-                  <div className="flex items-end justify-between pt-2 border-t border-white/10 text-[11px] font-code-sm text-on-surface-variant">
-                    <div>
-                      <div className="text-outline uppercase text-[9px]">
-                        Consensus
-                      </div>
-                      <div className="text-secondary font-medium">
-                        zk-EAS Base 8453
-                      </div>
+                    <div className="flex justify-between text-[#B9A99B]">
+                      <span>Stellar Ledger:</span>
+                      <span className="text-[#E08A3E] font-mono">Ledger #1,048,576</span>
                     </div>
-                    <div className="text-right">
-                      <div className="text-outline uppercase text-[9px]">
-                        Proof Hash
-                      </div>
-                      <div className="text-primary font-mono">
-                        0x7d2e...91aa
-                      </div>
+                    <div className="flex justify-between text-[#B9A99B]">
+                      <span>Source:</span>
+                      <span className="text-emerald-400 font-medium">Stellar Horizon Testnet</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Card 2: Runtime Verification */}
-                <div className="w-full sm:w-96 p-6 rounded-2xl bg-gradient-to-b from-surface-container-high/80 via-surface-container/75 to-surface-container-low/85 backdrop-blur-2xl border border-white/15 shadow-[0_25px_60px_rgba(0,0,0,0.65),0_0_35px_rgba(255,87,8,0.2)] transform md:rotate-3 hover:rotate-0 transition-transform duration-300 text-left relative overflow-hidden">
-                  <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-primary-container/20 rounded-full blur-2xl" />
+                {/* Card 2: Caught Deceptive Claim */}
+                <div className="w-full sm:w-96 p-6 rounded-2xl bg-gradient-to-b from-[#2C1710]/95 via-[#21110B]/95 to-[#160C08]/95 backdrop-blur-2xl border border-red-900/40 shadow-[0_25px_60px_rgba(0,0,0,0.65),0_0_35px_rgba(239,68,68,0.15)] transform md:rotate-2 hover:rotate-0 transition-transform duration-300 text-left relative overflow-hidden">
+                  <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-red-900/10 rounded-full blur-2xl" />
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-primary-container to-secondary flex items-center justify-center shadow-[0_0_12px_rgba(255,87,8,0.4)]">
-                        <span className="material-symbols-outlined text-on-primary text-[16px]">
-                          auto_awesome
-                        </span>
+                      <div className="w-7 h-7 rounded-lg bg-red-950 border border-red-800/50 flex items-center justify-center text-red-400">
+                        <span className="material-symbols-outlined text-[16px]">warning</span>
                       </div>
                       <div>
-                        <h3 className="font-headline-sm text-headline-sm text-on-surface font-bold leading-tight">
-                          Optimization Agent
+                        <h3 className="font-bold text-sm text-[#FFF8F0] leading-tight">
+                          Discrepancy Detected
                         </h3>
-                        <span className="font-code-sm text-[11px] text-on-surface-variant">
-                          Runtime Status: Invariant Checked
+                        <span className="text-[11px] text-[#B9A99B]">
+                          Agent claimed success, but underpaid
                         </span>
                       </div>
                     </div>
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container-lowest border border-white/10 font-label-caps text-label-caps text-secondary font-semibold">
-                      <span className="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse" />
-                      EVAL_LIVE
+                    <span className="px-2.5 py-1 rounded bg-red-950/70 border border-red-800/50 text-[10px] text-red-400 font-bold">
+                      FAILED
                     </span>
                   </div>
-                  <div className="p-3.5 rounded-xl bg-surface-container-lowest/80 border border-white/5 mb-3 font-code-sm text-code-sm text-on-surface-variant">
-                    <div className="text-[11px] text-outline mb-1 font-label-caps uppercase">
-                      Triangulated Quorum
+                  <div className="p-3.5 rounded-xl bg-[#160C08] border border-[#4A2B1D] mb-3 text-xs space-y-1.5">
+                    <div className="flex justify-between">
+                      <span className="text-[#B9A99B]">Agent Claimed:</span>
+                      <span className="text-[#FFF8F0] font-mono font-medium">Sent 5.00 USDC</span>
                     </div>
-                    <div className="text-on-surface font-medium flex items-center gap-1.5">
-                      <span className="material-symbols-outlined text-primary text-[16px]">
-                        check_circle
-                      </span>
-                      <span>Base Mempool state verified (0.50% bound asserted)</span>
+                    <div className="flex justify-between">
+                      <span className="text-[#B9A99B]">Actual Transfer:</span>
+                      <span className="text-red-400 font-mono font-bold">0.50 USDC</span>
+                    </div>
+                    <div className="flex justify-between pt-1 border-t border-[#4A2B1D]/40">
+                      <span className="text-[#E08A3E] font-medium">Missing Deficit:</span>
+                      <span className="text-red-400 font-mono font-bold">4.50 USDC remaining</span>
                     </div>
                   </div>
-                  <div className="flex items-center justify-between text-xs font-code-sm text-on-surface-variant">
-                    <span className="text-secondary font-semibold">
-                      Attestation: EAS_BASE_MAINNET
-                    </span>
-                    <span className="text-outline">Latency: 142ms</span>
+                  <div className="text-[11px] text-[#B9A99B] flex items-center justify-between">
+                    <span>Remediation: Worker prompted to execute 4.5 USDC transfer</span>
                   </div>
                 </div>
               </div>
 
-              {/* Technical Pipeline Flow Diagram */}
-              <div className="w-full max-w-5xl rounded-xl bg-surface-container-low/85 backdrop-blur-xl border border-white/10 shadow-2xl p-6 sm:p-8 text-left relative">
-                <div className="flex flex-wrap items-center justify-between gap-4 pb-6 mb-6 border-b border-white/5">
+              {/* 4-Step Plain English Workflow */}
+              <div className="w-full max-w-5xl rounded-2xl bg-[#21110B]/90 backdrop-blur-xl border border-[#4A2B1D] shadow-2xl p-6 sm:p-8 text-left relative">
+                <div className="flex flex-wrap items-center justify-between gap-4 pb-6 mb-6 border-b border-[#4A2B1D]/60">
                   <div className="flex items-center gap-3">
-                    <span className="inline-block w-2.5 h-2.5 rounded-full bg-primary-container animate-pulse" />
-                    <span className="font-label-caps text-label-caps uppercase text-on-surface tracking-wider font-semibold">
-                      RUNTIME ATTESTATION PIPELINE
-                    </span>
-                    <span className="text-outline font-code-sm text-code-sm">/</span>
-                    <span className="font-code-sm text-code-sm text-on-surface-variant">
-                      NODE_CLUSTER_BASE_4
+                    <span className="inline-block w-2.5 h-2.5 rounded-full bg-[#E08A3E] animate-pulse" />
+                    <span className="font-label-caps text-label-caps uppercase text-[#FFF8F0] tracking-wider font-semibold">
+                      HOW VERAOS VERIFIES AGENT WORK
                     </span>
                   </div>
-                  <div className="flex items-center gap-4 font-code-sm text-code-sm">
-                    <span className="text-on-surface-variant">
-                      Latency: <span className="text-secondary font-medium">142ms</span>
-                    </span>
-                    <span className="text-outline">|</span>
-                    <span className="text-on-surface-variant">
-                      Verdict Hash: <span className="text-primary font-mono">0x9f8c...3e1a</span>
-                    </span>
-                    <span className="text-outline">|</span>
-                    <span className="text-on-surface-variant">
-                      Standard: <span className="text-on-surface font-medium">EIP-712</span>
-                    </span>
+                  <div className="flex items-center gap-4 text-xs text-[#B9A99B]">
+                    <span>Blockchain: <strong className="text-[#E08A3E]">Stellar Testnet</strong></span>
+                    <span>•</span>
+                    <span>Method: <strong className="text-[#FFF8F0]">Zero-Trust Kernel</strong></span>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 relative">
-                  <div className="flex flex-col p-4 rounded-lg bg-surface-container/80 backdrop-blur-md border border-white/5 shadow-md group hover:bg-surface-container-high transition-colors">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="font-label-caps text-label-caps text-outline uppercase font-semibold">
-                        STAGE 01
-                      </span>
-                      <span className="material-symbols-outlined text-on-surface-variant text-[18px]">
-                        smart_toy
-                      </span>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="flex flex-col p-4 rounded-xl bg-[#160C08] border border-[#4A2B1D] shadow-sm">
+                    <div className="flex items-center justify-between mb-3 text-xs text-[#B9A99B]">
+                      <span className="font-bold text-[#E08A3E]">STEP 01</span>
+                      <span className="material-symbols-outlined text-[18px]">assignment</span>
                     </div>
-                    <h2 className="font-headline-sm text-headline-sm text-on-surface mb-1 font-bold">
-                      Worker Agent
-                    </h2>
-                    <p className="font-body-sm text-body-sm text-on-surface-variant mb-4">
-                      Emits structured intent, state deltas & claimed artifacts.
+                    <h3 className="font-bold text-[#FFF8F0] mb-1 text-sm">
+                      1. You Set the Task
+                    </h3>
+                    <p className="text-xs text-[#B9A99B] leading-relaxed">
+                      Define the job for the AI agent—like finding protocols, executing payments, or checking contracts.
                     </p>
-                    <div className="mt-auto px-2.5 py-1 rounded bg-surface-container-lowest font-code-sm text-code-sm text-secondary">
-                      agent_dispatch.v2
-                    </div>
                   </div>
 
-                  <div className="flex flex-col p-4 rounded-lg bg-surface-container/80 backdrop-blur-md border border-white/5 shadow-md group hover:bg-surface-container-high transition-colors relative">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="font-label-caps text-label-caps text-primary uppercase font-semibold">
-                        STAGE 02
-                      </span>
-                      <span className="material-symbols-outlined text-primary-container text-[18px]">
-                        hub
-                      </span>
+                  <div className="flex flex-col p-4 rounded-xl bg-[#160C08] border border-[#4A2B1D] shadow-sm">
+                    <div className="flex items-center justify-between mb-3 text-xs text-[#B9A99B]">
+                      <span className="font-bold text-[#E08A3E]">STEP 02</span>
+                      <span className="material-symbols-outlined text-[18px]">smart_toy</span>
                     </div>
-                    <h2 className="font-headline-sm text-headline-sm text-on-surface mb-1 font-bold">
-                      VeraOS Kernel
-                    </h2>
-                    <p className="font-body-sm text-body-sm text-on-surface-variant mb-4">
-                      Deconstructs task invariants into verifiable cryptographic checks.
+                    <h3 className="font-bold text-[#FFF8F0] mb-1 text-sm">
+                      2. Agent Submits Work
+                    </h3>
+                    <p className="text-xs text-[#B9A99B] leading-relaxed">
+                      The AI agent claims it completed the task and reports what it did along with any transaction hashes.
                     </p>
-                    <div className="mt-auto px-2.5 py-1 rounded bg-surface-container-lowest font-code-sm text-code-sm text-primary">
-                      invariant_tree_split
-                    </div>
                   </div>
 
-                  <div className="flex flex-col p-4 rounded-lg bg-surface-container/80 backdrop-blur-md border border-white/5 shadow-md group hover:bg-surface-container-high transition-colors">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="font-label-caps text-label-caps text-outline uppercase font-semibold">
-                        STAGE 03
-                      </span>
-                      <span className="material-symbols-outlined text-tertiary-fixed-dim text-[18px]">
-                        rule
-                      </span>
+                  <div className="flex flex-col p-4 rounded-xl bg-[#160C08] border border-[#4A2B1D] shadow-sm">
+                    <div className="flex items-center justify-between mb-3 text-xs text-[#B9A99B]">
+                      <span className="font-bold text-[#E08A3E]">STEP 03</span>
+                      <span className="material-symbols-outlined text-[18px]">search_check</span>
                     </div>
-                    <h2 className="font-headline-sm text-headline-sm text-on-surface mb-1 font-bold">
-                      Triangulation
-                    </h2>
-                    <p className="font-body-sm text-body-sm text-on-surface-variant mb-4">
-                      Independent parallel queries across Base RPC & Web TLS-Notary.
+                    <h3 className="font-bold text-[#FFF8F0] mb-1 text-sm">
+                      3. VeraOS Checks Proof
+                    </h3>
+                    <p className="text-xs text-[#B9A99B] leading-relaxed">
+                      VeraOS queries Stellar Horizon directly. We never trust the agent's word—we verify actual ledger records.
                     </p>
-                    <div className="mt-auto px-2.5 py-1 rounded bg-surface-container-lowest font-code-sm text-code-sm text-tertiary">
-                      3-oracle_quorum
-                    </div>
                   </div>
 
-                  <div className="flex flex-col p-4 rounded-lg bg-surface-container/80 backdrop-blur-md border border-white/5 shadow-md group hover:bg-surface-container-high transition-colors">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="font-label-caps text-label-caps text-error uppercase font-semibold">
-                        STAGE 04
-                      </span>
-                      <span className="material-symbols-outlined text-error text-[18px]">
-                        verified_user
-                      </span>
+                  <div className="flex flex-col p-4 rounded-xl bg-[#160C08] border border-[#4A2B1D] shadow-sm">
+                    <div className="flex items-center justify-between mb-3 text-xs text-[#B9A99B]">
+                      <span className="font-bold text-[#E08A3E]">STEP 04</span>
+                      <span className="material-symbols-outlined text-[18px]">task_alt</span>
                     </div>
-                    <h2 className="font-headline-sm text-headline-sm text-on-surface mb-1 font-bold">
-                      Cryptographic Verdict
-                    </h2>
-                    <p className="font-body-sm text-body-sm text-on-surface-variant mb-4">
-                      Deterministic signed verdict issued onchain: PASS / FAIL.
+                    <h3 className="font-bold text-[#FFF8F0] mb-1 text-sm">
+                      4. Pass or Actionable Fix
+                    </h3>
+                    <p className="text-xs text-[#B9A99B] leading-relaxed">
+                      You get a clear PASS or FAIL. If anything was missed, VeraOS gives the agent exact steps to correct it.
                     </p>
-                    <div className="mt-auto px-2.5 py-1 rounded bg-error-container/40 text-on-error-container font-code-sm text-code-sm font-semibold flex items-center justify-between">
-                      <span>VERDICT_REJECTED</span>
-                      <span className="material-symbols-outlined text-[14px]">
-                        close
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-6 pt-4 flex flex-col gap-2">
-                  <div className="h-1.5 w-full bg-surface-container-highest rounded-full overflow-hidden">
-                    <div className="h-full bg-gradient-to-r from-primary-container via-secondary to-error w-3/4 rounded-full" />
-                  </div>
-                  <div className="flex justify-between text-on-surface-variant font-code-sm text-code-sm">
-                    <span>Trace ID: trc_8841ae9</span>
-                    <span>Quorum Consensual Check: 3/3 Validated</span>
-                    <span className="text-error font-medium">Invariants Breached: 2</span>
                   </div>
                 </div>
               </div>
             </section>
           </div>
 
-          {/* 2. THE PROBLEM SECTION */}
-          <section className="max-w-7xl mx-auto px-gutter py-20 w-full relative">
+          {/* 2. THE PROBLEM (In Everyday Language) */}
+          <section className="max-w-7xl mx-auto px-gutter py-20 w-full relative" id="how-it-works">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
               <div className="max-w-2xl">
-                <span className="font-label-caps text-label-caps uppercase tracking-widest text-primary-container font-bold mb-3 block">
-                  SYSTEMIC FAILURE MODES
+                <span className="font-label-caps text-label-caps uppercase tracking-widest text-[#E08A3E] font-bold mb-3 block">
+                  WHY INDEPENDENT VERIFICATION MATTERS
                 </span>
-                <h2 className="font-headline-lg text-headline-lg text-on-surface font-bold">
-                  AI agents can say they're done.
+                <h2 className="font-headline-lg text-headline-lg text-[#FFF8F0] font-bold">
+                  AI agents can say they are finished.
                   <br />
-                  That doesn't mean they're right.
+                  That doesn't mean they actually are.
                 </h2>
               </div>
-              <p className="font-body-md text-body-md text-on-surface-variant max-w-md">
-                Autonomous agents frequently hallucinate successful completion, swallow unhandled execution errors, and invent external API confirmations. Without independent verification, agent execution in production is purely speculative.
+              <p className="font-body-md text-body-md text-[#B9A99B] max-w-md">
+                Autonomous AI agents often make math errors, send the wrong amounts, skip instructions, or invent confirmation links. Without independent verification, you risk paying for incomplete or wrong work.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <div className="p-6 rounded-xl bg-surface-container-low/80 backdrop-blur-xl border border-white/10 shadow-md hover:bg-surface-container transition-colors flex flex-col justify-between">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="p-6 rounded-xl bg-[#21110B]/90 border border-[#4A2B1D] shadow-md hover:border-[#C96A2B]/60 transition-colors flex flex-col justify-between">
                 <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="px-2.5 py-1 rounded bg-surface-container-highest font-label-caps text-label-caps text-primary uppercase">
-                      DEF-01: MISREPORTING
-                    </span>
-                    <span className="material-symbols-outlined text-primary-container text-[20px]">
-                      warning
-                    </span>
+                  <div className="w-10 h-10 rounded-lg bg-[#2C1710] flex items-center justify-center text-[#E08A3E] mb-4">
+                    <span className="material-symbols-outlined text-[20px]">payments</span>
                   </div>
-                  <h3 className="font-headline-sm text-headline-sm text-on-surface font-semibold mb-2">
-                    Incorrect Claims
+                  <h3 className="font-bold text-base text-[#FFF8F0] mb-2">
+                    Underpayments & Math Errors
                   </h3>
-                  <p className="font-body-sm text-body-sm text-on-surface-variant mb-4">
-                    Agent reports swap completed with 0.5% slippage; independent mempool reconstruction proves actual execution suffered 4.2% loss.
+                  <p className="text-sm text-[#B9A99B] mb-4 leading-relaxed">
+                    An agent claims it paid 5.00 USDC, but only transferred 0.50 USDC due to unit confusion. VeraOS checks the exact amount on Stellar and catches the 4.50 USDC deficit.
                   </p>
                 </div>
-                <div className="p-3 rounded bg-surface-container-lowest font-code-sm text-code-sm text-outline flex items-center justify-between">
-                  <span className="text-on-surface-variant">Claim: 0.50%</span>
-                  <span className="text-error font-medium">Delta: +3.70%</span>
+                <div className="p-2.5 rounded bg-[#160C08] text-xs flex justify-between">
+                  <span className="text-[#B9A99B]">Claimed: 5.0 USDC</span>
+                  <span className="text-red-400 font-bold">Actual: 0.5 USDC</span>
                 </div>
               </div>
 
-              <div className="p-6 rounded-xl bg-surface-container-low/80 backdrop-blur-xl border border-white/10 shadow-md hover:bg-surface-container transition-colors flex flex-col justify-between">
+              <div className="p-6 rounded-xl bg-[#21110B]/90 border border-[#4A2B1D] shadow-md hover:border-[#C96A2B]/60 transition-colors flex flex-col justify-between">
                 <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="px-2.5 py-1 rounded bg-surface-container-highest font-label-caps text-label-caps text-secondary uppercase">
-                      DEF-02: OMISSIONS
-                    </span>
-                    <span className="material-symbols-outlined text-secondary text-[20px]">
-                      playlist_remove
-                    </span>
+                  <div className="w-10 h-10 rounded-lg bg-[#2C1710] flex items-center justify-center text-[#E08A3E] mb-4">
+                    <span className="material-symbols-outlined text-[20px]">format_list_bulleted</span>
                   </div>
-                  <h3 className="font-headline-sm text-headline-sm text-on-surface font-semibold mb-2">
-                    Missing Requirements
+                  <h3 className="font-bold text-base text-[#FFF8F0] mb-2">
+                    Skipped Instructions
                   </h3>
-                  <p className="font-body-sm text-body-sm text-on-surface-variant mb-4">
-                    Sub-agent silently dropped static bytecode analysis step due to context window truncation, then declared full audit clearance.
+                  <p className="text-sm text-[#B9A99B] mb-4 leading-relaxed">
+                    You asked for 3 protocols, but the agent only returned 2 and claimed the job was complete. VeraOS counts results and rejects incomplete answers.
                   </p>
                 </div>
-                <div className="p-3 rounded bg-surface-container-lowest font-code-sm text-code-sm text-outline flex items-center justify-between">
-                  <span className="text-on-surface-variant">Required: 4 gates</span>
-                  <span className="text-error font-medium">Executed: 3 gates</span>
+                <div className="p-2.5 rounded bg-[#160C08] text-xs flex justify-between">
+                  <span className="text-[#B9A99B]">Required: 3 items</span>
+                  <span className="text-red-400 font-bold">Provided: 2 items</span>
                 </div>
               </div>
 
-              <div className="p-6 rounded-xl bg-surface-container-low/80 backdrop-blur-xl border border-white/10 shadow-md hover:bg-surface-container transition-colors flex flex-col justify-between">
+              <div className="p-6 rounded-xl bg-[#21110B]/90 border border-[#4A2B1D] shadow-md hover:border-[#C96A2B]/60 transition-colors flex flex-col justify-between">
                 <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="px-2.5 py-1 rounded bg-surface-container-highest font-label-caps text-label-caps text-error uppercase">
-                      DEF-03: ROUTING
-                    </span>
-                    <span className="material-symbols-outlined text-error text-[20px]">
-                      wrong_location
-                    </span>
+                  <div className="w-10 h-10 rounded-lg bg-[#2C1710] flex items-center justify-center text-[#E08A3E] mb-4">
+                    <span className="material-symbols-outlined text-[20px]">link_off</span>
                   </div>
-                  <h3 className="font-headline-sm text-headline-sm text-on-surface font-semibold mb-2">
-                    Wrong Transactions
+                  <h3 className="font-bold text-base text-[#FFF8F0] mb-2">
+                    Missing Transaction Proof
                   </h3>
-                  <p className="font-body-sm text-body-sm text-on-surface-variant mb-4">
-                    Funds transferred to an unverified implementation proxy on an unintended testnet fork because chain ID derivation was not asserted.
+                  <p className="text-sm text-[#B9A99B] mb-4 leading-relaxed">
+                    The agent writes “I sent the payment” but provides no transaction hash or ledger link. VeraOS flags it as Unverifiable until valid onchain proof is provided.
                   </p>
                 </div>
-                <div className="p-3 rounded bg-surface-container-lowest font-code-sm text-code-sm text-outline flex items-center justify-between">
-                  <span className="text-on-surface-variant">Expected: 8453 (Base)</span>
-                  <span className="text-error font-medium">Actual: 84532 (Sepolia)</span>
-                </div>
-              </div>
-
-              <div className="p-6 rounded-xl bg-surface-container-low/80 backdrop-blur-xl border border-white/10 shadow-md hover:bg-surface-container transition-colors flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="px-2.5 py-1 rounded bg-surface-container-highest font-label-caps text-label-caps text-tertiary uppercase">
-                      DEF-04: ATTESTATION
-                    </span>
-                    <span className="material-symbols-outlined text-tertiary text-[20px]">
-                      sentiment_dissatisfied
-                    </span>
-                  </div>
-                  <h3 className="font-headline-sm text-headline-sm text-on-surface font-semibold mb-2">
-                    Weak Evidence
-                  </h3>
-                  <p className="font-body-sm text-body-sm text-on-surface-variant mb-4">
-                    Agent provides conversational text asserting compliance instead of supplying verifiable cryptographic receipts or signature proofs.
-                  </p>
-                </div>
-                <div className="p-3 rounded bg-surface-container-lowest font-code-sm text-code-sm text-outline flex items-center justify-between">
-                  <span className="text-on-surface-variant">Proof Type: Text LLM</span>
-                  <span className="text-error font-medium">Unverifiable</span>
-                </div>
-              </div>
-
-              <div className="p-6 rounded-xl bg-surface-container-low/80 backdrop-blur-xl border border-white/10 shadow-md hover:bg-surface-container transition-colors flex flex-col justify-between md:col-span-2 lg:col-span-2">
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="px-2.5 py-1 rounded bg-surface-container-highest font-label-caps text-label-caps text-primary-container uppercase">
-                      DEF-05: CEILING VIOLATION
-                    </span>
-                    <span className="material-symbols-outlined text-primary-container text-[20px]">
-                      security_update_warning
-                    </span>
-                  </div>
-                  <h3 className="font-headline-sm text-headline-sm text-on-surface font-semibold mb-2">
-                    Out-of-Bounds Execution
-                  </h3>
-                  <p className="font-body-sm text-body-sm text-on-surface-variant mb-4">
-                    Autonomous execution loops exceeded approved max gas expenditure ceilings and mutated unauthorized contract storage slots outside its defined policy sandbox.
-                  </p>
-                </div>
-                <div className="p-3 rounded bg-surface-container-lowest font-code-sm text-code-sm text-outline flex flex-wrap items-center justify-between gap-2">
-                  <span className="text-on-surface-variant">Max Gas Authorized: 250,000</span>
-                  <span className="text-error font-medium">
-                    Observed: 1,420,891 (Limit Exceeded & Storage Slot 0x03 Mutated)
-                  </span>
+                <div className="p-2.5 rounded bg-[#160C08] text-xs flex justify-between">
+                  <span className="text-[#B9A99B]">Proof: Text only</span>
+                  <span className="text-amber-400 font-bold">Unverifiable</span>
                 </div>
               </div>
             </div>
           </section>
 
-          {/* 3. HOW IT WORKS */}
-          <section className="bg-surface-container-lowest py-24 w-full relative overflow-hidden" id="how-it-works">
-            <div className="pointer-events-none absolute -bottom-48 -left-48 w-96 h-96 bg-primary-container/10 rounded-full blur-[110px]" />
-            <div className="max-w-7xl mx-auto px-gutter relative z-10">
-              <div className="text-center max-w-3xl mx-auto mb-16">
-                <span className="font-label-caps text-label-caps uppercase tracking-widest text-secondary font-bold mb-3 block">
-                  EXECUTION ARCHITECTURE
-                </span>
-                <h2 className="font-headline-lg text-headline-lg text-on-surface font-bold mb-4">
-                  How VeraOS Verifies Agent Outcomes
-                </h2>
-                <p className="font-body-md text-body-md text-on-surface-variant">
-                  A 4-step deterministic protocol pipeline bridging natural language agent tasks with immutable state validation.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div className="p-6 rounded-xl bg-surface-container-low/80 backdrop-blur-xl border border-white/10 relative shadow-md">
-                  <div className="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center font-headline-sm text-headline-sm text-primary font-bold mb-5 shadow-[0_0_12px_rgba(255,87,8,0.2)]">
-                    01
-                  </div>
-                  <h3 className="font-headline-sm text-headline-sm text-on-surface font-bold mb-2">
-                    Task Ingestion
-                  </h3>
-                  <p className="font-body-sm text-body-sm text-on-surface-variant mb-4">
-                    Tasks are registered alongside formal declarative invariants, numerical boundaries, and contract permission boundaries.
-                  </p>
-                  <div className="font-code-sm text-code-sm text-outline bg-surface-container-lowest p-2.5 rounded">
-                    invariant: tvl &gt;= 10M<br />
-                    invariant: transfer == 5.0
-                  </div>
-                </div>
-
-                <div className="p-6 rounded-xl bg-surface-container-low/80 backdrop-blur-xl border border-white/10 relative shadow-md">
-                  <div className="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center font-headline-sm text-headline-sm text-primary font-bold mb-5 shadow-[0_0_12px_rgba(255,87,8,0.2)]">
-                    02
-                  </div>
-                  <h3 className="font-headline-sm text-headline-sm text-on-surface font-bold mb-2">
-                    Claim Parsing
-                  </h3>
-                  <p className="font-body-sm text-body-sm text-on-surface-variant mb-4">
-                    Extracts structured assertions from agent response traces, isolating claimed txHashes, protocol names, and amounts.
-                  </p>
-                  <div className="font-code-sm text-code-sm text-outline bg-surface-container-lowest p-2.5 rounded">
-                    parsed_claims: [3]<br />
-                    receipt_targets: [1]
-                  </div>
-                </div>
-
-                <div className="p-6 rounded-xl bg-surface-container-low/80 backdrop-blur-xl border border-white/10 relative shadow-md">
-                  <div className="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center font-headline-sm text-headline-sm text-secondary font-bold mb-5 shadow-[0_0_12px_rgba(238,152,0,0.2)]">
-                    03
-                  </div>
-                  <h3 className="font-headline-sm text-headline-sm text-on-surface font-bold mb-2">
-                    Evidence Grounding
-                  </h3>
-                  <p className="font-body-sm text-body-sm text-on-surface-variant mb-4">
-                    Directly queries Base RPC nodes, TLS-notarized web snapshots, and mempool receipts. No agent-provided data is trusted.
-                  </p>
-                  <div className="font-code-sm text-code-sm text-outline bg-surface-container-lowest p-2.5 rounded">
-                    rpc_query: Base_8453<br />
-                    tls_proof: valid
-                  </div>
-                </div>
-
-                <div className="p-6 rounded-xl bg-surface-container-low/80 backdrop-blur-xl border border-white/10 relative shadow-md">
-                  <div className="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center font-headline-sm text-headline-sm text-primary-container font-bold mb-5 shadow-[0_0_16px_rgba(255,87,8,0.35)]">
-                    04
-                  </div>
-                  <h3 className="font-headline-sm text-headline-sm text-on-surface font-bold mb-2">
-                    Attestation Verdict
-                  </h3>
-                  <p className="font-body-sm text-body-sm text-on-surface-variant mb-4">
-                    Issues deterministic signed cryptographic verdicts (PASS / FAIL) committed to the onchain EAS registry.
-                  </p>
-                  <div className="font-code-sm text-code-sm text-primary-container bg-surface-container-lowest p-2.5 rounded font-semibold">
-                    verdict: EVALUATED<br />
-                    status: REJECTED
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* 4. THREE EVIDENCE PILLARS */}
-          <section className="max-w-7xl mx-auto px-gutter py-24 w-full relative">
-            <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[350px] bg-gradient-to-r from-primary-container/10 via-secondary/15 to-tertiary-container/10 rounded-full blur-[120px]" />
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-14 relative z-10">
-              <div>
-                <span className="font-label-caps text-label-caps uppercase tracking-widest text-primary font-bold mb-3 block">
-                  EVIDENCE TRIANGULATION
-                </span>
-                <h2 className="font-headline-lg text-headline-lg text-on-surface font-bold">
-                  Don't trust the output. Check the evidence.
-                </h2>
-              </div>
-              <p className="font-body-md text-body-md text-on-surface-variant max-w-md">
-                Every agent execution assertion is validated simultaneously across three independent cryptographic vectors.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 relative z-10">
-              <div className="p-8 rounded-2xl bg-surface-container-low/80 backdrop-blur-xl border border-white/10 shadow-xl flex flex-col justify-between hover:border-primary-container/40 transition-all">
-                <div>
-                  <div className="flex items-center justify-between mb-6">
-                    <span className="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center text-primary font-bold font-code-md text-code-md">
-                      01
-                    </span>
-                    <span className="px-3 py-1 rounded bg-surface-container font-label-caps text-label-caps uppercase text-secondary font-semibold">
-                      ONCHAIN STATE
-                    </span>
-                  </div>
-                  <h3 className="font-headline-md text-headline-md text-on-surface font-bold mb-3">
-                    Base Mainnet Core
-                  </h3>
-                  <p className="font-body-md text-body-md text-on-surface-variant mb-6">
-                    Verifies raw transaction receipts, internal traces, emitted EVM event logs, gas usage meters, and contract storage changes directly via multi-client Base RPC nodes.
-                  </p>
-                </div>
-                <ul className="space-y-3 font-code-sm text-code-sm text-on-surface-variant pt-4 bg-surface-container-lowest/90 p-4 rounded-lg border border-white/5">
-                  <li className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-primary text-[16px]">
-                      check_circle
-                    </span>
-                    <span>Receipt Status & Block Index</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-primary text-[16px]">
-                      check_circle
-                    </span>
-                    <span>Accurate ERC20 Decimal Normalization</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-primary text-[16px]">
-                      check_circle
-                    </span>
-                    <span>Direct State Diff Inspection</span>
-                  </li>
-                </ul>
-              </div>
-
-              <div className="p-8 rounded-2xl bg-surface-container-low/80 backdrop-blur-xl border border-white/10 shadow-xl flex flex-col justify-between hover:border-secondary/40 transition-all">
-                <div>
-                  <div className="flex items-center justify-between mb-6">
-                    <span className="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center text-secondary font-bold font-code-md text-code-md">
-                      02
-                    </span>
-                    <span className="px-3 py-1 rounded bg-surface-container font-label-caps text-label-caps uppercase text-secondary font-semibold">
-                      TLS-NOTARIZATION
-                    </span>
-                  </div>
-                  <h3 className="font-headline-md text-headline-md text-on-surface font-bold mb-3">
-                    Independent Web Oracles
-                  </h3>
-                  <p className="font-body-md text-body-md text-on-surface-variant mb-6">
-                    Proves real-world data points like protocol TVL, external pricing feeds, or API endpoints using immutable TLS session proofs and cryptographic session hashes.
-                  </p>
-                </div>
-                <ul className="space-y-3 font-code-sm text-code-sm text-on-surface-variant pt-4 bg-surface-container-lowest/90 p-4 rounded-lg border border-white/5">
-                  <li className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-secondary text-[16px]">
-                      check_circle
-                    </span>
-                    <span>TLSNotary Session Zero-Knowledge</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-secondary text-[16px]">
-                      check_circle
-                    </span>
-                    <span>Timestamped JSON Path Match</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-secondary text-[16px]">
-                      check_circle
-                    </span>
-                    <span>Tamper-Proof REST Body Extraction</span>
-                  </li>
-                </ul>
-              </div>
-
-              <div className="p-8 rounded-2xl bg-surface-container-low/80 backdrop-blur-xl border border-white/10 shadow-xl flex flex-col justify-between hover:border-tertiary/40 transition-all">
-                <div>
-                  <div className="flex items-center justify-between mb-6">
-                    <span className="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center text-tertiary font-bold font-code-md text-code-md">
-                      03
-                    </span>
-                    <span className="px-3 py-1 rounded bg-surface-container font-label-caps text-label-caps uppercase text-tertiary font-semibold">
-                      TRACE AUDIT
-                    </span>
-                  </div>
-                  <h3 className="font-headline-md text-headline-md text-on-surface font-bold mb-3">
-                    Agent Execution Trace
-                  </h3>
-                  <p className="font-body-md text-body-md text-on-surface-variant mb-6">
-                    Deeply examines the agent's full tool invocation log, token expenditure, system prompt obedience, and context integrity to ensure no steps were omitted.
-                  </p>
-                </div>
-                <ul className="space-y-3 font-code-sm text-code-sm text-on-surface-variant pt-4 bg-surface-container-lowest/90 p-4 rounded-lg border border-white/5">
-                  <li className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-tertiary text-[16px]">
-                      check_circle
-                    </span>
-                    <span>Tool Invocation Parameter Check</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-tertiary text-[16px]">
-                      check_circle
-                    </span>
-                    <span>Invariant Constraint Bounds</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-tertiary text-[16px]">
-                      check_circle
-                    </span>
-                    <span>Structured JSON Schema Compliance</span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </section>
-
-          {/* 5. PRODUCT DEMO (Interactive Developer Console) */}
-          <section className="bg-surface-container-lowest py-24 w-full relative overflow-hidden" id="demo">
-            <div className="pointer-events-none absolute -top-40 right-[-15%] w-[800px] h-[600px] bg-gradient-to-l from-primary-container/15 via-secondary/10 to-transparent blur-[120px]" />
-            <div className="max-w-7xl mx-auto px-gutter relative z-10">
+          {/* 3. INTERACTIVE BENCHMARK CONSOLE */}
+          <section className="bg-[#120906] py-24 w-full relative" id="demo">
+            <div className="max-w-7xl mx-auto px-gutter">
               <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
                 <div>
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-surface-container border border-error/30 font-label-caps text-label-caps uppercase text-error mb-3">
-                    <span className="w-1.5 h-1.5 rounded-full bg-error animate-pulse" />
-                    LIVE AUDIT INCIDENT BENCHMARK
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#21110B] border border-red-900/40 text-xs uppercase text-red-400 font-bold mb-3">
+                    <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                    LIVE VERIFICATION BENCHMARK
                   </div>
-                  <h2 className="font-headline-lg text-headline-lg text-on-surface font-bold">
-                    The Verification Console
+                  <h2 className="font-headline-lg text-headline-lg text-[#FFF8F0] font-bold">
+                    See VeraOS Catch an Agent Mistake
                   </h2>
                 </div>
-                <p className="font-body-sm text-body-sm text-on-surface-variant max-w-md">
-                  A realistic production scenario: An autonomous DeFi operations agent reported successful task execution, but VeraOS kernel caught dual critical invariant breaches.
+                <p className="font-body-sm text-body-sm text-[#B9A99B] max-w-md">
+                  In this real test scenario, an agent claims it sent 5 USDC. VeraOS inspects the Stellar Horizon ledger and catches the 4.5 USDC deficit.
                 </p>
               </div>
 
-              {/* Main Developer Console Window */}
-              <div className="rounded-2xl bg-surface/90 backdrop-blur-2xl border border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.8)] overflow-hidden">
-                <div className="bg-surface-container-high/90 border-b border-white/5 px-6 py-3.5 flex flex-wrap items-center justify-between gap-4">
+              {/* Console Window */}
+              <div className="rounded-2xl bg-[#160C08] border border-[#4A2B1D] shadow-[0_20px_60px_rgba(0,0,0,0.8)] overflow-hidden">
+                <div className="bg-[#21110B] border-b border-[#4A2B1D] px-6 py-3.5 flex flex-wrap items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
                     <div className="flex items-center gap-1.5">
-                      <div className="w-3 h-3 rounded-full bg-error" />
-                      <div className="w-3 h-3 rounded-full bg-secondary" />
-                      <div className="w-3 h-3 rounded-full bg-surface-bright" />
+                      <div className="w-3 h-3 rounded-full bg-red-500" />
+                      <div className="w-3 h-3 rounded-full bg-amber-500" />
+                      <div className="w-3 h-3 rounded-full bg-emerald-500" />
                     </div>
-                    <span className="font-code-sm text-code-sm text-on-surface font-medium pl-2">
-                      vera_verifier_cli --stream --eval-id=984f1a20
+                    <span className="font-mono text-xs text-[#FFF8F0] pl-2">
+                      vera-verifier --network=stellar-testnet
                     </span>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className="px-2.5 py-1 rounded bg-surface-container text-on-surface-variant font-code-sm text-code-sm">
-                      Network: Base (8453)
+                  <div className="flex items-center gap-3 text-xs">
+                    <span className="px-2.5 py-1 rounded bg-[#160C08] text-[#B9A99B]">
+                      Network: Stellar Testnet
                     </span>
-                    <span className="px-2.5 py-1 rounded bg-error-container text-on-error-container font-label-caps text-label-caps uppercase font-bold">
-                      REJECTED
+                    <span className="px-2.5 py-1 rounded bg-red-950 text-red-400 font-bold">
+                      FAILED · CORRECTION REQUIRED
                     </span>
                   </div>
                 </div>
 
-                <div className="p-6 bg-surface-container-low/80 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/5">
+                <div className="p-6 bg-[#1B0E09] flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#4A2B1D]">
                   <div className="flex items-center gap-4">
-                    <span className="material-symbols-outlined text-primary-container text-[24px]">
+                    <span className="material-symbols-outlined text-[#E08A3E] text-[24px]">
                       assignment
                     </span>
                     <div>
-                      <div className="font-label-caps text-label-caps uppercase text-outline font-semibold">
-                        TASK MANDATE
+                      <div className="text-[10px] uppercase text-[#B9A99B] font-bold">
+                        TASK GIVEN TO AGENT
                       </div>
-                      <p className="font-code-md text-code-md text-on-surface font-semibold">
-                        “Find 3 Base lending protocols with TVL above $10M and pay 5 USDC.”
+                      <p className="font-mono text-sm text-[#FFF8F0] font-semibold">
+                        “Find 3 Stellar lending protocols with TVL above $10M and pay yourself 5 USDC.”
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-code-sm text-code-sm px-3 py-1.5 rounded bg-surface-container-high text-on-surface-variant">
-                      Invariants: 2
-                    </span>
-                    <span className="font-code-sm text-code-sm px-3 py-1.5 rounded bg-surface-container-high text-on-surface-variant">
-                      Quorum: Strict
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="px-3 py-1.5 rounded bg-[#21110B] text-[#B9A99B] border border-[#4A2B1D]">
+                      Attempt 1 of 3
                     </span>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-white/5">
-                  {/* Left Column */}
-                  <div className="p-6 bg-surface/80">
+                <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-[#4A2B1D]">
+                  {/* Left Column: What the Agent Said */}
+                  <div className="p-6 bg-[#160C08]">
                     <div className="flex items-center justify-between mb-4">
-                      <span className="font-label-caps text-label-caps uppercase text-on-surface-variant font-bold flex items-center gap-2">
-                        <span className="material-symbols-outlined text-[16px]">
-                          smart_toy
-                        </span>
-                        WORKER AGENT CLAIM (SUBMISSION)
+                      <span className="text-xs uppercase text-[#B9A99B] font-bold flex items-center gap-2">
+                        <span className="material-symbols-outlined text-[16px]">smart_toy</span>
+                        WHAT THE WORKER AGENT CLAIMED
                       </span>
-                      <span className="font-code-sm text-code-sm text-primary">
-                        Status: Self-Reported Success
+                      <span className="text-xs text-amber-400 font-medium">
+                        Self-Reported
                       </span>
                     </div>
-                    <div className="bg-surface-container-lowest/90 border border-white/5 p-4 rounded-lg font-code-sm text-code-sm text-on-surface space-y-3">
-                      <p className="text-on-surface-variant">
-                        “Execution finished with complete fidelity. Protocols identified:”
+                    <div className="bg-[#120906] border border-[#4A2B1D] p-4 rounded-xl text-xs space-y-2.5 font-mono">
+                      <p className="text-[#B9A99B]">
+                        “I completed the task and sent the payment:”
                       </p>
-                      <ul className="space-y-1 pl-4 list-disc text-on-surface">
-                        <li>
-                          <span className="text-on-surface font-semibold">Seamless Protocol:</span> Reported TVL <span className="text-secondary">$8.2M</span>
-                        </li>
-                        <li>
-                          <span className="text-on-surface font-semibold">Moonwell:</span> Reported TVL <span className="text-secondary">$45.0M</span>
-                        </li>
-                        <li>
-                          <span className="text-on-surface font-semibold">Overnight:</span> Reported TVL <span className="text-secondary">$12.0M</span>
-                        </li>
+                      <ul className="space-y-1 pl-4 list-disc text-[#FFF8F0]">
+                        <li>Blend Protocol — $14.2M TVL</li>
+                        <li>YieldBlox — $11.0M TVL</li>
+                        <li>Aqua Network — $18.5M TVL</li>
                       </ul>
-                      <div className="pt-3">
-                        <div className="text-on-surface-variant">Dispatched Payment:</div>
-                        <div className="text-secondary font-mono">
-                          Sent 5.0 USDC -&gt; recipient 0x3f982...48a
+                      <div className="pt-2 border-t border-[#4A2B1D]">
+                        <div className="text-[#B9A99B]">Payment Claim:</div>
+                        <div className="text-[#FFF8F0] font-bold">
+                          Sent 5.0 USDC -&gt; recipient GBBD47...FLA5
                         </div>
-                        <div className="text-outline text-[11px]">
-                          TxHash: 0x8a7b3c21...41cd
+                        <div className="text-[#B9A99B] text-[11px] truncate">
+                          TxHash: 0x8a7b3c21a4de99f2b1892f3900a41cd
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* Right Column */}
-                  <div className="p-6 bg-surface-container-low/70">
+                  {/* Right Column: What VeraOS Found on Stellar */}
+                  <div className="p-6 bg-[#1B0E09]">
                     <div className="flex items-center justify-between mb-4">
-                      <span className="font-label-caps text-label-caps uppercase text-primary-container font-bold flex items-center gap-2">
-                        <span className="material-symbols-outlined text-[16px]">
-                          verified
-                        </span>
-                        VERAOS INDEPENDENT TRIANGULATION
+                      <span className="text-xs uppercase text-[#E08A3E] font-bold flex items-center gap-2">
+                        <span className="material-symbols-outlined text-[16px]">verified</span>
+                        INDEPENDENT STELLAR LEDGER CHECK
                       </span>
-                      <span className="font-code-sm text-code-sm text-error font-semibold">
-                        2 VIOLATIONS FLAGGED
+                      <span className="text-xs text-red-400 font-bold">
+                        DEFICIT DETECTED
                       </span>
                     </div>
-                    <div className="space-y-4">
-                      <div className="p-4 rounded-lg bg-surface-container/90 border border-white/5 shadow-sm">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <span className="material-symbols-outlined text-error text-[18px]">
-                              cancel
-                            </span>
-                            <span className="font-code-sm text-code-sm font-semibold text-on-surface">
-                              Invariant 1: [TVL &gt; $10M for all 3]
-                            </span>
-                          </div>
-                          <span className="px-2 py-0.5 rounded bg-error-container text-on-error-container font-label-caps text-label-caps uppercase font-bold">
-                            FAILED
-                          </span>
+                    <div className="space-y-3 text-xs">
+                      <div className="p-3.5 rounded-xl bg-[#21110B] border border-[#4A2B1D]">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="font-semibold text-[#FFF8F0]">Rule 1: 3 Protocols Provided</span>
+                          <span className="text-emerald-400 font-bold text-[10px]">PASSED</span>
                         </div>
-                        <p className="font-body-sm text-body-sm text-on-surface-variant mb-2">
-                          DefiLlama Base mainnet verified TVL for Seamless Protocol is <span className="text-error font-medium font-mono">$8,241,900</span>.
+                        <p className="text-[#B9A99B] text-[11px]">
+                          Worker provided exactly 3 protocol names as requested.
                         </p>
-                        <div className="font-code-sm text-code-sm text-error bg-surface-container-lowest p-2 rounded">
-                          Delta: -$1,758,100 below required $10,000,000 threshold.
-                        </div>
                       </div>
 
-                      <div className="p-4 rounded-lg bg-surface-container/90 border border-white/5 shadow-sm">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <span className="material-symbols-outlined text-error text-[18px]">
-                              cancel
-                            </span>
-                            <span className="font-code-sm text-code-sm font-semibold text-on-surface">
-                              Invariant 2: [Payment exact 5.00 USDC]
-                            </span>
-                          </div>
-                          <span className="px-2 py-0.5 rounded bg-error-container text-on-error-container font-label-caps text-label-caps uppercase font-bold">
-                            FAILED
-                          </span>
+                      <div className="p-3.5 rounded-xl bg-[#21110B] border border-red-900/50">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="font-semibold text-[#FFF8F0]">Rule 2: Payment Equals 5.0 USDC</span>
+                          <span className="text-red-400 font-bold text-[10px]">FAILED</span>
                         </div>
-                        <p className="font-body-sm text-body-sm text-on-surface-variant mb-2">
-                          Base TxReceipt <span className="font-mono text-on-surface">0x8a7b...41cd</span> transferred <span className="text-error font-medium font-mono">500,000 base units (0.5 USDC)</span> due to decimal math error.
+                        <p className="text-[#B9A99B] text-[11px] mb-2">
+                          Stellar Horizon transaction receipt shows only <strong className="text-red-400">0.50 USDC</strong> was transferred to GBBD47...FLA5.
                         </p>
-                        <div className="font-code-sm text-code-sm text-error bg-surface-container-lowest p-2 rounded">
-                          Underfunded by 4.5 USDC. Agent hallucinated transfer perfection.
+                        <div className="p-2 rounded bg-[#160C08] text-red-400 font-mono text-[11px]">
+                          Deficit: 4.50 USDC missing. Directive sent to worker to correct transaction.
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="p-5 bg-surface-container-highest/90 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="p-5 bg-[#21110B] border-t border-[#4A2B1D] flex flex-col sm:flex-row items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
-                    <span className="material-symbols-outlined text-error text-[24px]">
-                      gpp_bad
+                    <span className="material-symbols-outlined text-amber-400 text-[24px]">
+                      sync_problem
                     </span>
                     <div>
-                      <div className="font-headline-sm text-headline-sm text-on-surface font-bold">
-                        TASK NOT VERIFIED — STATUS: VERDICT_REJECTED
+                      <div className="font-bold text-sm text-[#FFF8F0]">
+                        Verdict: FAILED (Attempt 1) → Correction Loop Active
                       </div>
-                      <div className="font-code-sm text-code-sm text-on-surface-variant">
-                        Deterministic attestation committed to Base registry at block #21,849,201
+                      <div className="text-xs text-[#B9A99B]">
+                        Worker can resubmit a supplemental 4.50 USDC transaction to achieve VERIFIED status.
                       </div>
                     </div>
                   </div>
                   <Link
                     to="/verify/v_test_89bf2e"
-                    className="px-4 py-2 rounded bg-surface-container text-on-surface font-headline-sm text-headline-sm hover:bg-surface-bright transition-colors"
+                    className="px-4 py-2 rounded-lg bg-[#2C1710] text-[#FFF8F0] text-xs font-semibold hover:bg-[#3A2015] transition-colors border border-[#4A2B1D]"
                   >
-                    Inspect Full Verification #V-1048
+                    View Full Verification Details
                   </Link>
                 </div>
               </div>
             </div>
           </section>
 
-          {/* 6. DEVELOPER SECTION (API & SDK) */}
-          <section className="bg-surface-container-lowest py-24 w-full" id="developers">
+          {/* 4. DEVELOPER PRIMITIVES (Simple API) */}
+          <section className="py-24 w-full bg-[#160C08]" id="developers">
             <div className="max-w-7xl mx-auto px-gutter">
               <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
                 <div>
-                  <span className="font-label-caps text-label-caps uppercase tracking-widest text-primary font-bold mb-3 block">
-                    DEVELOPER PRIMITIVES
+                  <span className="font-label-caps text-label-caps uppercase tracking-widest text-[#E08A3E] font-bold mb-3 block">
+                    DEVELOPER API & SDK
                   </span>
-                  <h2 className="font-headline-lg text-headline-lg text-on-surface font-bold">
-                    Built for agents, not just humans.
+                  <h2 className="font-headline-lg text-headline-lg text-[#FFF8F0] font-bold">
+                    Add verification in 3 lines of code.
                   </h2>
                 </div>
-                <p className="font-body-md text-body-md text-on-surface-variant max-w-md">
-                  Simple REST, WebSocket, and TypeScript SDK integrations. Insert a single verification assertion call into any LangChain, AutoGPT, or CrewAI workflow.
+                <p className="font-body-md text-body-md text-[#B9A99B] max-w-md">
+                  Works with any AI framework—LangChain, CrewAI, AutoGPT, or raw Python and Node.js.
                 </p>
               </div>
 
-              <div className="rounded-2xl bg-surface/90 backdrop-blur-2xl border border-white/10 shadow-2xl overflow-hidden">
-                <div className="bg-surface-container-high/90 border-b border-white/5 px-6 py-3 flex items-center justify-between">
+              <div className="rounded-2xl bg-[#21110B] border border-[#4A2B1D] shadow-2xl overflow-hidden">
+                <div className="bg-[#2C1710] border-b border-[#4A2B1D] px-6 py-3 flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <button
                       onClick={() => setActiveTab("curl")}
-                      className={`font-label-caps text-label-caps uppercase font-bold px-3 py-1.5 rounded ${
+                      className={`text-xs uppercase font-bold px-3 py-1.5 rounded transition-colors ${
                         activeTab === "curl"
-                          ? "text-primary bg-surface-container"
-                          : "text-on-surface-variant hover:text-on-surface"
+                          ? "text-[#FFF8F0] bg-[#160C08]"
+                          : "text-[#B9A99B] hover:text-[#FFF8F0]"
                       }`}
                     >
                       cURL (POST /v1/verify)
                     </button>
                     <button
                       onClick={() => setActiveTab("ts")}
-                      className={`font-label-caps text-label-caps uppercase font-bold px-3 py-1.5 rounded ${
+                      className={`text-xs uppercase font-bold px-3 py-1.5 rounded transition-colors ${
                         activeTab === "ts"
-                          ? "text-primary bg-surface-container"
-                          : "text-on-surface-variant hover:text-on-surface"
+                          ? "text-[#FFF8F0] bg-[#160C08]"
+                          : "text-[#B9A99B] hover:text-[#FFF8F0]"
                       }`}
                     >
-                      TypeScript SDK
+                      TypeScript / Node.js
                     </button>
                   </div>
                   <button
                     onClick={handleCopyCode}
-                    className="flex items-center gap-1.5 text-on-surface-variant hover:text-on-surface font-code-sm text-code-sm"
+                    className="flex items-center gap-1.5 text-[#B9A99B] hover:text-[#FFF8F0] text-xs transition-colors cursor-pointer"
                   >
                     <span className="material-symbols-outlined text-[16px]">
                       {copied ? "check" : "content_copy"}
@@ -1177,39 +784,31 @@ export const LandingPage: React.FC = () => {
                 </div>
 
                 {activeTab === "curl" ? (
-                  <div className="p-6 overflow-x-auto bg-surface font-code-sm text-code-sm text-on-surface-variant leading-relaxed">
-                    <div className="text-outline mb-2"># Request verification for an autonomous agent execution</div>
-                    <span className="text-primary-container">curl</span> -X POST https://api.veraos.network/v1/verify \<br />
-                    &nbsp;&nbsp;-H <span className="text-secondary">"Authorization: Bearer vera_live_9f828a1c"</span> \<br />
-                    &nbsp;&nbsp;-H <span className="text-secondary">"Content-Type: application/json"</span> \<br />
-                    &nbsp;&nbsp;-d <span className="text-on-surface">{`'{
-  "task_id": "task_lend_usdc_004",
-  "network": "base-mainnet",
-  "invariants": [
-    { "metric": "tvl_threshold", "operator": ">=", "value": 10000000 },
-    { "metric": "exact_transfer", "asset": "USDC", "amount": 5.0 }
-  ],
-  "agent_submission": {
-    "tx_hash": "0x8a7b3c2141cde049fa8102391039bc0912",
-    "protocols": ["Seamless", "Moonwell", "Overnight"]
+                  <div className="p-6 overflow-x-auto bg-[#160C08] font-mono text-xs text-[#B9A99B] leading-relaxed">
+                    <div className="text-[#63361F] mb-2 font-bold"># Send a task and agent output to VeraOS for verification</div>
+                    <span className="text-[#E08A3E]">curl</span> -X POST http://localhost:5173/v1/verify \<br />
+                    &nbsp;&nbsp;-H <span className="text-[#C96A2B]">"Content-Type: application/json"</span> \<br />
+                    &nbsp;&nbsp;-d <span className="text-[#FFF8F0]">{`'{
+  "task": "Find 3 Stellar lending protocols with TVL above $10M and pay yourself 5 USDC.",
+  "worker": {
+    "id": "agent-alpha-09",
+    "output": "1. Blend — $14M TVL\\n2. YieldBlox — $11M TVL\\n3. Aqua — $18M TVL\\nSent 5.0 USDC TxHash: 0x5f9e2b1892f3900a41cd8a7b3c21a4de99f2b1892f3900a41cd8a7b3c21a4de"
   }
 }'`}</span>
                   </div>
                 ) : (
-                  <div className="p-6 overflow-x-auto bg-surface font-code-sm text-code-sm text-on-surface-variant leading-relaxed">
-                    <span className="text-primary-container">import</span> &#123; VeraOS &#125; <span className="text-primary-container">from</span> <span className="text-secondary">'@veraos/sdk'</span>;<br /><br />
-                    <span className="text-primary-container">const</span> vera = <span className="text-primary-container">new</span> VeraOS(&#123; apiKey: process.env.VERA_API_KEY &#125;);<br /><br />
-                    <span className="text-primary-container">const</span> verification = <span className="text-primary-container">await</span> vera.verify(&#123;<br />
-                    &nbsp;&nbsp;task: <span className="text-secondary">'task_lend_usdc_004'</span>,<br />
-                    &nbsp;&nbsp;chainId: 8453, <span className="text-outline">// Base Mainnet</span><br />
-                    &nbsp;&nbsp;invariants: [<br />
-                    &nbsp;&nbsp;&nbsp;&nbsp;&#123; rule: <span className="text-secondary">'tvl_threshold'</span>, min: 10_000_000 &#125;,<br />
-                    &nbsp;&nbsp;&nbsp;&nbsp;&#123; rule: <span className="text-secondary">'exact_payment'</span>, amount: 5.0, token: <span className="text-secondary">'USDC'</span> &#125;<br />
-                    &nbsp;&nbsp;],<br />
-                    &nbsp;&nbsp;executionTrace: agentResult.trace<br />
+                  <div className="p-6 overflow-x-auto bg-[#160C08] font-mono text-xs text-[#B9A99B] leading-relaxed">
+                    <span className="text-[#E08A3E]">import</span> &#123; VeraOS &#125; <span className="text-[#E08A3E]">from</span> <span className="text-[#C96A2B]">'@veraos/sdk'</span>;<br /><br />
+                    <span className="text-[#E08A3E]">const</span> vera = <span className="text-[#E08A3E]">new</span> VeraOS();<br /><br />
+                    <span className="text-[#E08A3E]">const</span> verification = <span className="text-[#E08A3E]">await</span> vera.verify(&#123;<br />
+                    &nbsp;&nbsp;task: <span className="text-[#C96A2B]">'Find 3 Stellar lending protocols with TVL above $10M and pay yourself 5 USDC.'</span>,<br />
+                    &nbsp;&nbsp;worker: &#123;<br />
+                    &nbsp;&nbsp;&nbsp;&nbsp;id: <span className="text-[#C96A2B]">'agent-alpha-09'</span>,<br />
+                    &nbsp;&nbsp;&nbsp;&nbsp;output: agentResult.text<br />
+                    &nbsp;&nbsp;&#125;<br />
                     &#125;);<br /><br />
-                    <span className="text-primary-container">if</span> (!verification.valid) &#123;<br />
-                    &nbsp;&nbsp;<span className="text-primary-container">await</span> agent.remediate(verification.remediationDirectives);<br />
+                    <span className="text-[#E08A3E]">if</span> (verification.verdict.status !== <span className="text-[#C96A2B]">'VERIFIED'</span>) &#123;<br />
+                    &nbsp;&nbsp;console.log(<span className="text-[#C96A2B]">'Fix required:'</span>, verification.remediation?.directives);<br />
                     &#125;
                   </div>
                 )}
@@ -1217,134 +816,46 @@ export const LandingPage: React.FC = () => {
             </div>
           </section>
 
-          {/* 7. BASE ONCHAIN PROOF */}
-          <section className="max-w-7xl mx-auto px-gutter py-24 w-full">
-            <div className="p-8 md:p-12 rounded-2xl bg-surface-container-low/80 backdrop-blur-xl border border-white/10 relative overflow-hidden shadow-2xl">
-              <div className="pointer-events-none absolute -right-20 -bottom-20 w-96 h-96 bg-primary-container/15 rounded-full blur-[90px]" />
-              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 relative">
-                <div className="max-w-xl">
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-surface-container-high border border-white/5 font-label-caps text-label-caps uppercase text-secondary font-bold mb-4">
-                    <span className="material-symbols-outlined text-[16px] text-primary">
-                      token
-                    </span>
-                    BASE MAINNET ATTESTATION REGISTRY
-                  </div>
-                  <h2 className="font-headline-lg text-headline-lg text-on-surface font-bold mb-4">
-                    Proof that lives beyond the agent.
-                  </h2>
-                  <p className="font-body-md text-body-md text-on-surface-variant mb-6">
-                    Every verification verdict generates an immutable attestation via the Ethereum Attestation Service (EAS) on Base. Smart contracts and downstream agents can query attestation validity directly via onchain interfaces.
-                  </p>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                    <div className="p-3.5 rounded-lg bg-surface-container-lowest/90 border border-white/5">
-                      <div className="font-label-caps text-label-caps text-outline uppercase">
-                        EAS SCHEMA ID
-                      </div>
-                      <div className="font-code-sm text-code-sm text-on-surface font-semibold truncate">
-                        0x9a4f22...10cc
-                      </div>
-                    </div>
-                    <div className="p-3.5 rounded-lg bg-surface-container-lowest/90 border border-white/5">
-                      <div className="font-label-caps text-label-caps text-outline uppercase">
-                        FINALITY
-                      </div>
-                      <div className="font-code-sm text-code-sm text-primary font-semibold">
-                        Instant (L2 Final)
-                      </div>
-                    </div>
-                    <div className="p-3.5 rounded-lg bg-surface-container-lowest/90 border border-white/5">
-                      <div className="font-label-caps text-label-caps text-outline uppercase">
-                        ATTESTATION COST
-                      </div>
-                      <div className="font-code-sm text-code-sm text-secondary font-semibold">
-                        &lt; $0.0008 / txn
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="w-full lg:w-96 p-6 rounded-2xl bg-surface-container-high/90 backdrop-blur-xl border border-white/10 shadow-xl flex flex-col gap-4">
-                  <div className="flex items-center justify-between">
-                    <span className="font-label-caps text-label-caps uppercase text-on-surface-variant font-bold">
-                      ATTESTATION RECEIPT
-                    </span>
-                    <span className="flex items-center gap-1 font-code-sm text-code-sm text-[#4ade80]">
-                      <span className="w-2 h-2 rounded-full bg-[#4ade80] animate-ping" />
-                      Confirmed
-                    </span>
-                  </div>
-                  <div className="p-3 rounded-lg bg-surface-container-lowest/90 border border-white/5 font-code-sm text-code-sm space-y-2">
-                    <div className="text-on-surface-variant">Attester:</div>
-                    <div className="text-on-surface truncate font-mono text-[12px]">
-                      0xVeraKernel845391a20b0849208a001
-                    </div>
-                    <div className="text-on-surface-variant pt-1">UID:</div>
-                    <div className="text-secondary truncate font-mono text-[12px]">
-                      0x4c2810a9918230fec00281b378129031
-                    </div>
-                  </div>
-                  <Link
-                    to="/verify/v_test_89bf2e"
-                    className="w-full py-2.5 rounded bg-surface-container text-on-surface font-headline-sm text-headline-sm text-center hover:bg-surface-bright transition-colors flex items-center justify-center gap-2 border border-white/5"
-                  >
-                    <span>View in VeraOS Console</span>
-                    <span className="material-symbols-outlined text-[16px]">
-                      open_in_new
-                    </span>
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* 8. FINAL CTA */}
-          <section className="max-w-7xl mx-auto px-gutter pt-12 pb-24 w-full">
-            <div className="p-12 md:p-16 rounded-2xl bg-surface-container-low/80 backdrop-blur-xl border border-white/10 text-center flex flex-col items-center relative overflow-hidden shadow-2xl">
-              <div className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-30">
-                <div className="w-[600px] h-[350px] bg-gradient-to-r from-primary-container via-secondary to-tertiary-container rounded-full blur-[100px]" />
+          {/* 5. FINAL CALL TO ACTION */}
+          <section className="max-w-7xl mx-auto px-gutter pt-8 pb-24 w-full">
+            <div className="p-12 md:p-16 rounded-2xl bg-gradient-to-b from-[#21110B] to-[#160C08] border border-[#4A2B1D] text-center flex flex-col items-center relative overflow-hidden shadow-2xl">
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-20">
+                <div className="w-[600px] h-[350px] bg-gradient-to-r from-[#C96A2B] via-[#E08A3E] to-[#63361F] rounded-full blur-[110px]" />
               </div>
               <div className="relative z-10 max-w-3xl mx-auto">
-                <span className="font-label-caps text-label-caps uppercase tracking-widest text-primary-container font-bold mb-4 block">
-                  ZERO-HALLUCINATION RUNTIME
+                <span className="font-label-caps text-label-caps uppercase tracking-widest text-[#E08A3E] font-bold mb-4 block">
+                  SAFE AUTONOMOUS AGENTS
                 </span>
-                <h2 className="font-display-hero text-display-hero md:text-[52px] md:leading-[60px] text-on-surface font-bold mb-6 drop-shadow-sm">
-                  Trust the work. Not the claim.
+                <h2 className="font-display-hero text-display-hero md:text-[50px] md:leading-[58px] text-[#FFF8F0] font-bold mb-6">
+                  Never pay for unverified work.
                 </h2>
-                <p className="font-body-lg text-body-lg text-on-surface-variant mb-10 max-w-xl mx-auto">
-                  Integrate the VeraOS verification kernel into your agent swarms in under 5 minutes. Protect your protocols, smart contracts, and users from silent failures.
+                <p className="font-body-lg text-body-lg text-[#B9A99B] mb-10 max-w-xl mx-auto leading-relaxed">
+                  Start verifying AI agents today with Stellar-native truth. Check claims, detect errors, and guarantee real outcomes.
                 </p>
-                <div className="flex flex-wrap items-center justify-center gap-4 mb-10">
+                <div className="flex flex-wrap items-center justify-center gap-4 mb-8">
                   <Link
                     to="/verify/new"
-                    className="px-8 py-3.5 rounded-lg bg-primary-container text-on-primary font-headline-sm text-headline-sm font-semibold shadow-[0_0_24px_rgba(255,87,8,0.4)] hover:bg-secondary-container transition-all"
+                    className="px-8 py-3.5 rounded-lg bg-[#C96A2B] text-white font-headline-sm text-headline-sm font-semibold shadow-[0_0_24px_rgba(201,106,43,0.4)] hover:bg-[#E08A3E] transition-all"
                   >
                     Run a Verification
                   </Link>
                   <button
                     type="button"
                     onClick={() => openAuthModal("signup")}
-                    className="px-8 py-3.5 rounded-lg bg-surface-container-high/90 backdrop-blur-md border border-[#ffb95f]/40 text-[#ffb95f] font-headline-sm text-headline-sm hover:bg-[#ffb95f]/10 transition-colors cursor-pointer shadow-sm"
+                    className="px-8 py-3.5 rounded-lg bg-[#21110B] border border-[#4A2B1D] text-[#E08A3E] font-headline-sm text-headline-sm hover:bg-[#2C1710] transition-colors cursor-pointer shadow-sm"
                   >
                     Sign Up Free
                   </button>
                   <Link
                     to="/dashboard"
-                    className="px-8 py-3.5 rounded-lg bg-surface-container-high/90 backdrop-blur-md border border-white/10 text-on-surface font-headline-sm text-headline-sm hover:bg-surface-variant transition-colors"
+                    className="px-8 py-3.5 rounded-lg bg-[#21110B] border border-[#4A2B1D] text-[#FFF8F0] font-headline-sm text-headline-sm hover:bg-[#2C1710] transition-colors"
                   >
-                    Explore Dashboard
+                    Open Dashboard
                   </Link>
                 </div>
-                <div className="flex flex-wrap items-center justify-center gap-6 font-code-sm text-code-sm text-on-surface-variant">
-                  <span className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-primary text-[18px]">
-                      verified
-                    </span>
-                    <span>Verifying 450,000+ daily agent actions</span>
-                  </span>
-                  <span className="text-outline">•</span>
-                  <span>Base & Ethereum Native</span>
-                  <span className="text-outline">•</span>
-                  <span>Open Standards (EAS · EIP-712)</span>
+                <div className="text-xs text-[#B9A99B] flex items-center justify-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                  <span>Stellar Testnet Horizon & Soroban RPC Online</span>
                 </div>
               </div>
             </div>
@@ -1353,54 +864,22 @@ export const LandingPage: React.FC = () => {
       </main>
 
       {/* Footer */}
-      <footer className="w-full bg-surface-container-lowest py-space-xl shadow-[0_-1px_12px_rgba(0,0,0,0.5)] border-t border-white/5">
-        <div className="max-w-7xl mx-auto px-gutter flex flex-col gap-space-lg">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-space-md pb-space-lg bg-surface-container-low/40 rounded-lg p-space-md border border-white/5">
-            <div className="flex flex-wrap items-center gap-space-md">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-surface-container-high border border-white/5">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-primary-container" />
-                </span>
-                <span className="font-code-sm text-code-sm text-on-surface">
-                  Base Mainnet Operational
-                </span>
-              </div>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded bg-surface-container">
-                <span className="font-label-caps text-label-caps text-on-surface-variant uppercase">
-                  API Latency
-                </span>
-                <span className="font-code-sm text-code-sm text-secondary font-medium">
-                  14ms
-                </span>
-              </div>
+      <footer className="w-full bg-[#120906] py-10 shadow-[0_-1px_12px_rgba(0,0,0,0.5)] border-t border-[#4A2B1D]/50">
+        <div className="max-w-7xl mx-auto px-gutter flex flex-col gap-6">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#B9A99B]">
+            <div className="flex items-center gap-3">
+              <span className="font-bold text-[#FFF8F0]">VeraOS</span>
+              <span>•</span>
+              <span>Stellar-Native AI Verification Layer</span>
             </div>
-            <div className="flex items-center gap-space-sm font-code-sm text-code-sm text-on-surface-variant">
-              <span className="font-label-caps text-label-caps uppercase text-outline">
-                Epoch
-              </span>
-              <span className="text-on-surface font-code-sm text-code-sm">
-                #894,204
-              </span>
-              <span className="text-outline">|</span>
-              <span className="font-label-caps text-label-caps uppercase text-outline">
-                Consensus
-              </span>
-              <span className="text-on-surface font-code-sm text-code-sm">
-                Zero-Knowledge
-              </span>
+            <div className="flex items-center gap-4">
+              <span>Horizon Testnet</span>
+              <span>•</span>
+              <span>Stellar Expert Explorer</span>
             </div>
           </div>
-
-          <div className="pt-space-md flex flex-col sm:flex-row items-center justify-between gap-space-sm text-on-surface-variant font-code-sm text-code-sm border-t border-white/5">
-            <p>© 2026 VeraOS Foundation. All runtime verification rights reserved.</p>
-            <div className="flex items-center gap-space-md font-body-sm text-body-sm">
-              <span className="font-code-sm text-code-sm text-on-surface-variant">
-                v2.14.0-rc4
-              </span>
-              <span className="w-1 h-1 rounded-full bg-outline" />
-              <span className="text-on-surface-variant">Obsidian Core</span>
-            </div>
+          <div className="text-center text-[11px] text-[#63361F] pt-4 border-t border-[#4A2B1D]/20">
+            © 2026 VeraOS. Verify before you trust.
           </div>
         </div>
       </footer>

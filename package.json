@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "test": "node --test server/tests/engine.test.ts server/tests/stellar.test.ts",
+    "server": "node server/api/server.ts",
     "lint": "oxlint",
     "preview": "vite preview"
   },
