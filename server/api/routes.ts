@@ -2,7 +2,13 @@ import { IncomingMessage, ServerResponse } from "node:http";
 import { verificationPipeline } from "../verification/pipeline.ts";
 import { defaultRepository } from "../storage/memoryRepository.ts";
 import { veraTelegramBot } from "../telegram/bot.ts";
-import type { VerificationRequest, VerificationRecord } from "../types/domain.ts";
+import type { VerificationRecord } from "../types/domain.ts";
+import {
+  VerificationRequestSchema,
+  CorrectRequestSchema,
+  ResubmitRequestSchema,
+  normalizeVerificationRequest,
+} from "../types/schemas.ts";
 
 
 
@@ -108,42 +114,20 @@ export async function handleApiRequest(
     // POST /v1/verify
     // ----------------------------------------------------
     if (pathname === "/v1/verify" && req.method === "POST") {
-      const body = await parseJsonBody<VerificationRequest>(req);
+      const body = await parseJsonBody<unknown>(req);
+      const parseResult = VerificationRequestSchema.safeParse(body);
 
-      // Support both { task, worker } and { taskSpec, workerOutput }
-      const rawBody = body as any;
-      const taskStr = typeof rawBody.task === "string" 
-        ? rawBody.task 
-        : (rawBody.taskSpec?.description || rawBody.taskSpec?.title || (typeof rawBody.taskSpec === "string" ? rawBody.taskSpec : null));
-      const workerOutputStr = typeof rawBody.worker?.output === "string"
-        ? rawBody.worker.output
-        : (rawBody.workerOutput?.rawOutput || (typeof rawBody.workerOutput === "string" ? rawBody.workerOutput : null));
-
-      if (!taskStr) {
+      if (!parseResult.success) {
+        const firstIssue = parseResult.error.issues[0];
         sendJson(res, 400, {
           error: "Invalid request",
-          message: "Field 'task' (or 'taskSpec.description') is required and must be a string.",
+          message: firstIssue?.message || "Invalid verification request payload",
+          issues: parseResult.error.issues,
         });
         return true;
       }
 
-      if (!workerOutputStr) {
-        sendJson(res, 400, {
-          error: "Invalid request",
-          message: "Field 'worker.output' (or 'workerOutput.rawOutput') is required and must be a string.",
-        });
-        return true;
-      }
-
-      const normalizedRequest: VerificationRequest = {
-        task: taskStr,
-        worker: {
-          output: workerOutputStr,
-          id: rawBody.worker?.workerId || rawBody.worker?.id || rawBody.workerOutput?.workerId || "worker-agent",
-        },
-        telegramUserId: rawBody.telegramUserId,
-        telegramChatId: rawBody.telegramChatId,
-      };
+      const normalizedRequest = normalizeVerificationRequest(parseResult.data);
 
       // Execute real deterministic verification pipeline
       const record: VerificationRecord = await verificationPipeline.run(normalizedRequest);
@@ -274,13 +258,19 @@ export async function handleApiRequest(
         return true;
       }
 
-      const body = await parseJsonBody<{
-        instruction?: string;
-        note?: string;
-        telegramUserId?: number | string;
-      }>(req);
+      const body = await parseJsonBody<unknown>(req);
+      const parseResult = CorrectRequestSchema.safeParse(body);
 
-      const instruction = body.instruction || body.note || "Please correct the output according to requirements.";
+      if (!parseResult.success) {
+        sendJson(res, 400, {
+          error: "Invalid request",
+          message: parseResult.error.issues[0]?.message || "Invalid correction payload",
+          issues: parseResult.error.issues,
+        });
+        return true;
+      }
+
+      const instruction = parseResult.data.instruction || parseResult.data.note || "Please correct the output according to requirements.";
 
       const directive = {
         id: `dir_custom_${Date.now().toString(36)}`,
@@ -332,18 +322,22 @@ export async function handleApiRequest(
         return true;
       }
 
-      const body = await parseJsonBody<{
-        correctedWorkerOutput?: string;
-        workerOutput?: string;
-        supplementalTxHash?: string;
-        txHash?: string;
-        telegramUserId?: number | string;
-      }>(req);
+      const body = await parseJsonBody<unknown>(req);
+      const parseResult = ResubmitRequestSchema.safeParse(body);
 
-      let newOutput = body.correctedWorkerOutput || body.workerOutput;
+      if (!parseResult.success) {
+        sendJson(res, 400, {
+          error: "Invalid request",
+          message: parseResult.error.issues[0]?.message || "Invalid resubmission payload",
+          issues: parseResult.error.issues,
+        });
+        return true;
+      }
+
+      let newOutput = parseResult.data.correctedWorkerOutput || parseResult.data.workerOutput;
       if (!newOutput) {
         newOutput = record.worker.output;
-        const hashToAdd = body.supplementalTxHash || body.txHash;
+        const hashToAdd = parseResult.data.supplementalTxHash || parseResult.data.txHash;
         if (hashToAdd) {
           if (/\b(?:txhash|tx|hash):\s*[0-9a-fA-Fx]+/i.test(newOutput)) {
             newOutput = newOutput.replace(/\b(?:txhash|tx|hash):\s*[0-9a-fA-Fx]+/i, `TxHash: ${hashToAdd}`);

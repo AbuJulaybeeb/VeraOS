@@ -1,4 +1,7 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
+import { TelegramUpdateSchema } from "../types/schemas.ts";
+import type { VerificationRecord } from "../types/domain.ts";
+import { aiService } from "../ai/aiService.ts";
 
 export interface InlineKeyboardButton {
   text: string;
@@ -319,6 +322,10 @@ export class VeraTelegramBot {
 
   // --- Main Update Dispatcher ---
   async handleUpdate(update: TelegramUpdate): Promise<{ handled: boolean; reply?: string }> {
+    const parseResult = TelegramUpdateSchema.safeParse(update);
+    if (!parseResult.success) {
+      return { handled: false };
+    }
     // 1. Handle Inline Button Callback Queries
     if (update.callback_query) {
       return this.handleCallbackQuery(update.callback_query);
@@ -370,7 +377,16 @@ export class VeraTelegramBot {
       return this.executeResubmission(chatId, userId, vId, rawText);
     }
 
-    // 3. Command Routing
+    // 3. Natural Language Verification Prompt Handling (AI & Heuristics)
+    if (!rawText.startsWith("/")) {
+      const parsed = await aiService.parseVerificationPrompt(rawText);
+      if (parsed.isVerification && parsed.task && parsed.workerOutput) {
+        return this.executeVerification(chatId, userId, `${parsed.task} | ${parsed.workerOutput}`);
+      }
+      return { handled: false };
+    }
+
+    // 4. Command Routing
     const parts = rawText.split(/\s+/);
     const rawCommand = parts[0].toLowerCase();
     // Strip @username suffix if present in group chats (e.g. /start@VeraOSBot -> /start)
@@ -392,8 +408,11 @@ export class VeraTelegramBot {
         return this.handleCorrectCommand(chatId, userId, arg);
       case "/resubmit":
         return this.handleResubmitCommand(chatId, userId, arg);
+      case "/explain":
+      case "/ask":
+        return this.handleExplainCommand(chatId, userId, arg);
       default:
-        // Ignore unhandled commands or normal chat messages
+        // Ignore unhandled commands
         return { handled: false };
     }
   }
@@ -424,6 +443,7 @@ export class VeraTelegramBot {
       "/verify\nStart a new verification\n\n" +
       "/status <verification_id>\nCheck verification status\n\n" +
       "/evidence <verification_id>\nView evidence\n\n" +
+      "/explain <verification_id>\nAI explanation of verification\n\n" +
       "/correct <verification_id>\nRequest correction\n\n" +
       "/resubmit <verification_id>\nRun verification again\n\n" +
       "/help\nShow this help";
@@ -561,7 +581,10 @@ export class VeraTelegramBot {
 
         keyboard = {
           inline_keyboard: [
-            [{ text: "View Evidence", callback_data: `view_evidence:${displayId}` }],
+            [
+              { text: "View Evidence", callback_data: `view_evidence:${displayId}` },
+              { text: "Explain (AI)", callback_data: `explain_verdict:${displayId}` },
+            ],
           ],
         };
       } else {
@@ -583,6 +606,9 @@ export class VeraTelegramBot {
             [
               { text: "View Evidence", callback_data: `view_evidence:${displayId}` },
               { text: "Request Correction", callback_data: `request_correction:${displayId}` },
+            ],
+            [
+              { text: "Explain (AI)", callback_data: `explain_verdict:${displayId}` },
             ],
           ],
         };
@@ -889,6 +915,58 @@ export class VeraTelegramBot {
     }
   }
 
+  // --- Command: /explain or /ask ---
+  private async handleExplainCommand(
+    chatId: number,
+    userId: number,
+    arg: string
+  ): Promise<{ handled: boolean; reply: string }> {
+    const parts = arg.trim().split(/\s+/);
+    const id = parts[0]?.trim();
+    const question = parts.slice(1).join(" ").trim() || undefined;
+
+    if (!id) {
+      const reply = "⚠️ Usage: /explain <verification_id> [question]\nExample: /explain ver_123 Why did this fail?";
+      await this.sendMessage(chatId, reply);
+      return { handled: true, reply };
+    }
+
+    try {
+      const res = await fetch(`${this.apiBaseUrl}/v1/verify/${encodeURIComponent(id)}`);
+      if (!res.ok) {
+        const reply = `⚠️ Verification not found: ${id}`;
+        await this.sendMessage(chatId, reply);
+        return { handled: true, reply };
+      }
+
+      const record = (await res.json()) as VerificationRecord;
+
+      // Authorization check
+      if (record.telegramUserId && String(record.telegramUserId) !== String(userId)) {
+        const reply = `⚠️ Unauthorized: You are not authorized to view verification ${id}.`;
+        await this.sendMessage(chatId, reply);
+        return { handled: true, reply };
+      }
+
+      const explanation = await aiService.explainVerdict(record, question);
+      const displayId = record.displayId || record.id;
+      const reply = `🤖 VeraOS AI Analysis\n\n${explanation}`;
+
+      const keyboard: InlineKeyboardMarkup = {
+        inline_keyboard: [
+          [{ text: "View Evidence", callback_data: `view_evidence:${displayId}` }],
+        ],
+      };
+
+      await this.sendMessage(chatId, reply, keyboard);
+      return { handled: true, reply };
+    } catch {
+      const reply = "⚠️ Verification unavailable\n\nVeraOS could not generate an explanation.\n\nPlease try again shortly.";
+      await this.sendMessage(chatId, reply);
+      return { handled: true, reply };
+    }
+  }
+
   // --- Inline Keyboard Callbacks ---
   private async handleCallbackQuery(query: TelegramCallbackQuery): Promise<{ handled: boolean; reply?: string }> {
     const data = query.data || "";
@@ -903,6 +981,11 @@ export class VeraTelegramBot {
     if (data.startsWith("view_evidence:")) {
       const id = data.split(":")[1];
       return this.handleEvidenceCommand(chatId, userId, id);
+    }
+
+    if (data.startsWith("explain_verdict:")) {
+      const id = data.split(":")[1];
+      return this.handleExplainCommand(chatId, userId, id);
     }
 
     if (data.startsWith("request_correction:")) {
@@ -1027,8 +1110,14 @@ export class VeraTelegramBot {
 
       req.on("end", async () => {
         try {
-          const update = JSON.parse(body) as TelegramUpdate;
-          const result = await this.handleUpdate(update);
+          const raw = JSON.parse(body);
+          const parseResult = TelegramUpdateSchema.safeParse(raw);
+          if (!parseResult.success) {
+            res.writeHead(400, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ error: "Invalid Telegram payload", issues: parseResult.error.issues }));
+            return;
+          }
+          const result = await this.handleUpdate(parseResult.data as TelegramUpdate);
           res.writeHead(200, { "Content-Type": "application/json" });
           res.end(JSON.stringify({ ok: true, handled: result.handled }));
         } catch {
