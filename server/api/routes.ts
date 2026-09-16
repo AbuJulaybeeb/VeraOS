@@ -260,13 +260,60 @@ export async function handleApiRequest(
 
     // ----------------------------------------------------
     // POST /v1/verify/:verificationId/correct
-    // POST /v1/verify/:verificationId/resubmit
     // ----------------------------------------------------
-    const correctMatch =
-      pathname.match(/^\/v1\/verify\/([^/]+)\/correct$/) ||
-      pathname.match(/^\/v1\/verify\/([^/]+)\/resubmit$/);
+    const correctMatch = pathname.match(/^\/v1\/verify\/([^/]+)\/correct$/);
     if (correctMatch && req.method === "POST") {
       const id = decodeURIComponent(correctMatch[1]);
+      const record = await defaultRepository.get(id);
+
+      if (!record) {
+        sendJson(res, 404, {
+          error: "Not Found",
+          message: `Verification with ID '${id}' was not found.`,
+        });
+        return true;
+      }
+
+      const body = await parseJsonBody<{
+        instruction?: string;
+        note?: string;
+        telegramUserId?: number | string;
+      }>(req);
+
+      const instruction = body.instruction || body.note || "Please correct the output according to requirements.";
+
+      const directive = {
+        id: `dir_custom_${Date.now().toString(36)}`,
+        type: "CORRECT_TRANSACTION" as const,
+        requirementId: record.requirements[0]?.id || "req_1",
+        directive: instruction,
+        reason: instruction,
+        required: instruction,
+      };
+
+      if (!record.remediation) {
+        record.remediation = {
+          status: "FAIL",
+          retryable: true,
+          attempt: record.attempt,
+          maxAttempts: record.maxAttempts,
+          directives: [directive],
+        };
+      } else {
+        record.remediation.directives = [directive, ...(record.remediation.directives || [])];
+      }
+
+      await defaultRepository.update(record);
+      sendJson(res, 200, record);
+      return true;
+    }
+
+    // ----------------------------------------------------
+    // POST /v1/verify/:verificationId/resubmit
+    // ----------------------------------------------------
+    const resubmitMatch = pathname.match(/^\/v1\/verify\/([^/]+)\/resubmit$/);
+    if (resubmitMatch && req.method === "POST") {
+      const id = decodeURIComponent(resubmitMatch[1]);
       const record = await defaultRepository.get(id);
 
       if (!record) {
@@ -290,6 +337,7 @@ export async function handleApiRequest(
         workerOutput?: string;
         supplementalTxHash?: string;
         txHash?: string;
+        telegramUserId?: number | string;
       }>(req);
 
       let newOutput = body.correctedWorkerOutput || body.workerOutput;
@@ -326,6 +374,8 @@ export async function handleApiRequest(
       updatedRecord.id = record.id;
       updatedRecord.displayId = record.displayId;
       updatedRecord.createdAt = record.createdAt;
+      updatedRecord.telegramUserId = record.telegramUserId;
+      updatedRecord.telegramChatId = record.telegramChatId;
       updatedRecord.attempts = [
         ...(record.attempts || []),
         ...(updatedRecord.attempts || []),

@@ -3,11 +3,16 @@ import { defineConfig, type Plugin } from 'vite'
 import { handleApiRequest } from './server/api/routes.ts'
 import { veraTelegramBot } from './server/telegram/bot.ts'
 
+try {
+  process.loadEnvFile?.()
+} catch {}
+
 function veraBackendPlugin(): Plugin {
   return {
     name: 'vera-backend-plugin',
     configureServer(server) {
-      if (process.env.TELEGRAM_BOT_TOKEN && !veraTelegramBot.isPollingActive()) {
+      const telegramMode = process.env.TELEGRAM_MODE?.toLowerCase()
+      if (telegramMode === 'embedded_polling' && process.env.TELEGRAM_BOT_TOKEN && !veraTelegramBot.isPollingActive()) {
         veraTelegramBot.setApiBaseUrl('http://localhost:5173')
         veraTelegramBot.startPolling()
       }

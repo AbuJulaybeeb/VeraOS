@@ -148,6 +148,31 @@ export class VeraTelegramBot {
     }
   }
 
+  async setWebhook(webhookUrl: string, secretToken?: string): Promise<{ ok: boolean; description?: string }> {
+    if (!this.botToken) {
+      return { ok: false, description: "TELEGRAM_BOT_TOKEN is not configured." };
+    }
+    try {
+      const payload: Record<string, unknown> = {
+        url: webhookUrl,
+        allowed_updates: ["message", "callback_query"],
+      };
+      const secret = secretToken || this.webhookSecret;
+      if (secret) {
+        payload.secret_token = secret;
+      }
+      const res = await fetch(`https://api.telegram.org/bot${this.botToken}/setWebhook`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = (await res.json()) as { ok: boolean; description?: string };
+      return data;
+    } catch (err) {
+      return { ok: false, description: (err as Error).message };
+    }
+  }
+
   async startPolling(options?: { timeoutSeconds?: number }): Promise<boolean> {
     if (this.isPolling) {
       console.log("[Telegram Bot] Polling already active.");
@@ -347,8 +372,10 @@ export class VeraTelegramBot {
 
     // 3. Command Routing
     const parts = rawText.split(/\s+/);
-    const command = parts[0].toLowerCase();
-    const arg = rawText.slice(command.length).trim();
+    const rawCommand = parts[0].toLowerCase();
+    // Strip @username suffix if present in group chats (e.g. /start@VeraOSBot -> /start)
+    const command = rawCommand.includes("@") ? rawCommand.split("@")[0] : rawCommand;
+    const arg = rawText.slice(parts[0].length).trim();
 
     switch (command) {
       case "/start":
@@ -868,6 +895,11 @@ export class VeraTelegramBot {
     const chatId = query.message?.chat.id || query.from.id;
     const userId = query.from.id;
 
+    // Immediately answer callback query to dismiss Telegram client spinner
+    if (query.id) {
+      await this.answerCallbackQuery(query.id);
+    }
+
     if (data.startsWith("view_evidence:")) {
       const id = data.split(":")[1];
       return this.handleEvidenceCommand(chatId, userId, id);
@@ -932,6 +964,38 @@ export class VeraTelegramBot {
       return res.ok;
     } catch (err) {
       console.error(`[Telegram Bot] Network error sending message to chat ${chatId}:`, (err as Error).message);
+      return false;
+    }
+  }
+
+  // --- Telegram API Answer Callback Query ---
+  async answerCallbackQuery(
+    callbackQueryId: string,
+    text?: string,
+    showAlert = false
+  ): Promise<boolean> {
+    if (!this.botToken) {
+      return true;
+    }
+    try {
+      const payload: Record<string, unknown> = {
+        callback_query_id: callbackQueryId,
+        show_alert: showAlert,
+      };
+      if (text) {
+        payload.text = text;
+      }
+      const res = await fetch(`https://api.telegram.org/bot${this.botToken}/answerCallbackQuery`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      return res.ok;
+    } catch (err) {
+      console.error(
+        `[Telegram Bot] Error answering callback query ${callbackQueryId}:`,
+        (err as Error).message
+      );
       return false;
     }
   }
