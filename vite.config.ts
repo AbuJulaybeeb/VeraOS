@@ -44,6 +44,10 @@ export default defineConfig(({ mode }) => {
   Object.assign(process.env, env)
 
   return {
+    server: {
+      host: '0.0.0.0',
+      port: 5173,
+    },
     plugins: [react(), veraBackendPlugin()],
   }
 })
