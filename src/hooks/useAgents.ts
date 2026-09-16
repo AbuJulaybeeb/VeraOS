@@ -1,51 +1,18 @@
-import { useState, useEffect, useCallback } from "react";
-import { Agent } from "../types/agent";
-import { agentsApi } from "../services/agentsApi";
+import { useAgentContext } from "../context/AgentContext";
 
 export function useAgents() {
-  const [agents, setAgents] = useState<Agent[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchAgents = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await agentsApi.list();
-      setAgents(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load agents");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchAgents();
-  }, [fetchAgents]);
-
-  const connectAgent = async (params: {
-    name: string;
-    endpoint: string;
-    runtime: string;
-    model: string;
-    capabilities: string[];
-  }) => {
-    try {
-      const created = await agentsApi.connect(params);
-      await fetchAgents();
-      return created;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to connect agent");
-      return null;
-    }
-  };
-
+  const ctx = useAgentContext();
   return {
-    agents,
-    loading,
-    error,
-    refetch: fetchAgents,
-    connectAgent,
+    agents: ctx.agents,
+    activeAgent: ctx.activeAgent,
+    loading: ctx.loading,
+    error: ctx.error,
+    refetch: ctx.refetchAgents,
+    connectAgent: ctx.connectAgentWithConsent,
+    disconnectAgent: ctx.disconnectAgent,
+    testHandshake: ctx.testHandshake,
+    openConnectModal: ctx.openConnectModal,
+    closeConnectModal: ctx.closeConnectModal,
+    isConnectModalOpen: ctx.isConnectModalOpen,
   };
 }
