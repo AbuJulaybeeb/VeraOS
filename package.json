@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "test": "tsx --test server/tests/engine.test.ts server/tests/stellar.test.ts server/tests/stellarRpc.test.ts server/tests/telegram.test.ts server/tests/agentConnect.test.ts",
+    "test": "tsx --test server/tests/engine.test.ts server/tests/stellar.test.ts server/tests/stellarRpc.test.ts server/tests/telegram.test.ts server/tests/agentConnect.test.ts server/tests/ai.test.ts server/tests/schemas.test.ts",
     "server": "tsx server/api/server.ts",
     "bot": "tsx server/telegram/runner.ts",
     "lint": "oxlint",
