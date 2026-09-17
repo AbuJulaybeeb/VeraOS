@@ -2,6 +2,7 @@ import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "../../lib/utils";
 import { useAuth } from "../../context/AuthContext";
+import { useAgentContext } from "../../context/AgentContext";
 import { ThemeToggle } from "../../context/ThemeContext";
 import { TELEGRAM_BOT_URL } from "../../config/env";
 
@@ -18,6 +19,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const location = useLocation();
   const { user, openAuthModal, logout } = useAuth();
+  const { activeAgent, openConnectModal } = useAgentContext();
 
   const navItems = [
     {
@@ -209,6 +211,43 @@ export const Sidebar: React.FC<SidebarProps> = ({
             arrow_outward
           </span>
         </a>
+
+        {/* Connected AI Agent Status (Wallet-Style) */}
+        {activeAgent && activeAgent.status === "CONNECTED" ? (
+          <div
+            onClick={() => openConnectModal(activeAgent)}
+            className="p-space-sm rounded-xl bg-surface-container-low flex flex-col gap-1 border border-white/5 hover:border-[#E08A3E]/30 transition-colors cursor-pointer group"
+            title="Click to manage agent connection"
+          >
+            <div className="flex items-center justify-between">
+              <span className="font-label-caps text-label-caps uppercase tracking-wider text-outline flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                Active Agent
+              </span>
+              <span className="font-code-sm text-[10px] text-[#4ade80]">
+                Connected
+              </span>
+            </div>
+            <div className="flex items-center justify-between font-code-sm text-code-sm text-on-surface">
+              <span className="truncate text-xs font-semibold text-white">{activeAgent.name}</span>
+              <span className="text-[10px] text-outline truncate max-w-[80px]">{activeAgent.runtime.split(" ")[0]}</span>
+            </div>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => openConnectModal()}
+            className="p-space-sm rounded-xl bg-surface-container-low hover:bg-surface-container border border-dashed border-[#E08A3E]/30 flex items-center justify-between gap-2 text-xs text-[#E08A3E] font-medium transition-colors cursor-pointer text-left"
+          >
+            <div className="flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-[16px]">smart_toy</span>
+              <span>Connect Agent</span>
+            </div>
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#E08A3E]/20 text-[#E08A3E]">
+              1-Click
+            </span>
+          </button>
+        )}
 
         {/* Network status indicator */}
         <div className="p-space-sm rounded-xl bg-surface-container-low flex flex-col gap-1 border border-white/5">

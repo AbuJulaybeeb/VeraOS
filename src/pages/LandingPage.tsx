@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useAgentContext } from "../context/AgentContext";
 import { ThemeToggle } from "../context/ThemeContext";
 import { NotificationsPopover, NotificationItem } from "../components/notifications/NotificationsPopover";
 import { CommandPalette } from "../components/search/CommandPalette";
 import { InteractiveVerifyWidget } from "../components/verification/InteractiveVerifyWidget";
+import { AgentHeaderWidget } from "../components/agent/AgentHeaderWidget";
 import { TELEGRAM_BOT_URL, GITHUB_REPO_URL } from "../config/env";
 
 const INITIAL_LANDING_NOTIFICATIONS: NotificationItem[] = [
@@ -39,6 +41,7 @@ const INITIAL_LANDING_NOTIFICATIONS: NotificationItem[] = [
 
 export const LandingPage: React.FC = () => {
   const { user, isAuthenticated, openAuthModal, logout } = useAuth();
+  const { openConnectModal } = useAgentContext();
   const [activeTab, setActiveTab] = useState<"curl" | "ts">("curl");
   const [copied, setCopied] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -204,6 +207,9 @@ export const LandingPage: React.FC = () => {
 
             {/* Theme Toggle */}
             <ThemeToggle />
+
+            {/* AI Agent Connection Widget (Wallet-Style) */}
+            <AgentHeaderWidget />
 
             {/* Auth Buttons */}
             {isAuthenticated ? (
@@ -427,6 +433,18 @@ export const LandingPage: React.FC = () => {
                   <span className="material-symbols-outlined text-[18px]">verified</span>
                   <span>Verify a Task</span>
                 </a>
+
+                {/* 1-Click AgentConnect CTA */}
+                <button
+                  type="button"
+                  onClick={() => openConnectModal()}
+                  className="inline-flex items-center gap-2 px-6 py-3.5 rounded-lg bg-[#21110B] border border-[#E08A3E]/50 text-[#E08A3E] font-headline-sm text-headline-sm hover:bg-[#C96A2B] hover:text-white transition-all shadow-[0_0_24px_rgba(201,106,43,0.25)] cursor-pointer group"
+                >
+                  <span className="material-symbols-outlined text-[18px] group-hover:rotate-12 transition-transform">
+                    smart_toy
+                  </span>
+                  <span>Connect Your Agent</span>
+                </button>
 
                 {/* Telegram Hero CTA */}
                 <a

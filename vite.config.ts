@@ -1,5 +1,11 @@
+try {
+  process.loadEnvFile?.();
+} catch {
+  // Ignore if .env is missing
+}
+
 import react from '@vitejs/plugin-react'
-import { defineConfig, type Plugin } from 'vite'
+import { defineConfig, loadEnv, type Plugin } from 'vite'
 import { handleApiRequest } from './server/api/routes.ts'
 import { veraTelegramBot } from './server/telegram/bot.ts'
 
@@ -8,13 +14,18 @@ try {
 } catch {}
 
 function veraBackendPlugin(): Plugin {
+  let isInitialized = false
   return {
     name: 'vera-backend-plugin',
     configureServer(server) {
-      const telegramMode = process.env.TELEGRAM_MODE?.toLowerCase()
-      if (telegramMode === 'embedded_polling' && process.env.TELEGRAM_BOT_TOKEN && !veraTelegramBot.isPollingActive()) {
-        veraTelegramBot.setApiBaseUrl('http://localhost:5173')
-        veraTelegramBot.startPolling()
+      if (!isInitialized) {
+        isInitialized = true
+        const token = process.env.TELEGRAM_BOT_TOKEN
+        if (token && !veraTelegramBot.isPollingActive()) {
+          veraTelegramBot.setBotToken(token.trim())
+          veraTelegramBot.setApiBaseUrl('http://localhost:5173')
+          veraTelegramBot.startPolling()
+        }
       }
 
       server.httpServer?.on('close', () => {
@@ -36,7 +47,16 @@ function veraBackendPlugin(): Plugin {
 }
 
 // https://vite.dev/config/
-export default defineConfig({
-  plugins: [react(), veraBackendPlugin()],
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '')
+  Object.assign(process.env, env)
+
+  return {
+    server: {
+      host: '0.0.0.0',
+      port: 5173,
+    },
+    plugins: [react(), veraBackendPlugin()],
+  }
 })
 

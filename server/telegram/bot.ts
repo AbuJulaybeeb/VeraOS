@@ -64,6 +64,7 @@ export class VeraTelegramBot {
   private webhookSecret?: string;
 
   private isPolling = false;
+  private isStarting = false;
   private pollingAbortController: AbortController | null = null;
   private botUsername: string | null = null;
   private botInfo: { id: number; username?: string; first_name?: string } | null = null;
@@ -177,8 +178,7 @@ export class VeraTelegramBot {
   }
 
   async startPolling(options?: { timeoutSeconds?: number }): Promise<boolean> {
-    if (this.isPolling) {
-      console.log("[Telegram Bot] Polling already active.");
+    if (this.isPolling || this.isStarting) {
       return true;
     }
 
@@ -188,33 +188,38 @@ export class VeraTelegramBot {
       return false;
     }
 
-    const meRes = await this.getMe();
-    if (!meRes.ok || !meRes.result) {
-      console.error(`[Telegram Bot] Error: Failed to authenticate with Telegram Bot API: ${meRes.error}`);
-      return false;
+    this.isStarting = true;
+    try {
+      const meRes = await this.getMe();
+      if (!meRes.ok || !meRes.result) {
+        console.error(`[Telegram Bot] Error: Failed to authenticate with Telegram Bot API: ${meRes.error}`);
+        return false;
+      }
+
+      console.log(
+        `[Telegram Bot] Connected as @${meRes.result.username || "unknown"} (${meRes.result.first_name}, ID: ${meRes.result.id})`
+      );
+
+      // Delete webhook with drop_pending_updates=true to clear any stale webhooks or hanging locks
+      const webhookCleared = await this.deleteWebhook(true);
+      if (webhookCleared) {
+        console.log("[Telegram Bot] Webhook cleared; ready for getUpdates long-polling.");
+      }
+
+      this.isPolling = true;
+      this.pollingAbortController = new AbortController();
+      console.log("[Telegram Bot] Long polling started (listening for updates...)");
+
+      const timeout = options?.timeoutSeconds ?? 25;
+      this.runPollingLoop(timeout).catch((err) => {
+        console.error("[Telegram Bot] Fatal polling loop error:", err);
+        this.isPolling = false;
+      });
+
+      return true;
+    } finally {
+      this.isStarting = false;
     }
-
-    console.log(
-      `[Telegram Bot] Connected as @${meRes.result.username || "unknown"} (${meRes.result.first_name}, ID: ${meRes.result.id})`
-    );
-
-    // Delete webhook to ensure Telegram sends updates via getUpdates
-    const webhookCleared = await this.deleteWebhook(false);
-    if (webhookCleared) {
-      console.log("[Telegram Bot] Webhook cleared; ready for getUpdates long-polling.");
-    }
-
-    this.isPolling = true;
-    this.pollingAbortController = new AbortController();
-    console.log("[Telegram Bot] Long polling started (listening for updates...)");
-
-    const timeout = options?.timeoutSeconds ?? 25;
-    this.runPollingLoop(timeout).catch((err) => {
-      console.error("[Telegram Bot] Fatal polling loop error:", err);
-      this.isPolling = false;
-    });
-
-    return true;
   }
 
   stopPolling(): void {
@@ -228,19 +233,29 @@ export class VeraTelegramBot {
   }
 
   private async runPollingLoop(timeoutSeconds: number): Promise<void> {
+    let consecutive409Count = 0;
     while (this.isPolling) {
       try {
         const offset = this.lastUpdateId > 0 ? this.lastUpdateId + 1 : 0;
-        const url = `https://api.telegram.org/bot${this.botToken}/getUpdates?offset=${offset}&timeout=${timeoutSeconds}&allowed_updates=["message","callback_query"]`;
+        const allowedUpdates = encodeURIComponent(JSON.stringify(["message", "callback_query"]));
+        const url = `https://api.telegram.org/bot${this.botToken}/getUpdates?offset=${offset}&timeout=${timeoutSeconds}&allowed_updates=${allowedUpdates}`;
 
         const res = await fetch(url, { signal: this.pollingAbortController?.signal });
 
         if (!res.ok) {
           if (res.status === 409) {
-            console.warn("[Telegram Bot] 409 Conflict: another instance or webhook is active. Retrying in 5s...");
-            await new Promise((r) => setTimeout(r, 5000));
+            consecutive409Count++;
+            const backoffMs = Math.min(5000 * consecutive409Count, 30000);
+            if (consecutive409Count === 1 || consecutive409Count % 5 === 0) {
+              console.warn(`[Telegram Bot] 409 Conflict: another instance is active. Backing off for ${backoffMs / 1000}s...`);
+            }
+            if (consecutive409Count === 3) {
+              await this.deleteWebhook(true);
+            }
+            await new Promise((r) => setTimeout(r, backoffMs));
             continue;
           }
+          consecutive409Count = 0;
           if (res.status === 401) {
             console.error("[Telegram Bot] 401 Unauthorized: Telegram Bot token is invalid. Stopping polling.");
             this.isPolling = false;
@@ -250,6 +265,8 @@ export class VeraTelegramBot {
           await new Promise((r) => setTimeout(r, 3000));
           continue;
         }
+
+        consecutive409Count = 0;
 
         const data = (await res.json()) as { ok: boolean; result: TelegramUpdate[]; description?: string };
         if (data.ok && Array.isArray(data.result)) {

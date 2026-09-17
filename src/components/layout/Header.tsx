@@ -5,6 +5,7 @@ import { useAuth } from "../../context/AuthContext";
 import { ThemeToggle } from "../../context/ThemeContext";
 import { NotificationsPopover, NotificationItem } from "../notifications/NotificationsPopover";
 import { CommandPalette } from "../search/CommandPalette";
+import { AgentHeaderWidget } from "../agent/AgentHeaderWidget";
 
 interface HeaderProps {
   onToggleMobileMenu: () => void;
@@ -166,6 +167,9 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Theme Mode Toggle (Dark / White Theme) */}
           <ThemeToggle />
+
+          {/* Connect AI Agent Widget (Wallet-style) */}
+          <AgentHeaderWidget />
 
           {/* New Verification Button */}
           <Button
