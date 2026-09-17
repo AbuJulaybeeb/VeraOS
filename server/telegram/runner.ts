@@ -24,9 +24,11 @@ veraTelegramBot.setBotToken(token.trim());
 
 async function resolveAndCheckApiTarget(): Promise<string> {
   const explicitUrl = process.env.VERAOS_API_URL || process.env.VERA_API_URL;
-  const candidates = explicitUrl
-    ? [explicitUrl.replace(/\/$/, "")]
-    : ["http://localhost:5173", "http://localhost:3001"];
+  const uniqueCandidates = new Set<string>();
+  if (explicitUrl) uniqueCandidates.add(explicitUrl.replace(/\/$/, ""));
+  uniqueCandidates.add("http://localhost:3001");
+  uniqueCandidates.add("http://localhost:5173");
+  const candidates = Array.from(uniqueCandidates);
 
   for (const candidate of candidates) {
     try {
