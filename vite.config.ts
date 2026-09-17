@@ -9,6 +9,10 @@ import { defineConfig, loadEnv, type Plugin } from 'vite'
 import { handleApiRequest } from './server/api/routes.ts'
 import { veraTelegramBot } from './server/telegram/bot.ts'
 
+try {
+  process.loadEnvFile?.()
+} catch {}
+
 function veraBackendPlugin(): Plugin {
   let isInitialized = false
   return {

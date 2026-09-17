@@ -457,3 +457,47 @@ test("Telegram Bot Polling: Unconfigured bot gracefully handles getMe, webhook c
   unconfiguredBot.stopPolling();
   assert.equal(unconfiguredBot.isPollingActive(), false);
 });
+
+test("Telegram Bot Protocol: Group command sanitization handles @botname suffixes", async () => {
+  const update: TelegramUpdate = {
+    update_id: 13,
+    message: {
+      message_id: 113,
+      from: { id: 1003, first_name: "GroupMember" },
+      chat: { id: -1001234567, type: "supergroup" },
+      date: Math.floor(Date.now() / 1000),
+      text: "/start@VeraOSBot",
+    },
+  };
+
+  const res = await bot.handleUpdate(update);
+  assert.equal(res.handled, true);
+  assert.ok(res.reply?.includes("🛡 VeraOS"), "Must recognize /start@VeraOSBot as /start");
+
+  const helpUpdate: TelegramUpdate = {
+    update_id: 14,
+    message: {
+      message_id: 114,
+      from: { id: 1003, first_name: "GroupMember" },
+      chat: { id: -1001234567, type: "supergroup" },
+      date: Math.floor(Date.now() / 1000),
+      text: "/help@VeraOSBot",
+    },
+  };
+
+  const helpRes = await bot.handleUpdate(helpUpdate);
+  assert.equal(helpRes.handled, true);
+  assert.ok(helpRes.reply?.includes("🛡 VeraOS Commands"), "Must recognize /help@VeraOSBot as /help");
+});
+
+test("Telegram Bot Protocol: answerCallbackQuery and setWebhook methods execute safely", async () => {
+  // Test offline/unconfigured behavior
+  const unconfiguredBot = new VeraTelegramBot("", `http://localhost:${testPort}`);
+  const ansResult = await unconfiguredBot.answerCallbackQuery("cb_query_123", "Acknowledged");
+  assert.equal(ansResult, true, "Offline bot safely returns true for answerCallbackQuery");
+
+  const setWebhookResult = await unconfiguredBot.setWebhook("https://example.com/webhook", "secret-token");
+  assert.equal(setWebhookResult.ok, false);
+  assert.ok(setWebhookResult.description?.includes("TELEGRAM_BOT_TOKEN is not configured"));
+});
+

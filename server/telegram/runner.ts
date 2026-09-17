@@ -22,15 +22,50 @@ if (!token || !token.trim()) {
 
 veraTelegramBot.setBotToken(token.trim());
 
-const apiUrl = process.env.VERAOS_API_URL || process.env.VERA_API_URL || "http://localhost:5173";
-veraTelegramBot.setApiBaseUrl(apiUrl);
-console.log(`[Telegram Bot] Configured API target: ${apiUrl}`);
+async function resolveAndCheckApiTarget(): Promise<string> {
+  const explicitUrl = process.env.VERAOS_API_URL || process.env.VERA_API_URL;
+  const uniqueCandidates = new Set<string>();
+  if (explicitUrl) uniqueCandidates.add(explicitUrl.replace(/\/$/, ""));
+  uniqueCandidates.add("http://localhost:3001");
+  uniqueCandidates.add("http://localhost:5173");
+  const candidates = Array.from(uniqueCandidates);
 
-veraTelegramBot.startPolling().then((started) => {
+  for (const candidate of candidates) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 1200);
+      const res = await fetch(`${candidate}/health`, { signal: controller.signal });
+      clearTimeout(timeoutId);
+      if (res.ok) {
+        console.log(`[Telegram Bot] Connected to VeraOS Verification Engine at ${candidate}`);
+        return candidate;
+      }
+    } catch {
+      // Try next candidate
+    }
+  }
+
+  const fallback = candidates[0];
+  console.warn(`[Telegram Bot] Notice: Verification backend is not currently responding at ${fallback}.`);
+  console.warn(`[Telegram Bot] Start your backend via 'npm run dev' (5173) or 'npm run server' (3001) to process verifications.`);
+  return fallback;
+}
+
+async function main() {
+  const apiUrl = await resolveAndCheckApiTarget();
+  veraTelegramBot.setApiBaseUrl(apiUrl);
+  console.log(`[Telegram Bot] Configured API target: ${apiUrl}`);
+
+  const started = await veraTelegramBot.startPolling();
   if (!started) {
     console.error("[Telegram Bot] Failed to start long polling loop.");
     process.exit(1);
   }
+}
+
+main().catch((err) => {
+  console.error("[Telegram Bot] Fatal runner error:", err);
+  process.exit(1);
 });
 
 const shutdown = () => {

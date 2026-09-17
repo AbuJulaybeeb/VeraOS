@@ -21,7 +21,12 @@ export function startServer(port = PORT) {
     console.log(`[VeraOS API] Verification Engine Server active on http://localhost:${port}`);
   });
 
-  if (process.env.TELEGRAM_BOT_TOKEN && !veraTelegramBot.isPollingActive()) {
+  const telegramMode = process.env.TELEGRAM_MODE?.toLowerCase();
+  const shouldPoll =
+    telegramMode === "embedded_polling" ||
+    process.env.RUN_TELEGRAM_IN_SERVER === "true";
+
+  if (shouldPoll && process.env.TELEGRAM_BOT_TOKEN && !veraTelegramBot.isPollingActive()) {
     veraTelegramBot.setApiBaseUrl(`http://localhost:${port}`);
     veraTelegramBot.startPolling();
   }
