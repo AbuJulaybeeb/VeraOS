@@ -82,99 +82,96 @@ export const LandingPage: React.FC = () => {
   return (
     <div className="bg-[#160C08] font-body-md text-[#F3E5D5] bg-grid-tech min-h-screen selection:bg-[#C96A2B] selection:text-[#FFF8F0]">
       {/* Header */}
-      <header className="fixed top-0 w-full z-50 bg-[#160C08]/85 backdrop-blur-xl shadow-[0_4px_24px_rgba(0,0,0,0.5)] border-b border-[#4A2B1D]/40 transition-all">
-        <div className="h-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-6 xl:gap-8">
-            <Link to="/" className="flex items-center gap-3 group shrink-0">
-              <div className="w-8 h-8 flex items-center justify-center bg-gradient-to-br from-[#2C1710] to-[#1C0E09] rounded-xl transition-all duration-300 group-hover:scale-105 group-hover:shadow-[0_0_20px_rgba(201,106,43,0.45)] border border-[#4A2B1D]">
-                <svg
-                  className="w-4 h-4 text-[#E08A3E] transition-transform duration-300 group-hover:rotate-6"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2.2"
-                  viewBox="0 0 24 24"
-                >
-                  <polygon
-                    fill="currentColor"
-                    fillOpacity="0.2"
-                    points="12 2 21 7.5 21 16.5 12 22 3 16.5 3 7.5 12 2"
-                  />
-                  <polyline points="12 2 12 12 21 7.5" />
-                  <polyline points="12 12 3 7.5" />
-                  <line x1="12" x2="12" y1="12" y2="22" />
-                </svg>
-              </div>
-              <span className="font-headline-sm text-lg text-[#FFF8F0] tracking-tight font-bold">
-                Vera<span className="text-[#E08A3E]">OS</span>
-              </span>
+      <header className="fixed top-0 w-full z-50 bg-[#160C08]/90 backdrop-blur-xl shadow-[0_4px_30px_rgba(0,0,0,0.6)] border-b border-[#4A2B1D]/40 transition-all">
+        <div className="h-16 lg:h-[70px] max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
+          {/* 1. Left: Brand Logo */}
+          <Link to="/" className="flex items-center gap-3 group shrink-0">
+            <div className="w-8 h-8 flex items-center justify-center bg-gradient-to-br from-[#2C1710] to-[#1C0E09] rounded-xl transition-all duration-300 group-hover:scale-105 group-hover:shadow-[0_0_20px_rgba(201,106,43,0.45)] border border-[#4A2B1D]">
+              <svg
+                className="w-4 h-4 text-[#E08A3E] transition-transform duration-300 group-hover:rotate-6"
+                fill="none"
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2.2"
+                viewBox="0 0 24 24"
+              >
+                <polygon
+                  fill="currentColor"
+                  fillOpacity="0.2"
+                  points="12 2 21 7.5 21 16.5 12 22 3 16.5 3 7.5 12 2"
+                />
+                <polyline points="12 2 12 12 21 7.5" />
+                <polyline points="12 12 3 7.5" />
+                <line x1="12" x2="12" y1="12" y2="22" />
+              </svg>
+            </div>
+            <span className="font-headline-sm text-lg text-[#FFF8F0] tracking-tight font-bold whitespace-nowrap">
+              Vera<span className="text-[#E08A3E]">OS</span>
+            </span>
+          </Link>
+
+          {/* 2. Center: LTS Modern Floating Pill Navigation */}
+          <nav className="hidden lg:flex items-center gap-1 xl:gap-1.5 p-1 rounded-full bg-[#1F0F09]/80 border border-[#3E1E12]/80 backdrop-blur-md shadow-[0_2px_16px_rgba(0,0,0,0.35)]">
+            <a
+              href="#verify-anywhere"
+              className="px-3 xl:px-3.5 py-1.5 text-xs xl:text-[13px] font-medium tracking-normal text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#2F170E]/80 rounded-full transition-all duration-200 whitespace-nowrap"
+            >
+              Product
+            </a>
+            <a
+              href="#how-it-works"
+              className="px-3 xl:px-3.5 py-1.5 text-xs xl:text-[13px] font-medium tracking-normal text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#2F170E]/80 rounded-full transition-all duration-200 whitespace-nowrap"
+            >
+              How it works
+            </a>
+            <a
+              href="#interactive-verify"
+              className="px-3 xl:px-3.5 py-1.5 text-xs xl:text-[13px] font-medium tracking-normal text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#2F170E]/80 rounded-full transition-all duration-200 whitespace-nowrap"
+            >
+              Verify
+            </a>
+            <a
+              href="#demo"
+              className="px-3 xl:px-3.5 py-1.5 text-xs xl:text-[13px] font-medium tracking-normal text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#2F170E]/80 rounded-full transition-all duration-200 whitespace-nowrap"
+            >
+              Evidence
+            </a>
+            <a
+              href="#developers"
+              className="px-3 xl:px-3.5 py-1.5 text-xs xl:text-[13px] font-medium tracking-normal text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#2F170E]/80 rounded-full transition-all duration-200 whitespace-nowrap"
+            >
+              API
+            </a>
+            <Link
+              to="/docs"
+              className="px-3 xl:px-3.5 py-1.5 text-xs xl:text-[13px] font-medium tracking-normal text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#2F170E]/80 rounded-full transition-all duration-200 whitespace-nowrap"
+            >
+              Docs
             </Link>
+            <a
+              href={TELEGRAM_BOT_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="ml-1 pl-2.5 pr-3 py-1 text-xs font-semibold text-[#E08A3E] bg-[#E08A3E]/10 hover:bg-[#E08A3E]/20 border border-[#E08A3E]/30 rounded-full transition-all duration-200 flex items-center gap-1.5 shadow-[0_0_12px_rgba(224,138,62,0.15)] whitespace-nowrap group shrink-0"
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-[#E08A3E] animate-pulse shrink-0" />
+              <span>Telegram Bot</span>
+              <span className="material-symbols-outlined text-[12px] opacity-70 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform">arrow_outward</span>
+            </a>
+          </nav>
 
-            {/* Desktop Modern Pill Navigation */}
-            <nav className="hidden lg:flex items-center gap-1 p-1 rounded-full bg-[#20110A]/80 border border-[#422216]/60 backdrop-blur-md shadow-[inset_0_1px_1px_rgba(255,255,255,0.04)]">
-              <a
-                href="#verify-anywhere"
-                className="px-3.5 py-1.5 text-xs font-medium tracking-wide text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#2F170E]/80 rounded-full transition-all duration-200"
-              >
-                Product
-              </a>
-              <a
-                href="#how-it-works"
-                className="px-3.5 py-1.5 text-xs font-medium tracking-wide text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#2F170E]/80 rounded-full transition-all duration-200"
-              >
-                How it works
-              </a>
-              <a
-                href="#interactive-verify"
-                className="px-3.5 py-1.5 text-xs font-medium tracking-wide text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#2F170E]/80 rounded-full transition-all duration-200"
-              >
-                Verify a task
-              </a>
-              <a
-                href="#demo"
-                className="px-3.5 py-1.5 text-xs font-medium tracking-wide text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#2F170E]/80 rounded-full transition-all duration-200"
-              >
-                Evidence
-              </a>
-              <a
-                href="#developers"
-                className="px-3.5 py-1.5 text-xs font-medium tracking-wide text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#2F170E]/80 rounded-full transition-all duration-200"
-              >
-                API
-              </a>
-              <Link
-                to="/docs"
-                className="px-3.5 py-1.5 text-xs font-medium tracking-wide text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#2F170E]/80 rounded-full transition-all duration-200"
-              >
-                Docs
-              </Link>
-              <a
-                href={TELEGRAM_BOT_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="ml-1 pl-2.5 pr-3 py-1 text-xs font-semibold text-[#E08A3E] bg-[#E08A3E]/10 hover:bg-[#E08A3E]/20 border border-[#E08A3E]/30 rounded-full transition-all duration-200 flex items-center gap-1.5 shadow-[0_0_12px_rgba(224,138,62,0.15)] group"
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-[#E08A3E] animate-pulse" />
-                <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/>
-                </svg>
-                <span>Telegram Bot</span>
-                <span className="material-symbols-outlined text-[12px] opacity-70 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform">arrow_outward</span>
-              </a>
-            </nav>
-          </div>
-
-          <div className="flex items-center gap-2.5 sm:gap-3">
+          {/* 3. Right: Action Controls & CTA */}
+          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
             {/* Quick Search Button */}
             <button
               type="button"
               onClick={() => setSearchOpen(true)}
-              className="hidden xl:flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-[#20110A]/80 border border-[#422216]/70 text-xs text-[#B9A99B] hover:text-[#FFF8F0] hover:border-[#C96A2B]/60 transition-all cursor-pointer shadow-sm backdrop-blur-sm"
+              className="hidden 2xl:flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#1F0F09]/80 border border-[#3E1E12] text-xs text-[#B9A99B] hover:text-[#FFF8F0] hover:border-[#C96A2B]/60 transition-all cursor-pointer shadow-sm backdrop-blur-sm whitespace-nowrap"
               title="Quick Search (Ctrl+K or Cmd+K)"
             >
               <span className="material-symbols-outlined text-[15px] text-[#C96A2B]">search</span>
-              <span className="text-[11px] font-medium">Search...</span>
+              <span className="text-[11px] font-medium">Search</span>
               <kbd className="px-1.5 py-0.5 rounded-md bg-[#2C1710] text-[10px] text-[#B9A99B] border border-[#4A2B1D]">
                 ⌘K
               </kbd>
@@ -268,7 +265,7 @@ export const LandingPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => openAuthModal("signin")}
-                  className="px-3 py-1.5 rounded-full text-xs font-medium text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#20110A] transition-all cursor-pointer"
+                  className="px-3 py-1.5 rounded-full text-xs font-medium text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#20110A] transition-all cursor-pointer whitespace-nowrap"
                 >
                   Sign In
                 </button>
@@ -278,7 +275,7 @@ export const LandingPage: React.FC = () => {
             {/* Dashboard CTA Pill */}
             <Link
               to="/dashboard"
-              className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold text-white bg-gradient-to-r from-[#C96A2B] via-[#D87431] to-[#E08A3E] hover:from-[#D87431] hover:to-[#E59247] shadow-[0_0_18px_rgba(201,106,43,0.35)] hover:shadow-[0_0_24px_rgba(201,106,43,0.55)] active:scale-[0.98] transition-all shrink-0 group"
+              className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold text-white bg-gradient-to-r from-[#C96A2B] via-[#D87431] to-[#E08A3E] hover:from-[#D87431] hover:to-[#E59247] shadow-[0_0_18px_rgba(201,106,43,0.35)] hover:shadow-[0_0_24px_rgba(201,106,43,0.55)] active:scale-[0.98] transition-all shrink-0 whitespace-nowrap group"
             >
               <span>Open Dashboard</span>
               <span className="material-symbols-outlined text-[14px] group-hover:translate-x-0.5 transition-transform">arrow_forward</span>
