@@ -82,13 +82,13 @@ export const LandingPage: React.FC = () => {
   return (
     <div className="bg-[#160C08] font-body-md text-[#F3E5D5] bg-grid-tech min-h-screen selection:bg-[#C96A2B] selection:text-[#FFF8F0]">
       {/* Header */}
-      <header className="fixed top-0 w-full z-50 bg-[#160C08]/90 backdrop-blur-xl shadow-[0_1px_12px_rgba(0,0,0,0.6)] border-b border-[#4A2B1D]/40">
-        <div className="h-16 max-w-7xl mx-auto px-gutter flex items-center justify-between">
-          <div className="flex items-center gap-8">
-            <Link to="/" className="flex items-center gap-3 group">
-              <div className="w-8 h-8 flex items-center justify-center bg-[#2C1710] rounded-lg transition-transform group-hover:scale-105 shadow-[0_0_16px_rgba(201,106,43,0.35)] border border-[#4A2B1D]">
+      <header className="fixed top-0 w-full z-50 bg-[#160C08]/85 backdrop-blur-xl shadow-[0_4px_24px_rgba(0,0,0,0.5)] border-b border-[#4A2B1D]/40 transition-all">
+        <div className="h-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-6 xl:gap-8">
+            <Link to="/" className="flex items-center gap-3 group shrink-0">
+              <div className="w-8 h-8 flex items-center justify-center bg-gradient-to-br from-[#2C1710] to-[#1C0E09] rounded-xl transition-all duration-300 group-hover:scale-105 group-hover:shadow-[0_0_20px_rgba(201,106,43,0.45)] border border-[#4A2B1D]">
                 <svg
-                  className="w-4 h-4 text-[#E08A3E]"
+                  className="w-4 h-4 text-[#E08A3E] transition-transform duration-300 group-hover:rotate-6"
                   fill="none"
                   stroke="currentColor"
                   strokeLinecap="round"
@@ -106,46 +106,46 @@ export const LandingPage: React.FC = () => {
                   <line x1="12" x2="12" y1="12" y2="22" />
                 </svg>
               </div>
-              <span className="font-headline-sm text-headline-sm text-[#FFF8F0] tracking-tight font-bold">
+              <span className="font-headline-sm text-lg text-[#FFF8F0] tracking-tight font-bold">
                 Vera<span className="text-[#E08A3E]">OS</span>
               </span>
             </Link>
 
-            {/* Desktop Navigation */}
-            <nav className="hidden lg:flex items-center gap-1">
+            {/* Desktop Modern Pill Navigation */}
+            <nav className="hidden lg:flex items-center gap-1 p-1 rounded-full bg-[#20110A]/80 border border-[#422216]/60 backdrop-blur-md shadow-[inset_0_1px_1px_rgba(255,255,255,0.04)]">
               <a
                 href="#verify-anywhere"
-                className="px-3 py-1.5 font-body-md text-body-md text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#21110B] rounded transition-colors"
+                className="px-3.5 py-1.5 text-xs font-medium tracking-wide text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#2F170E]/80 rounded-full transition-all duration-200"
               >
                 Product
               </a>
               <a
                 href="#how-it-works"
-                className="px-3 py-1.5 font-body-md text-body-md text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#21110B] rounded transition-colors"
+                className="px-3.5 py-1.5 text-xs font-medium tracking-wide text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#2F170E]/80 rounded-full transition-all duration-200"
               >
                 How it works
               </a>
               <a
                 href="#interactive-verify"
-                className="px-3 py-1.5 font-body-md text-body-md text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#21110B] rounded transition-colors"
+                className="px-3.5 py-1.5 text-xs font-medium tracking-wide text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#2F170E]/80 rounded-full transition-all duration-200"
               >
                 Verify a task
               </a>
               <a
                 href="#demo"
-                className="px-3 py-1.5 font-body-md text-body-md text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#21110B] rounded transition-colors"
+                className="px-3.5 py-1.5 text-xs font-medium tracking-wide text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#2F170E]/80 rounded-full transition-all duration-200"
               >
                 Evidence
               </a>
               <a
                 href="#developers"
-                className="px-3 py-1.5 font-body-md text-body-md text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#21110B] rounded transition-colors"
+                className="px-3.5 py-1.5 text-xs font-medium tracking-wide text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#2F170E]/80 rounded-full transition-all duration-200"
               >
                 API
               </a>
               <Link
                 to="/docs"
-                className="px-3 py-1.5 font-body-md text-body-md text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#21110B] rounded transition-colors"
+                className="px-3.5 py-1.5 text-xs font-medium tracking-wide text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#2F170E]/80 rounded-full transition-all duration-200"
               >
                 Docs
               </Link>
@@ -153,28 +153,29 @@ export const LandingPage: React.FC = () => {
                 href={TELEGRAM_BOT_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-3 py-1.5 font-body-md text-body-md text-[#E08A3E] hover:text-[#FFF8F0] hover:bg-[#21110B] rounded transition-colors flex items-center gap-1.5"
+                className="ml-1 pl-2.5 pr-3 py-1 text-xs font-semibold text-[#E08A3E] bg-[#E08A3E]/10 hover:bg-[#E08A3E]/20 border border-[#E08A3E]/30 rounded-full transition-all duration-200 flex items-center gap-1.5 shadow-[0_0_12px_rgba(224,138,62,0.15)] group"
               >
+                <span className="w-1.5 h-1.5 rounded-full bg-[#E08A3E] animate-pulse" />
                 <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
                   <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/>
                 </svg>
-                <span>Telegram</span>
-                <span className="material-symbols-outlined text-[13px] opacity-70">arrow_outward</span>
+                <span>Telegram Bot</span>
+                <span className="material-symbols-outlined text-[12px] opacity-70 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform">arrow_outward</span>
               </a>
             </nav>
           </div>
 
-          <div className="flex items-center gap-3">
-            {/* Search Button */}
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            {/* Quick Search Button */}
             <button
               type="button"
               onClick={() => setSearchOpen(true)}
-              className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#21110B] border border-[#4A2B1D] text-xs text-[#B9A99B] hover:text-[#FFF8F0] hover:border-[#C96A2B]/60 transition-all cursor-pointer shadow-sm"
+              className="hidden xl:flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-[#20110A]/80 border border-[#422216]/70 text-xs text-[#B9A99B] hover:text-[#FFF8F0] hover:border-[#C96A2B]/60 transition-all cursor-pointer shadow-sm backdrop-blur-sm"
               title="Quick Search (Ctrl+K or Cmd+K)"
             >
-              <span className="material-symbols-outlined text-[16px]">search</span>
-              <span>Search verifications...</span>
-              <kbd className="px-1.5 py-0.5 rounded bg-[#2C1710] text-[10px] text-[#B9A99B] border border-[#4A2B1D]">
+              <span className="material-symbols-outlined text-[15px] text-[#C96A2B]">search</span>
+              <span className="text-[11px] font-medium">Search...</span>
+              <kbd className="px-1.5 py-0.5 rounded-md bg-[#2C1710] text-[10px] text-[#B9A99B] border border-[#4A2B1D]">
                 ⌘K
               </kbd>
             </button>
@@ -184,15 +185,15 @@ export const LandingPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setNotifOpen((prev) => !prev)}
-                className="relative p-2 rounded-lg text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#21110B] transition-colors cursor-pointer"
+                className="relative w-8 h-8 rounded-full flex items-center justify-center text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#20110A] border border-transparent hover:border-[#4A2B1D]/50 transition-all cursor-pointer"
                 title="Notifications"
                 aria-label="Notifications"
               >
-                <span className="material-symbols-outlined text-[20px]">
+                <span className="material-symbols-outlined text-[19px]">
                   notifications
                 </span>
                 {unreadCount > 0 && (
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#C96A2B] shadow-[0_0_8px_rgba(201,106,43,0.8)] animate-pulse" />
+                  <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-[#C96A2B] shadow-[0_0_8px_rgba(201,106,43,0.8)] animate-pulse" />
                 )}
               </button>
 
@@ -213,10 +214,10 @@ export const LandingPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setProfileDropdownOpen((prev) => !prev)}
-                  className="w-8 h-8 rounded-full bg-[#C96A2B] hover:ring-2 hover:ring-[#E08A3E] flex items-center justify-center transition-all cursor-pointer text-white"
+                  className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#C96A2B] to-[#E08A3E] hover:ring-2 hover:ring-[#E08A3E] flex items-center justify-center transition-all cursor-pointer text-white shadow-[0_0_12px_rgba(201,106,43,0.35)]"
                   title={`${user?.name} (Account)`}
                 >
-                  <span className="material-symbols-outlined text-[18px]">
+                  <span className="material-symbols-outlined text-[17px]">
                     person
                   </span>
                 </button>
@@ -253,7 +254,7 @@ export const LandingPage: React.FC = () => {
                           setProfileDropdownOpen(false);
                           logout();
                         }}
-                        className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs text-red-400 hover:bg-red-950/30 transition-colors flex items-center gap-2"
+                        className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs text-red-400 hover:bg-red-950/30 transition-colors flex items-center gap-2 cursor-pointer"
                       >
                         <span className="material-symbols-outlined text-[16px]">logout</span>
                         <span>Sign Out</span>
@@ -263,33 +264,34 @@ export const LandingPage: React.FC = () => {
                 )}
               </div>
             ) : (
-              <div className="hidden sm:flex items-center gap-2">
+              <div className="hidden sm:flex items-center">
                 <button
                   type="button"
                   onClick={() => openAuthModal("signin")}
-                  className="px-2.5 py-1.5 rounded-lg font-body-sm text-body-sm text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#21110B] transition-all cursor-pointer"
+                  className="px-3 py-1.5 rounded-full text-xs font-medium text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#20110A] transition-all cursor-pointer"
                 >
                   Sign In
                 </button>
               </div>
             )}
 
-            {/* Dashboard CTA */}
+            {/* Dashboard CTA Pill */}
             <Link
               to="/dashboard"
-              className="inline-flex items-center justify-center px-3.5 sm:px-4 py-2 rounded-lg font-body-sm sm:font-body-md text-white font-semibold bg-[#C96A2B] hover:bg-[#E08A3E] transition-all shadow-[0_0_18px_rgba(201,106,43,0.45)] active:scale-[0.99] shrink-0"
+              className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold text-white bg-gradient-to-r from-[#C96A2B] via-[#D87431] to-[#E08A3E] hover:from-[#D87431] hover:to-[#E59247] shadow-[0_0_18px_rgba(201,106,43,0.35)] hover:shadow-[0_0_24px_rgba(201,106,43,0.55)] active:scale-[0.98] transition-all shrink-0 group"
             >
               <span>Open Dashboard</span>
+              <span className="material-symbols-outlined text-[14px] group-hover:translate-x-0.5 transition-transform">arrow_forward</span>
             </Link>
 
             {/* Mobile Hamburger Button */}
             <button
               type="button"
               onClick={() => setMobileMenuOpen((prev) => !prev)}
-              className="lg:hidden p-2 rounded-lg text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#21110B] transition-colors"
+              className="lg:hidden w-9 h-9 rounded-xl flex items-center justify-center text-[#B9A99B] hover:text-[#FFF8F0] bg-[#20110A] border border-[#4A2B1D]/60 transition-colors cursor-pointer"
               aria-label="Open mobile navigation menu"
             >
-              <span className="material-symbols-outlined text-[22px]">
+              <span className="material-symbols-outlined text-[20px]">
                 {mobileMenuOpen ? "close" : "menu"}
               </span>
             </button>
@@ -298,42 +300,49 @@ export const LandingPage: React.FC = () => {
 
         {/* Mobile Navigation Drawer */}
         {mobileMenuOpen && (
-          <div className="lg:hidden bg-[#160C08] border-b border-[#4A2B1D] px-gutter py-4 flex flex-col gap-2 shadow-2xl animate-in fade-in slide-in-from-top-2 duration-150">
+          <div className="lg:hidden bg-[#160C08]/95 backdrop-blur-2xl border-b border-[#4A2B1D] px-4 py-4 flex flex-col gap-1.5 shadow-2xl animate-in fade-in slide-in-from-top-2 duration-150">
             <a
               href="#verify-anywhere"
               onClick={() => setMobileMenuOpen(false)}
-              className="px-3 py-2 rounded-lg text-sm text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#21110B] transition-colors"
+              className="px-3.5 py-2 rounded-xl text-xs font-medium text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#21110B] transition-colors"
             >
               Product
             </a>
             <a
               href="#how-it-works"
               onClick={() => setMobileMenuOpen(false)}
-              className="px-3 py-2 rounded-lg text-sm text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#21110B] transition-colors"
+              className="px-3.5 py-2 rounded-xl text-xs font-medium text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#21110B] transition-colors"
             >
               How it works
             </a>
             <a
               href="#interactive-verify"
               onClick={() => setMobileMenuOpen(false)}
-              className="px-3 py-2 rounded-lg text-sm text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#21110B] transition-colors"
+              className="px-3.5 py-2 rounded-xl text-xs font-medium text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#21110B] transition-colors"
             >
               Verify a task
             </a>
             <a
               href="#demo"
               onClick={() => setMobileMenuOpen(false)}
-              className="px-3 py-2 rounded-lg text-sm text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#21110B] transition-colors"
+              className="px-3.5 py-2 rounded-xl text-xs font-medium text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#21110B] transition-colors"
             >
               Evidence
             </a>
             <a
               href="#developers"
               onClick={() => setMobileMenuOpen(false)}
-              className="px-3 py-2 rounded-lg text-sm text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#21110B] transition-colors"
+              className="px-3.5 py-2 rounded-xl text-xs font-medium text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#21110B] transition-colors"
             >
               API
             </a>
+            <Link
+              to="/docs"
+              onClick={() => setMobileMenuOpen(false)}
+              className="px-3.5 py-2 rounded-xl text-xs font-medium text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#21110B] transition-colors"
+            >
+              Docs
+            </Link>
 
             <div className="pt-2 border-t border-[#4A2B1D]/40 flex flex-col gap-2">
               <a
@@ -341,21 +350,22 @@ export const LandingPage: React.FC = () => {
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center justify-between px-3 py-2.5 rounded-lg bg-[#21110B] border border-[#4A2B1D] text-sm text-[#E08A3E] font-medium"
+                className="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-[#21110B] border border-[#4A2B1D] text-xs text-[#E08A3E] font-medium"
               >
                 <div className="flex items-center gap-2">
-                  <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#E08A3E] animate-pulse" />
+                  <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
                     <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/>
                   </svg>
-                  <span>Open Telegram Bot</span>
+                  <span>Open Telegram Bot (@Vera_Of_bot)</span>
                 </div>
-                <span className="material-symbols-outlined text-[16px]">arrow_outward</span>
+                <span className="material-symbols-outlined text-[15px]">arrow_outward</span>
               </a>
 
               <Link
                 to="/dashboard"
                 onClick={() => setMobileMenuOpen(false)}
-                className="w-full text-center px-4 py-2 rounded-lg bg-[#C96A2B] text-white font-semibold text-sm"
+                className="w-full text-center px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#C96A2B] to-[#E08A3E] text-white font-semibold text-xs shadow-[0_0_16px_rgba(201,106,43,0.35)]"
               >
                 Open Dashboard
               </Link>
