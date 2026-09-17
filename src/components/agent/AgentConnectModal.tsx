@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { useAgentContext } from "../../context/AgentContext";
 import { Button } from "../ui/Button";
 import { Badge } from "../ui/Badge";
@@ -77,7 +76,6 @@ const FRAMEWORKS: FrameworkOption[] = [
 ];
 
 export const AgentConnectModal: React.FC = () => {
-  const navigate = useNavigate();
   const {
     isConnectModalOpen,
     closeConnectModal,
@@ -85,6 +83,13 @@ export const AgentConnectModal: React.FC = () => {
     connectAgentWithConsent,
     testHandshake,
   } = useAgentContext();
+
+  const handleNavigate = (path: string) => {
+    closeConnectModal();
+    if (typeof window !== "undefined") {
+      window.location.href = path;
+    }
+  };
 
   const [step, setStep] = useState<"select" | "consent" | "handshake" | "connected">("select");
   const [selectedFramework, setSelectedFramework] = useState<FrameworkOption>(FRAMEWORKS[0]);
@@ -584,10 +589,7 @@ export const AgentConnectModal: React.FC = () => {
                 type="button"
                 variant="outline"
                 size="md"
-                onClick={() => {
-                  closeConnectModal();
-                  navigate("/agents");
-                }}
+                onClick={() => handleNavigate("/agents")}
                 className="flex-1"
               >
                 View in Registry
@@ -597,10 +599,7 @@ export const AgentConnectModal: React.FC = () => {
                 type="button"
                 variant="primary"
                 size="md"
-                onClick={() => {
-                  closeConnectModal();
-                  navigate("/verify/new");
-                }}
+                onClick={() => handleNavigate("/verify/new")}
                 icon={
                   <span className="material-symbols-outlined text-[18px]">
                     add_circle
