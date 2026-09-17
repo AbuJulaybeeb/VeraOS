@@ -217,13 +217,14 @@ export class VeraTelegramBot {
         if (!res.ok) {
           if (res.status === 409) {
             consecutive409Count++;
-            console.warn(`[Telegram Bot] 409 Conflict (attempt ${consecutive409Count}): another instance or webhook is active.`);
-            if (consecutive409Count >= 3) {
-              console.warn("[Telegram Bot] Clearing webhook lock with drop_pending_updates=true...");
-              await this.deleteWebhook(true);
-              consecutive409Count = 0;
+            const backoffMs = Math.min(5000 * consecutive409Count, 30000);
+            if (consecutive409Count === 1 || consecutive409Count % 5 === 0) {
+              console.warn(`[Telegram Bot] 409 Conflict: another instance is active. Backing off for ${backoffMs / 1000}s...`);
             }
-            await new Promise((r) => setTimeout(r, 4000));
+            if (consecutive409Count === 3) {
+              await this.deleteWebhook(true);
+            }
+            await new Promise((r) => setTimeout(r, backoffMs));
             continue;
           }
           consecutive409Count = 0;
