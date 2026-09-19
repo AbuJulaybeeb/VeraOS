@@ -171,13 +171,14 @@ See [`docs/API_REFERENCE.md`](./docs/API_REFERENCE.md) for complete endpoint sch
 
 ---
 
-## 7.  Contributor Roadmap
+## 7. Product & Technical Roadmap
 
-We offer curated, rewarded tasks for open-source contributors:
+Our prioritized technical milestones focus on enterprise scalability and zero-trust verification:
+- **Cloudflare D1 Ledger Storage**: SQLite database schema with persistent user sessions and audit logs.
+- **Stellar Horizon RPC Corroboration**: Live onchain payment and contract invocation proofs.
+- **Automated Remediation**: Actionable correction loops for failed agent outputs.
 
-
-
-Check out [`docs/CONTRIBUTOR_ROADMAP.md`](./docs/CONTRIBUTOR_ROADMAP.md) to claim an issue!
+Check out [`docs/CONTRIBUTOR_ROADMAP.md`](./docs/CONTRIBUTOR_ROADMAP.md) for full technical milestone details.
 
 ---
 
@@ -187,7 +188,7 @@ Check out [`docs/CONTRIBUTOR_ROADMAP.md`](./docs/CONTRIBUTOR_ROADMAP.md) to clai
 - [Stellar RPC & Horizon Integration](./docs/STELLAR_INTEGRATION.md)
 - [Telegram Bot Guide](./docs/TELEGRAM_BOT.md)
 - [REST API Reference](./docs/API_REFERENCE.md)
-- [Contributor Roadmap ](./docs/CONTRIBUTOR_ROADMAP.md)
+- [Technical Roadmap](./docs/CONTRIBUTOR_ROADMAP.md)
 - [Demo Script & Video Narration](./docs/DEMO_SCRIPT.md)
 
 ---

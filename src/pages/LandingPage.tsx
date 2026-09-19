@@ -337,7 +337,7 @@ if result.verdict.status != "VERIFIED":
                 <div className="p-3.5 rounded-xl bg-[#1C0E09] border border-[#4A2B1D]/60 flex flex-col gap-1.5">
                   <span className="text-[11px] text-[#B9A99B] font-medium">Task Specification:</span>
                   <p className="text-xs text-[#FFF8F0] font-mono">
-                    &quot;Execute 5.00 USDC bounty payment to recipient GCEYA... for protocol TVL analysis.&quot;
+                    &quot;Execute 5.00 USDC settlement payment to recipient GCEYA... for protocol TVL analysis.&quot;
                   </p>
                 </div>
 

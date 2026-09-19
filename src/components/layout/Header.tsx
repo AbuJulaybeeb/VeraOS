@@ -35,7 +35,7 @@ const INITIAL_NOTIFICATIONS: NotificationItem[] = [
   {
     id: "notif_3",
     type: "warning",
-    title: "Unverified Bounty Claim",
+    title: "Unverified Settlement Claim",
     message: "Worker ScoutAgent reported 5 USDC payment without independent Stellar receipt.",
     time: "32m ago",
     path: "/verify/v_test_unver_003",

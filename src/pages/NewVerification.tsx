@@ -41,10 +41,10 @@ const PRESETS: PresetScenario[] = [
     workerOutput: `Gates 1, 2, and 3 completed successfully. Gate 1 (linter) 0 errors, Gate 2 (tests) 100% pass, Gate 3 (static checks) 0 issues. Audit complete.`,
   },
   {
-    title: "Scenario C: USDC Bounty Transfer",
+    title: "Scenario C: USDC Settlement Transfer",
     badge: "Unverified Claim",
     taskPrompt:
-      "Pay exactly 5 USDC bounty to solver address GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5 on Stellar Testnet.",
+      "Pay exactly 5 USDC settlement to payee address GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5 on Stellar Testnet.",
     workerId: "scout-agent",
     network: "Stellar Testnet",
     workerOutput: `5 USDC was sent to recipient GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5. Transaction broadcast finished.`,

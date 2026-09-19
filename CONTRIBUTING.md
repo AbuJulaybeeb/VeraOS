@@ -2,7 +2,7 @@
 
 Thank you for your interest in contributing to **VeraOS — The verification layer for AI agents**!
 
-VeraOS is an active open-source project participating in the **Stellar Wave Program** on [Drips](https://drips.network). We welcome contributions from developers, researchers, and agent creators across the ecosystem.
+VeraOS is an open-source verification platform for autonomous agents and financial workflows on the Stellar network. We welcome contributions from developers, researchers, and AI agent creators across the ecosystem.
 
 ---
 
@@ -91,7 +91,6 @@ We enforce a clean, disciplined Git history:
 - `feat/<feature-name>` for new capabilities.
 - `fix/<bug-description>` for bug fixes.
 - `docs/<topic>` for documentation updates.
-- `wave/<issue-number>-<task-name>` for Drips Wave backlog issues.
 
 ### Commit Conventions
 Follow [Conventional Commits](https://www.conventionalcommits.org/):
@@ -111,11 +110,12 @@ docs(readme): document live testnet transaction explorer links
 
 ---
 
-## 5. Drips Wave Contributors
+## 5. Submitting Contributions
 
-If you are working on a task for the **Drips Stellar Wave Program**:
+When contributing new features or bug fixes:
 
-1. **Find an Issue**: Browse open issues tagged [`wave-task`](https://github.com/k-deejah/VeraOS/issues?q=label%3Awave-task) or check [`docs/CONTRIBUTOR_ROADMAP.md`](./docs/CONTRIBUTOR_ROADMAP.md).
-2. **Comment to Claim**: Post a comment requesting assignment so other contributors know the task is active.
-3. **Link Your PR**: Ensure your Pull Request description explicitly links the issue (`Fixes #<number>`).
-4. **Acceptance Criteria**: Verify every item in the issue's Acceptance Criteria checklist is fully satisfied and tested.
+1. **Find or Open an Issue**: Browse open issues or open a new issue detailing your proposal or bug report.
+2. **Branch & Implement**: Create a branch following the conventions above and implement your changes with comprehensive tests.
+3. **Run Validation**: Ensure `npm test` and `npm run lint` pass locally with zero errors.
+4. **Link Your PR**: Ensure your Pull Request description clearly describes the changes and references the issue (`Fixes #<number>`).
+5. **Acceptance Criteria**: Verify every item in the issue's Acceptance Criteria checklist is fully satisfied and tested.
