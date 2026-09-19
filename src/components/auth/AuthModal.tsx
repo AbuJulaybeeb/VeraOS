@@ -4,7 +4,7 @@ import { Button } from "../ui/Button";
 import { StellarWalletModal } from "../wallet/StellarWalletModal";
 
 export const AuthModal: React.FC = () => {
-  const { isAuthModalOpen, authModalMode, closeAuthModal, login, loginWithGoogle, signup, connectWallet } = useAuth();
+  const { isAuthModalOpen, authModalMode, closeAuthModal, login, loginWithGoogle, signup } = useAuth();
 
   const [mode, setMode] = useState<"signin" | "signup">(authModalMode);
   const [name, setName] = useState("");
@@ -12,6 +12,7 @@ export const AuthModal: React.FC = () => {
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [walletModalOpen, setWalletModalOpen] = useState(false);
 
   React.useEffect(() => {
     setMode(authModalMode);
@@ -61,8 +62,6 @@ export const AuthModal: React.FC = () => {
       setIsSubmitting(false);
     }
   };
-
-  const [walletModalOpen, setWalletModalOpen] = useState(false);
 
   const handleWalletLogin = () => {
     setWalletModalOpen(true);
