@@ -32,6 +32,9 @@ const ConnectAgent = lazy(() =>
 const Docs = lazy(() =>
   import("../pages/Docs").then((m) => ({ default: m.Docs }))
 );
+const InvitePortal = lazy(() =>
+  import("../pages/InvitePortal").then((m) => ({ default: m.InvitePortal }))
+);
 const NotFound = lazy(() =>
   import("../pages/NotFound").then((m) => ({ default: m.NotFound }))
 );
@@ -60,6 +63,16 @@ export const router = createBrowserRouter([
     element: (
       <Suspense fallback={<PageLoader />}>
         <Docs />
+      </Suspense>
+    ),
+  },
+
+  // Enterprise Invitation Portal
+  {
+    path: "/invite",
+    element: (
+      <Suspense fallback={<PageLoader />}>
+        <InvitePortal />
       </Suspense>
     ),
   },

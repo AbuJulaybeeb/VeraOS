@@ -6,6 +6,7 @@ import { ThemeToggle } from "../../context/ThemeContext";
 import { NotificationsPopover, NotificationItem } from "../notifications/NotificationsPopover";
 import { CommandPalette } from "../search/CommandPalette";
 import { AgentHeaderWidget } from "../agent/AgentHeaderWidget";
+import { StellarWalletModal } from "../wallet/StellarWalletModal";
 
 interface HeaderProps {
   onToggleMobileMenu: () => void;
@@ -51,6 +52,7 @@ export const Header: React.FC<HeaderProps> = ({
 
   const [searchOpen, setSearchOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [walletModalOpen, setWalletModalOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
 
@@ -171,6 +173,35 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Connect AI Agent Widget (Wallet-style) */}
           <AgentHeaderWidget />
 
+          {/* Connect Stellar Wallet (Freighter, Albedo, Lobstr) */}
+          {user?.walletAddress ? (
+            <button
+              type="button"
+              onClick={() => setWalletModalOpen(true)}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high border border-white/10 text-xs font-mono text-[#00E5FF] transition-all cursor-pointer"
+              title={`Stellar Wallet Connected: ${user.walletAddress}`}
+            >
+              <span className="material-symbols-outlined text-[15px] text-[#00E5FF]">
+                account_balance_wallet
+              </span>
+              <span className="hidden xl:inline">
+                {user.walletAddress.slice(0, 4)}...{user.walletAddress.slice(-4)}
+              </span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setWalletModalOpen(true)}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-xs font-medium text-on-surface-variant hover:text-on-surface transition-all cursor-pointer border border-white/5"
+              title="Connect Stellar Wallet (Freighter, Albedo, Lobstr)"
+            >
+              <span className="material-symbols-outlined text-[15px] text-[#00E5FF]">
+                account_balance_wallet
+              </span>
+              <span className="hidden md:inline">Stellar</span>
+            </button>
+          )}
+
           {/* New Verification Button */}
           <Button
             variant="primary"
@@ -284,6 +315,12 @@ export const Header: React.FC<HeaderProps> = ({
       <CommandPalette
         isOpen={searchOpen}
         onClose={() => setSearchOpen(false)}
+      />
+
+      {/* Stellar Multi-Wallet Modal */}
+      <StellarWalletModal
+        isOpen={walletModalOpen}
+        onClose={() => setWalletModalOpen(false)}
       />
     </>
   );

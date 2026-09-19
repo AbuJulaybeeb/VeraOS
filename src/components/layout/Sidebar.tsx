@@ -56,6 +56,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
       path: "/agents/connect",
       active: location.pathname === "/agents/connect",
     },
+    {
+      label: "Invite Portal",
+      icon: "vpn_key",
+      path: "/invite",
+      active: location.pathname === "/invite",
+    },
   ];
 
   return (

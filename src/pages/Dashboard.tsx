@@ -85,15 +85,24 @@ export const Dashboard: React.FC = () => {
             <strong className="text-on-surface">Connected Interface:</strong> Telegram bot is linked to this shared verification engine. Start or monitor tasks using <code className="text-secondary font-mono">/verify</code> or <code className="text-secondary font-mono">/status</code> in Telegram.
           </span>
         </div>
-        <a
-          href={TELEGRAM_BOT_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#21110B] hover:bg-[#2C1710] border border-[#4A2B1D] text-xs font-semibold text-[#E08A3E] transition-colors whitespace-nowrap self-start sm:self-auto"
-        >
-          <span>Open Telegram Bot</span>
-          <span className="material-symbols-outlined text-[14px]">arrow_outward</span>
-        </a>
+        <div className="flex items-center gap-2 flex-wrap self-start sm:self-auto">
+          <Link
+            to="/invite"
+            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high border border-white/5 text-xs font-medium text-on-surface transition-colors"
+          >
+            <span className="material-symbols-outlined text-[14px] text-primary">vpn_key</span>
+            <span>Invite Portal</span>
+          </Link>
+          <a
+            href={TELEGRAM_BOT_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#21110B] hover:bg-[#2C1710] border border-[#4A2B1D] text-xs font-semibold text-[#E08A3E] transition-colors whitespace-nowrap"
+          >
+            <span>Open Telegram Bot</span>
+            <span className="material-symbols-outlined text-[14px]">arrow_outward</span>
+          </a>
+        </div>
       </div>
 
       {/* Useful Telemetry Summary Cards */}
