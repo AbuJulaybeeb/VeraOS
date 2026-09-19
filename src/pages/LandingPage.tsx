@@ -580,12 +580,12 @@ if result.verdict.status != "VERIFIED":
       </section>
 
       {/* ---------------------------------------------------- */}
-      {/* 5. INTERACTIVE VERIFICATION SCENARIO DEMO            */}
+      {/* 5. INTERACTIVE VERIFICATION SCENARIO TESTBED         */}
       {/* ---------------------------------------------------- */}
       <section id="interactive-verify" className="py-24 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto border-t border-[#4A2B1D]/40">
         <div className="text-center max-w-3xl mx-auto mb-14">
           <div className="text-xs font-bold uppercase tracking-widest text-[#E08A3E] mb-2">
-            LIVE ENGINE DEMO
+            LIVE ENGINE TESTBED
           </div>
           <h2 className="font-headline-lg text-3xl sm:text-5xl font-bold tracking-tight text-[#FFF8F0] mb-4">
             Test a verification scenario right now.
@@ -1145,7 +1145,7 @@ if result.verdict.status != "VERIFIED":
               <ul className="space-y-2 text-[#B9A99B]">
                 <li><a href="#problem" className="hover:text-white transition-colors">Visibility Gap</a></li>
                 <li><a href="#how-it-works" className="hover:text-white transition-colors">How it works</a></li>
-                <li><a href="#interactive-verify" className="hover:text-white transition-colors">Interactive Demo</a></li>
+                <li><a href="#interactive-verify" className="hover:text-white transition-colors">Interactive Testbed</a></li>
                 <li><Link to="/dashboard" className="hover:text-white transition-colors">Dashboard</Link></li>
               </ul>
             </div>

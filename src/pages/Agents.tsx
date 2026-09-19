@@ -78,6 +78,23 @@ export const Agents: React.FC = () => {
           <span className="w-8 h-8 border-2 border-primary-container border-t-transparent rounded-full animate-spin" />
           <span className="font-code-sm text-code-sm">Loading registered agents...</span>
         </div>
+      ) : agents.length === 0 ? (
+        <div className="p-16 rounded-2xl bg-surface-container-low border border-white/5 flex flex-col items-center justify-center text-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-surface-container flex items-center justify-center text-[#E08A3E]">
+            <span className="material-symbols-outlined text-[28px]">smart_toy</span>
+          </div>
+          <div>
+            <h3 className="font-headline-sm text-headline-sm font-semibold text-on-surface">
+              NO AGENTS REGISTERED
+            </h3>
+            <p className="font-body-sm text-body-sm text-on-surface-variant max-w-sm mt-1">
+              Connect your first autonomous AI agent to establish scoped permissions, cryptographic attestation, and live verification.
+            </p>
+          </div>
+          <Button variant="primary" onClick={() => openConnectModal()}>
+            Connect Your First Agent
+          </Button>
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-space-md">
           {agents.map((agent) => {

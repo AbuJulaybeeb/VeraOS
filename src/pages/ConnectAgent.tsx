@@ -66,10 +66,10 @@ export const ConnectAgent: React.FC = () => {
   const [pingStatus, setPingStatus] = useState<string | null>(null);
   const [isPinging, setIsPinging] = useState(false);
 
-  const demoApiKey = activeAgent?.apiKeySnippet || "vera_live_demo_984f1a20b0849208a001";
+  const liveApiKey = activeAgent?.apiKeySnippet || "vera_live_sec_89bf2e91a001";
 
   const handleCopyKey = () => {
-    navigator.clipboard.writeText(demoApiKey);
+    navigator.clipboard.writeText(liveApiKey);
     setCopiedKey(true);
     setTimeout(() => setCopiedKey(false), 2000);
   };
@@ -94,7 +94,7 @@ export const ConnectAgent: React.FC = () => {
 
 // Initialize VeraOS Verification Client
 const vera = new VeraOS({
-  apiKey: process.env.VERA_API_KEY, // ${demoApiKey}
+  apiKey: process.env.VERA_API_KEY, // ${liveApiKey}
   network: 'stellar-testnet'
 });
 
@@ -139,7 +139,7 @@ else:
     print(f"Verified on Stellar! Explorer: https://stellar.expert/explorer/testnet/tx/{verification.tx_hash}")`;
 
   const curlCode = `curl -X POST https://api.veraos.network/v1/verify \\
-  -H "Authorization: Bearer ${demoApiKey}" \\
+  -H "Authorization: Bearer ${liveApiKey}" \\
   -H "Content-Type: application/json" \\
   -d '{
     "task": "Find 3 Stellar lending protocols with TVL > $10M and pay 5 USDC.",
@@ -369,7 +369,7 @@ else:
                 Active Verification Key
               </span>
               <span className="font-code-sm text-code-sm text-secondary font-mono truncate">
-                {demoApiKey}
+                {liveApiKey}
               </span>
               <span className="text-[11px] text-outline">
                 Scoped with user consent for Stellar verification

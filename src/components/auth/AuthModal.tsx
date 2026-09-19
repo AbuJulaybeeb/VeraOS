@@ -3,7 +3,7 @@ import { useAuth } from "../../context/AuthContext";
 import { Button } from "../ui/Button";
 
 export const AuthModal: React.FC = () => {
-  const { isAuthModalOpen, authModalMode, closeAuthModal, login, loginAsDemo, loginWithGoogle, signup, connectWallet } = useAuth();
+  const { isAuthModalOpen, authModalMode, closeAuthModal, login, loginWithGoogle, signup, connectWallet } = useAuth();
 
   const [mode, setMode] = useState<"signin" | "signup">(authModalMode);
   const [name, setName] = useState("");
@@ -43,17 +43,8 @@ export const AuthModal: React.FC = () => {
       } else {
         await signup(name, email, password);
       }
-    } catch {
-      setErrorMsg("Authentication failed. Please check credentials.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleQuickDemoLogin = async () => {
-    setIsSubmitting(true);
-    try {
-      await loginAsDemo();
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : "Authentication failed. Please check credentials.");
     } finally {
       setIsSubmitting(false);
     }
@@ -62,23 +53,20 @@ export const AuthModal: React.FC = () => {
   const handleGoogleLogin = async () => {
     setIsSubmitting(true);
     try {
-      await loginWithGoogle();
+      await loginWithGoogle(email.trim() || undefined);
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : "Google authentication failed.");
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const handleAutoFillSignup = () => {
-    setName("Deejah");
-    setEmail("Deejahai@gmail.com");
-    setPassword("securePass2026!");
-    setErrorMsg(null);
   };
 
   const handleWalletLogin = async () => {
     setIsSubmitting(true);
     try {
       await connectWallet();
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : "Stellar wallet connection failed.");
     } finally {
       setIsSubmitting(false);
     }
@@ -210,26 +198,12 @@ export const AuthModal: React.FC = () => {
             />
           </div>
 
-          {mode === "signup" && (
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] text-outline">Testing sign-up?</span>
-              <button
-                type="button"
-                onClick={handleAutoFillSignup}
-                className="text-[11px] text-primary hover:underline flex items-center gap-1 font-medium"
-              >
-                <span className="material-symbols-outlined text-[14px]">bolt</span>
-                Autofill Test Details
-              </button>
-            </div>
-          )}
-
           <Button
             type="submit"
             variant="primary"
             size="md"
             loading={isSubmitting}
-            className="w-full mt-1"
+            className="w-full mt-2"
           >
             {mode === "signin" ? "Sign In with Email" : "Create Account & Sign Up"}
           </Button>
@@ -289,21 +263,7 @@ export const AuthModal: React.FC = () => {
               <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
               <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
             </svg>
-            <span className="font-semibold text-on-surface">Connect with Google</span>
-            <span className="text-[11px] text-outline font-code-sm hidden sm:inline">(Deejahai@gmail.com)</span>
-          </button>
-
-          {/* Quick Demo Sign In as Deejah */}
-          <button
-            type="button"
-            onClick={handleQuickDemoLogin}
-            disabled={isSubmitting}
-            className="w-full py-2 px-3 rounded-lg bg-surface-container-high hover:bg-surface-bright border border-white/5 text-on-surface font-body-sm text-body-sm font-medium flex items-center justify-center gap-2 transition-colors cursor-pointer"
-          >
-            <span className="material-symbols-outlined text-primary text-[18px]">
-              badge
-            </span>
-            <span>Demo: Sign in as Deejah (Lead Infrastructure Engineer)</span>
+            <span className="font-semibold text-on-surface">Continue with Google</span>
           </button>
 
           {/* Web3 Wallet */}
@@ -311,7 +271,7 @@ export const AuthModal: React.FC = () => {
             type="button"
             onClick={handleWalletLogin}
             disabled={isSubmitting}
-            className="w-full py-2 px-3 rounded-lg bg-surface-container-high hover:bg-surface-bright border border-white/5 text-on-surface font-body-sm text-body-sm font-medium flex items-center justify-center gap-2 transition-colors cursor-pointer"
+            className="w-full py-2.5 px-3 rounded-lg bg-surface-container-high hover:bg-surface-bright border border-white/5 text-on-surface font-body-sm text-body-sm font-medium flex items-center justify-center gap-2 transition-colors cursor-pointer"
           >
             <span className="material-symbols-outlined text-secondary text-[18px]">
               account_balance_wallet

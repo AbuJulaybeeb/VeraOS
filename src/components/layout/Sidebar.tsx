@@ -99,7 +99,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   Acme AI Corp
                 </p>
                 <p className="font-label-caps text-label-caps text-outline uppercase tracking-wider truncate">
-                  {user?.role || "Demo Workspace"}
+                  {user?.role || "Production Workspace"}
                 </p>
               </div>
             </div>

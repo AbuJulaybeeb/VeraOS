@@ -1,0 +1,10 @@
+name = "veraos"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+pages_build_output_dir = "dist"
+
+[vars]
+STELLAR_NETWORK = "testnet"
+STELLAR_RPC_URL = "https://soroban-testnet.stellar.org"
+STELLAR_HORIZON_URL = "https://horizon-testnet.stellar.org"
+TELEGRAM_BOT_TOKEN = "8398164925:AAHdxpRwoIOvBocQyEaJEGhb-FuVJ58O7Dk"
