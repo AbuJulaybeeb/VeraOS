@@ -1,4 +1,7 @@
 interface Env {
+  STATIC_ASSETS?: {
+    fetch: (req: Request) => Promise<Response>;
+  };
   ASSETS?: {
     fetch: (req: Request) => Promise<Response>;
   };
@@ -292,9 +295,10 @@ export default {
       }
     }
 
-    // 4. Static Assets (Frontend UI): Serve via env.ASSETS if present
-    if (env.ASSETS) {
-      return env.ASSETS.fetch(request);
+    // 4. Static Assets (Frontend UI): Serve via env.STATIC_ASSETS or env.ASSETS
+    const assetBinding = env.STATIC_ASSETS || env.ASSETS;
+    if (assetBinding) {
+      return assetBinding.fetch(request);
     }
 
     return new Response("Not Found", { status: 404 });
