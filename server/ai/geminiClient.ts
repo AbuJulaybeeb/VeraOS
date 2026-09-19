@@ -256,9 +256,10 @@ User Message: "${userMessage}"`;
       };
     }
 
-    // 5. Verification Task (e.g. "Verify that I sent 5 USDC to GCEYAU...")
+    // 5. Verification Task (e.g. "Verify that I sent 5 USDC to GCEYAU..." or "Verify this payment of 5 USDC...")
     const verifyPhrases = [
       "verify that",
+      "verify this",
       "verify i",
       "check if i",
       "audit this",
@@ -269,7 +270,7 @@ User Message: "${userMessage}"`;
     ];
     const isVerification =
       verifyPhrases.some((phrase) => lower.includes(phrase)) ||
-      (lower.includes("usdc") && (lower.includes("sent") || lower.includes("pay") || lower.includes("tx"))) ||
+      (lower.includes("usdc") && (lower.includes("sent") || lower.includes("pay") || lower.includes("payment") || lower.includes("tx"))) ||
       lower.includes("|");
 
     if (isVerification) {
@@ -297,8 +298,8 @@ User Message: "${userMessage}"`;
 
       // Clean task
       let task = text;
-      if (lower.startsWith("verify that ") || lower.startsWith("verify i ")) {
-        task = text.replace(/^verify\s+(that\s+|i\s+)?/i, "").trim();
+      if (lower.startsWith("verify that ") || lower.startsWith("verify i ") || lower.startsWith("verify this ")) {
+        task = text.replace(/^verify\s+(that\s+|i\s+|this\s+)?/i, "").trim();
       }
 
       let output = `Execution completed. Transferred funds to recipient ${address || "account"}.`;

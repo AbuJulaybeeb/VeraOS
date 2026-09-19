@@ -69,3 +69,20 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 
 CREATE INDEX IF NOT EXISTS idx_audit_logs_user_id ON audit_logs(user_id);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_timestamp ON audit_logs(timestamp);
+
+-- 5. User Accounts & Authentication Table
+CREATE TABLE IF NOT EXISTS users (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  email TEXT UNIQUE NOT NULL,
+  password_hash TEXT NOT NULL,
+  role TEXT NOT NULL DEFAULT 'AI Verification Engineer',
+  avatar TEXT,
+  stellar_wallet TEXT,
+  auth_provider TEXT NOT NULL DEFAULT 'password', -- 'password', 'stellar', 'google'
+  created_at TEXT NOT NULL,
+  last_login_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_stellar_wallet ON users(stellar_wallet);

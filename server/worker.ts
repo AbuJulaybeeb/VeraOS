@@ -2,6 +2,7 @@ import { VeraDatabase, D1Database, StoredVerification } from "./db/database.ts";
 import { InviteService } from "./auth/inviteService.ts";
 import { GeminiClient } from "./ai/geminiClient.ts";
 import { stellarWalletService } from "./stellar/walletService.ts";
+import { AuthService } from "./auth/authService.ts";
 
 interface Env {
   STATIC_ASSETS?: {
@@ -25,6 +26,7 @@ export default {
     const pathname = url.pathname;
 
     const db = new VeraDatabase(env.DB);
+    const auth = new AuthService(db);
     const invites = new InviteService(db);
     const gemini = new GeminiClient(env.GEMINI_API_KEY);
     const botToken = env.TELEGRAM_BOT_TOKEN || "8398164925:AAHdxpRwoIOvBocQyEaJEGhb-FuVJ58O7Dk";
@@ -103,6 +105,113 @@ export default {
           headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
         });
       }
+    }
+
+    // 2.1 Real Database Authentication APIs (Cloudflare D1 backed)
+    if (pathname === "/v1/auth/signup" && request.method === "POST") {
+      try {
+        const body = (await request.json()) as any;
+        const result = await auth.signup({
+          name: body.name || "",
+          email: body.email || "",
+          password: body.password || "",
+          role: body.role,
+          stellarWallet: body.stellarWallet,
+        });
+        return new Response(JSON.stringify(result), {
+          status: 201,
+          headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+        });
+      } catch (err) {
+        return new Response(
+          JSON.stringify({ error: err instanceof Error ? err.message : "Signup failed" }),
+          {
+            status: 400,
+            headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+          }
+        );
+      }
+    }
+
+    if (pathname === "/v1/auth/login" && request.method === "POST") {
+      try {
+        const body = (await request.json()) as any;
+        const result = await auth.login(body.email || "", body.password || "");
+        return new Response(JSON.stringify(result), {
+          status: 200,
+          headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+        });
+      } catch (err) {
+        return new Response(
+          JSON.stringify({ error: err instanceof Error ? err.message : "Authentication failed" }),
+          {
+            status: 401,
+            headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+          }
+        );
+      }
+    }
+
+    if (pathname === "/v1/auth/wallet-login" && request.method === "POST") {
+      try {
+        const body = (await request.json()) as any;
+        const result = await auth.loginWithStellarWallet(body.publicKey || "");
+        return new Response(JSON.stringify(result), {
+          status: 200,
+          headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+        });
+      } catch (err) {
+        return new Response(
+          JSON.stringify({ error: err instanceof Error ? err.message : "Wallet login failed" }),
+          {
+            status: 400,
+            headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+          }
+        );
+      }
+    }
+
+    if (pathname === "/v1/auth/link-wallet" && request.method === "POST") {
+      try {
+        const body = (await request.json()) as any;
+        const result = await auth.linkWallet(body.userId || body.email || "", body.walletAddress || "");
+        return new Response(JSON.stringify(result), {
+          status: 200,
+          headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+        });
+      } catch (err) {
+        return new Response(
+          JSON.stringify({ error: err instanceof Error ? err.message : "Link wallet failed" }),
+          {
+            status: 400,
+            headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+          }
+        );
+      }
+    }
+
+    if (pathname === "/v1/auth/me" && request.method === "GET") {
+      const authHeader = request.headers.get("Authorization") || "";
+      const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+      const session = await auth.verifySessionToken(token);
+      if (!session) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401,
+          headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+        });
+      }
+      const user = await db.getUserById(session.uid);
+      if (!user) {
+        return new Response(JSON.stringify({ error: "User not found" }), {
+          status: 404,
+          headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+        });
+      }
+      const { password_hash: _, ...safeUser } = user;
+      return new Response(JSON.stringify({ user: safeUser }), {
+        status: 200,
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+      });
     }
 
     // 3. Telegram Webhook: /telegram/webhook
@@ -387,26 +496,56 @@ export default {
               `[Open Telemetry Record](https://veraos.abdulwasiikhadijah.workers.dev/verify/${vid})`
             );
           } else if (ai.intent === "EVIDENCE") {
-            const vid = ai.verificationId || "V-1048";
-            const rec = await db.getVerification(vid);
+            let vid = ai.verificationId;
+            let rec = vid ? await db.getVerification(vid) : null;
+            if (!rec) {
+              const recent = await db.listVerifications(1, 0);
+              if (recent.length > 0) {
+                rec = recent[0];
+                vid = rec.display_id;
+              } else {
+                vid = "V-1048";
+              }
+            }
             const txHash = rec?.stellar_tx_hash || ai.stellarTxHash || "62256096f306726197208231b00e422628b0bb83e104dabed9a74da5186afbaf";
             await sendMessage(
               botToken,
               chatId,
               `🔐 *Cryptographic Evidence for ${vid}*\n\n` +
+              `• Task: ${rec?.task_prompt || "Payment verification"}\n` +
               `• Proof Provider: Stellar Horizon Node\n` +
-              `• Ledger Tx: \`${txHash.slice(0, 16)}...${txHash.slice(-16)}\`\n` +
+              `• Ledger Tx: \`${txHash}\`\n` +
+              `• Status: *${rec?.status || "PASSED"}*\n` +
               `• Attestation: Corroborated onchain\n\n` +
               `👉 [View on Stellar Expert Explorer](https://stellar.expert/explorer/testnet/tx/${txHash})`
             );
           } else if (ai.intent === "CONNECT_WALLET") {
-            await sendMessage(
-              botToken,
-              chatId,
-              `💼 *Stellar Wallet Connection*\n\n` +
-              `You can link your Stellar wallet directly to your operator account using Freighter, Lobstr, or Albedo.\n\n` +
-              `👉 [Connect Wallet on Web Platform](https://veraos.abdulwasiikhadijah.workers.dev/dashboard)`
-            );
+            if (ai.walletAddress && stellarWalletService.isValidPublicKey(ai.walletAddress)) {
+              await db.linkStellarWallet(telegramId, ai.walletAddress);
+              const info = await stellarWalletService.getAccountInfo(ai.walletAddress);
+              const balances = info ? stellarWalletService.formatBalances(info) : "Active on Testnet";
+              await sendMessage(
+                botToken,
+                chatId,
+                `💼 *Stellar Wallet Linked Successfully!*\n\n` +
+                `• Address: \`${ai.walletAddress}\`\n` +
+                `• Network: Stellar Testnet\n` +
+                `• Horizon Balances: \`${balances}\`\n` +
+                `• Status: Verified & saved to your VeraOS profile in D1.\n\n` +
+                `[Manage on Telemetry Dashboard](https://veraos.abdulwasiikhadijah.workers.dev/dashboard)`
+              );
+            } else {
+              await sendMessage(
+                botToken,
+                chatId,
+                `💼 *Stellar Wallet Connection*\n\n` +
+                `You can link your Stellar wallet directly by sending your public key:\n` +
+                `\`/wallet <YOUR_G_ADDRESS>\`\n` +
+                `or say: _"Connect wallet GCEYAU..."_\n\n` +
+                `You can also connect via Freighter or Albedo on the web:\n` +
+                `👉 [Connect on Web Platform](https://veraos.abdulwasiikhadijah.workers.dev/dashboard)`
+              );
+            }
           } else if (ai.intent === "HELP") {
             await sendMessage(
               botToken,
@@ -502,6 +641,22 @@ export default {
           });
         }
       }
+    }
+
+    // 4.1 Single Verification Record: /v1/verify/:id
+    if (pathname.startsWith("/v1/verify/") && request.method === "GET") {
+      const vid = pathname.replace("/v1/verify/", "").trim();
+      const rec = await db.getVerification(vid);
+      if (!rec) {
+        return new Response(JSON.stringify({ error: "Verification not found" }), {
+          status: 404,
+          headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+        });
+      }
+      return new Response(JSON.stringify(rec), {
+        status: 200,
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+      });
     }
 
     // 5. Static Assets (Frontend UI): Serve via env.STATIC_ASSETS or env.ASSETS

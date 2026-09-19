@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { Button } from "../ui/Button";
+import { StellarWalletModal } from "../wallet/StellarWalletModal";
 
 export const AuthModal: React.FC = () => {
   const { isAuthModalOpen, authModalMode, closeAuthModal, login, loginWithGoogle, signup, connectWallet } = useAuth();
@@ -61,15 +62,10 @@ export const AuthModal: React.FC = () => {
     }
   };
 
-  const handleWalletLogin = async () => {
-    setIsSubmitting(true);
-    try {
-      await connectWallet();
-    } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : "Stellar wallet connection failed.");
-    } finally {
-      setIsSubmitting(false);
-    }
+  const [walletModalOpen, setWalletModalOpen] = useState(false);
+
+  const handleWalletLogin = () => {
+    setWalletModalOpen(true);
   };
 
   return (
@@ -276,10 +272,18 @@ export const AuthModal: React.FC = () => {
             <span className="material-symbols-outlined text-secondary text-[18px]">
               account_balance_wallet
             </span>
-            <span>Connect Stellar Wallet (Freighter)</span>
+            <span>Connect Real Stellar Wallet (Freighter, Albedo, Lobstr)</span>
           </button>
         </div>
       </div>
+
+      <StellarWalletModal
+        isOpen={walletModalOpen}
+        onClose={() => {
+          setWalletModalOpen(false);
+          closeAuthModal();
+        }}
+      />
     </div>
   );
 };

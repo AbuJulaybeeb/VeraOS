@@ -82,90 +82,114 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const login = async (email: string, pass: string): Promise<boolean> => {
-    await new Promise((r) => setTimeout(r, 300));
     const cleanEmail = email.trim().toLowerCase();
-    const users = getStoredUsers();
-    const existing = users.find((u) => u.email.toLowerCase() === cleanEmail);
-
-    if (existing) {
-      if (existing.passwordHash !== pass) {
-        throw new Error("Invalid password for this account.");
+    try {
+      const res = await fetch("/v1/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: cleanEmail, password: pass }),
+      });
+      const data = (await res.json()) as any;
+      if (!res.ok) {
+        throw new Error(data.error || "Authentication failed.");
+      }
+      if (data.token) {
+        localStorage.setItem("vera_session_token_v1", data.token);
       }
       const activeUser: User = {
-        id: existing.id,
-        name: existing.name,
-        email: existing.email,
-        role: existing.role,
-        avatar: existing.avatar,
-        walletAddress: existing.walletAddress,
-        authProvider: "password",
+        id: data.user.id,
+        name: data.user.name,
+        email: data.user.email,
+        role: data.user.role,
+        avatar: data.user.avatar,
+        walletAddress: data.user.stellar_wallet,
+        authProvider: data.user.auth_provider || "password",
       };
       setUser(activeUser);
       setIsAuthModalOpen(false);
       return true;
+    } catch (err) {
+      // Local database fallback for offline / disconnected dev mode
+      const users = getStoredUsers();
+      const existing = users.find((u) => u.email.toLowerCase() === cleanEmail);
+      if (existing) {
+        if (existing.passwordHash !== pass) {
+          throw new Error("Invalid password for this account.");
+        }
+        const activeUser: User = {
+          id: existing.id,
+          name: existing.name,
+          email: existing.email,
+          role: existing.role,
+          avatar: existing.avatar,
+          walletAddress: existing.walletAddress,
+          authProvider: "password",
+        };
+        setUser(activeUser);
+        setIsAuthModalOpen(false);
+        return true;
+      }
+      throw err;
     }
-
-    // If account wasn't in local registry yet, register and authenticate them as a live operator
-    const newId = `usr_${Date.now().toString(36)}`;
-    const derivedName = cleanEmail.split("@")[0].replace(/[._-]/g, " ") || "Operator";
-    const displayName = derivedName.charAt(0).toUpperCase() + derivedName.slice(1);
-    const newAccount: StoredAccount = {
-      id: newId,
-      name: displayName,
-      email: cleanEmail,
-      role: "Lead Systems Engineer",
-      passwordHash: pass,
-      authProvider: "password",
-      createdAt: new Date().toISOString(),
-    };
-    saveStoredUsers([...users, newAccount]);
-
-    setUser({
-      id: newAccount.id,
-      name: newAccount.name,
-      email: newAccount.email,
-      role: newAccount.role,
-      authProvider: "password",
-    });
-    setIsAuthModalOpen(false);
-    return true;
   };
 
   const signup = async (name: string, email: string, pass: string): Promise<boolean> => {
-    await new Promise((r) => setTimeout(r, 350));
     const cleanEmail = email.trim().toLowerCase();
-    const users = getStoredUsers();
-    const existing = users.find((u) => u.email.toLowerCase() === cleanEmail);
-
-    if (existing) {
-      throw new Error("An account with this email already exists. Please sign in.");
+    try {
+      const res = await fetch("/v1/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: name.trim(), email: cleanEmail, password: pass }),
+      });
+      const data = (await res.json()) as any;
+      if (!res.ok) {
+        throw new Error(data.error || "Registration failed.");
+      }
+      if (data.token) {
+        localStorage.setItem("vera_session_token_v1", data.token);
+      }
+      const activeUser: User = {
+        id: data.user.id,
+        name: data.user.name,
+        email: data.user.email,
+        role: data.user.role,
+        avatar: data.user.avatar,
+        walletAddress: data.user.stellar_wallet,
+        authProvider: data.user.auth_provider || "password",
+      };
+      setUser(activeUser);
+      setIsAuthModalOpen(false);
+      return true;
+    } catch (err) {
+      // Local fallback
+      const users = getStoredUsers();
+      const existing = users.find((u) => u.email.toLowerCase() === cleanEmail);
+      if (existing) {
+        throw new Error("An account with this email already exists. Please sign in.");
+      }
+      const newAccount: StoredAccount = {
+        id: `usr_${Date.now().toString(36)}`,
+        name: name.trim(),
+        email: cleanEmail,
+        role: "AI Verification Engineer",
+        passwordHash: pass,
+        authProvider: "password",
+        createdAt: new Date().toISOString(),
+      };
+      saveStoredUsers([...users, newAccount]);
+      setUser({
+        id: newAccount.id,
+        name: newAccount.name,
+        email: newAccount.email,
+        role: newAccount.role,
+        authProvider: "password",
+      });
+      setIsAuthModalOpen(false);
+      return true;
     }
-
-    const newId = `usr_${Date.now().toString(36)}`;
-    const newAccount: StoredAccount = {
-      id: newId,
-      name: name.trim(),
-      email: cleanEmail,
-      role: "AI Verification Engineer",
-      passwordHash: pass,
-      authProvider: "password",
-      createdAt: new Date().toISOString(),
-    };
-    saveStoredUsers([...users, newAccount]);
-
-    setUser({
-      id: newAccount.id,
-      name: newAccount.name,
-      email: newAccount.email,
-      role: newAccount.role,
-      authProvider: "password",
-    });
-    setIsAuthModalOpen(false);
-    return true;
   };
 
   const connectWallet = async (customAddress?: string): Promise<boolean> => {
-    await new Promise((r) => setTimeout(r, 400));
     let address = customAddress?.trim();
 
     // Check for Freighter browser extension
@@ -183,7 +207,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (win.freighterApi?.getPublicKey) {
         try {
           const key = await win.freighterApi.getPublicKey();
-          if (key && key.startsWith("G")) {
+          if (key && /^G[A-Z0-9]{55}$/.test(key)) {
             address = key;
           }
         } catch {
@@ -192,7 +216,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else if (win.stellar?.getPublicKey) {
         try {
           const key = await win.stellar.getPublicKey();
-          if (key && key.startsWith("G")) {
+          if (key && /^G[A-Z0-9]{55}$/.test(key)) {
             address = key;
           }
         } catch {
@@ -202,8 +226,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     if (!address) {
-      // Default to official Stellar Testnet auditor address if no extension detected
-      address = "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5";
+      throw new Error("No Stellar wallet detected. Please select Freighter or Albedo, or enter your public key.");
+    }
+
+    // Call real database API on Cloudflare Worker
+    try {
+      const res = await fetch("/v1/auth/wallet-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ publicKey: address }),
+      });
+      const data = (await res.json()) as any;
+      if (res.ok && data.user) {
+        if (data.token) {
+          localStorage.setItem("vera_session_token_v1", data.token);
+        }
+        setUser({
+          id: data.user.id,
+          name: data.user.name,
+          email: data.user.email,
+          role: data.user.role,
+          walletAddress: data.user.stellar_wallet || address,
+          authProvider: "stellar",
+        });
+        setIsAuthModalOpen(false);
+        return true;
+      }
+    } catch {
+      // Offline fallback
     }
 
     const walletUser: User = {

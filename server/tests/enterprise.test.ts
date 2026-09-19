@@ -168,3 +168,93 @@ test("StellarWalletService: Public key validation and address formatting", async
   assert.ok(wallets.some((w) => w.id === "albedo"));
   assert.ok(wallets.some((w) => w.id === "lobstr"));
 });
+
+test("AuthService & D1 Users: Registration, credential hashing, and Stellar wallet linking", async () => {
+  const { AuthService } = await import("../auth/authService.ts");
+  const db = new VeraDatabase();
+  const auth = new AuthService(db);
+
+  // 1. Signup new user with password hashing
+  const signupRes = await auth.signup({
+    name: "Dr. Elena Rostova",
+    email: "elena@acme-ai.org",
+    password: "securePassword123!",
+    role: "Chief Auditor",
+  });
+  assert.ok(signupRes.user.id);
+  assert.equal(signupRes.user.email, "elena@acme-ai.org");
+  assert.equal(signupRes.user.role, "Chief Auditor");
+  assert.ok(signupRes.token.startsWith("v1."));
+
+  // 2. Prevent duplicate signup
+  await assert.rejects(
+    () =>
+      auth.signup({
+        name: "Elena Duplicate",
+        email: "elena@acme-ai.org",
+        password: "anotherPassword",
+      }),
+    /already exists/
+  );
+
+  // 3. Login with correct password
+  const loginRes = await auth.login("elena@acme-ai.org", "securePassword123!");
+  assert.equal(loginRes.user.id, signupRes.user.id);
+  assert.ok(loginRes.token);
+
+  // 4. Reject invalid password
+  await assert.rejects(
+    () => auth.login("elena@acme-ai.org", "wrongPassword!"),
+    /Invalid email or password/
+  );
+
+  // 5. Link Stellar wallet to user account in database
+  const walletKey = "GCEYAUYCI3WTE5GOD7CDLRJQPATQCLHMXY4Q3CEQ64RP5SVDWPFF5L2L";
+  const linkRes = await auth.linkWallet(loginRes.user.id, walletKey);
+  assert.equal(linkRes.success, true);
+  assert.equal(linkRes.user.stellar_wallet, walletKey);
+
+  // Confirm database record has linked wallet
+  const updatedUser = await db.getUserById(loginRes.user.id);
+  assert.equal(updatedUser?.stellar_wallet, walletKey);
+
+  // 6. Direct Stellar wallet authentication
+  const walletAuth = await auth.loginWithStellarWallet(
+    "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5"
+  );
+  assert.ok(walletAuth.user);
+  assert.equal(walletAuth.user.auth_provider, "stellar");
+  assert.equal(
+    walletAuth.user.stellar_wallet,
+    "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5"
+  );
+
+  // 7. Verify session token
+  const session = await auth.verifySessionToken(loginRes.token);
+  assert.ok(session);
+  assert.equal(session?.uid, loginRes.user.id);
+  assert.equal(session?.email, "elena@acme-ai.org");
+});
+
+test("GeminiClient: Handles exact natural language prompts from enterprise specification", async () => {
+  const client = new GeminiClient();
+
+  // Prompt: “Verify this payment of 5 USDC…”
+  const p1 = await client.parseQuery("Verify this payment of 5 USDC to GCEYAU tx 62256096f306726197208231b00e422628b0bb83e104dabed9a74da5186afbaf");
+  assert.equal(p1.intent, "VERIFY");
+  assert.ok(p1.task?.includes("payment of 5 USDC"));
+
+  // Prompt: “What’s the status of V-1048?”
+  const p2 = await client.parseQuery("What’s the status of V-1048?");
+  assert.equal(p2.intent, "STATUS");
+  assert.equal(p2.verificationId, "V-1048");
+
+  // Prompt: “Show me the evidence for the last verification”
+  const p3 = await client.parseQuery("Show me the evidence for the last verification");
+  assert.equal(p3.intent, "EVIDENCE");
+
+  // Prompt: General questions about the system
+  const p4 = await client.parseQuery("How does VeraOS audit Stellar transactions deterministically?");
+  assert.equal(p4.intent, "QUESTION");
+  assert.ok(p4.conversationalReply?.includes("VeraOS"));
+});

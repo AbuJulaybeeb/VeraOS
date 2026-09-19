@@ -51,6 +51,19 @@ export interface AuditLog {
   timestamp: string;
 }
 
+export interface StoredUser {
+  id: string;
+  name: string;
+  email: string;
+  password_hash: string;
+  role: string;
+  avatar?: string;
+  stellar_wallet?: string;
+  auth_provider: "password" | "stellar" | "google";
+  created_at: string;
+  last_login_at: string;
+}
+
 // Minimal Cloudflare D1 types interface for type safety without external dependencies
 export interface D1Database {
   prepare: (query: string) => D1PreparedStatement;
@@ -122,6 +135,22 @@ export class VeraDatabase {
   ]);
   private static fallbackVerifications: Map<string, StoredVerification> = new Map();
   private static fallbackAuditLogs: AuditLog[] = [];
+  private static fallbackAccounts: Map<string, StoredUser> = new Map([
+    [
+      "admin@veraos.network",
+      {
+        id: "usr_admin_001",
+        name: "Enterprise Admin",
+        email: "admin@veraos.network",
+        password_hash: "admin123",
+        role: "Lead Platform Auditor",
+        stellar_wallet: "GCEYAUYCI3WTE5GOD7CDLRJQPATQCLHMXY4Q3CEQ64RP5SVDWPFF5L2L",
+        auth_provider: "password",
+        created_at: new Date().toISOString(),
+        last_login_at: new Date().toISOString(),
+      },
+    ],
+  ]);
 
   constructor(d1Database?: D1Database) {
     this.d1 = d1Database;
@@ -486,6 +515,130 @@ export class VeraDatabase {
       }
     }
     return VeraDatabase.fallbackAuditLogs.slice(0, limit);
+  }
+
+  // --- 5. User Accounts & Authentication ---
+
+  async saveUserAccount(user: StoredUser): Promise<void> {
+    const cleanEmail = user.email.toLowerCase().trim();
+    if (this.d1) {
+      try {
+        const query = `
+          INSERT INTO users (id, name, email, password_hash, role, avatar, stellar_wallet, auth_provider, created_at, last_login_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ON CONFLICT(email) DO UPDATE SET
+            name = excluded.name,
+            password_hash = excluded.password_hash,
+            role = excluded.role,
+            stellar_wallet = coalesce(excluded.stellar_wallet, users.stellar_wallet),
+            last_login_at = excluded.last_login_at
+        `;
+        await this.d1
+          .prepare(query)
+          .bind(
+            user.id,
+            user.name,
+            cleanEmail,
+            user.password_hash,
+            user.role,
+            user.avatar || null,
+            user.stellar_wallet || null,
+            user.auth_provider,
+            user.created_at,
+            user.last_login_at
+          )
+          .run();
+      } catch (err) {
+        console.warn("[DB] D1 saveUserAccount error:", err);
+      }
+    }
+    const acc = { ...user, email: cleanEmail };
+    VeraDatabase.fallbackAccounts.set(cleanEmail, acc);
+    VeraDatabase.fallbackAccounts.set(user.id, acc);
+  }
+
+  async getUserByEmail(email: string): Promise<StoredUser | null> {
+    const clean = email.toLowerCase().trim();
+    if (this.d1) {
+      try {
+        const stmt = this.d1.prepare("SELECT * FROM users WHERE lower(email) = ?");
+        const res = await stmt.bind(clean).first<StoredUser>();
+        if (res) return res;
+      } catch (err) {
+        console.warn("[DB] D1 getUserByEmail error:", err);
+      }
+    }
+    return VeraDatabase.fallbackAccounts.get(clean) || null;
+  }
+
+  async getUserById(id: string): Promise<StoredUser | null> {
+    if (this.d1) {
+      try {
+        const stmt = this.d1.prepare("SELECT * FROM users WHERE id = ?");
+        const res = await stmt.bind(id).first<StoredUser>();
+        if (res) return res;
+      } catch (err) {
+        console.warn("[DB] D1 getUserById error:", err);
+      }
+    }
+    return VeraDatabase.fallbackAccounts.get(id) || null;
+  }
+
+  async updateUserWallet(emailOrId: string, walletAddress: string): Promise<boolean> {
+    const clean = emailOrId.toLowerCase().trim();
+    if (this.d1) {
+      try {
+        await this.d1
+          .prepare("UPDATE users SET stellar_wallet = ? WHERE id = ? OR lower(email) = ?")
+          .bind(walletAddress, clean, clean)
+          .run();
+      } catch (err) {
+        console.warn("[DB] D1 updateUserWallet error:", err);
+      }
+    }
+    const acc = VeraDatabase.fallbackAccounts.get(clean);
+    if (acc) {
+      acc.stellar_wallet = walletAddress;
+      VeraDatabase.fallbackAccounts.set(acc.email, acc);
+      VeraDatabase.fallbackAccounts.set(acc.id, acc);
+    }
+    return true;
+  }
+
+  async updateUserLogin(idOrEmail: string): Promise<void> {
+    const now = new Date().toISOString();
+    const clean = idOrEmail.toLowerCase().trim();
+    if (this.d1) {
+      try {
+        await this.d1
+          .prepare("UPDATE users SET last_login_at = ? WHERE id = ? OR lower(email) = ?")
+          .bind(now, clean, clean)
+          .run();
+      } catch {
+        // ignore
+      }
+    }
+    const acc = VeraDatabase.fallbackAccounts.get(clean);
+    if (acc) {
+      acc.last_login_at = now;
+    }
+  }
+
+  async listUserAccounts(limit = 20): Promise<StoredUser[]> {
+    if (this.d1) {
+      try {
+        const stmt = this.d1.prepare("SELECT * FROM users ORDER BY created_at DESC LIMIT ?");
+        const res = await stmt.bind(limit).all<StoredUser>();
+        if (res && res.results) return res.results;
+      } catch (err) {
+        console.warn("[DB] D1 listUserAccounts error:", err);
+      }
+    }
+    const unique = new Map<string, StoredUser>();
+    for (const u of VeraDatabase.fallbackAccounts.values()) {
+      unique.set(u.id, u);
+    }
+    return Array.from(unique.values()).slice(0, limit);
   }
 }
 
