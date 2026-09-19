@@ -18,6 +18,8 @@ interface Env {
   STELLAR_NETWORK?: string;
   STELLAR_RPC_URL?: string;
   STELLAR_HORIZON_URL?: string;
+  OWNER_EMAILS?: string;
+  GOOGLE_CLIENT_ID?: string;
 }
 
 export default {
@@ -212,6 +214,118 @@ export default {
         status: 200,
         headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
       });
+    }
+
+    // 2.2 Google OAuth Authentication Endpoint
+    if (pathname === "/v1/auth/google" && request.method === "POST") {
+      try {
+        const body = (await request.json()) as any;
+        const ownerEmails = (env.OWNER_EMAILS || "owner@veraos.network,admin@veraos.network")
+          .split(",")
+          .map((e) => e.trim().toLowerCase());
+        const result = await auth.authenticateWithGoogle(body, ownerEmails);
+        return new Response(JSON.stringify(result), {
+          status: 200,
+          headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+        });
+      } catch (err) {
+        return new Response(
+          JSON.stringify({ error: err instanceof Error ? err.message : "Google authentication failed" }),
+          {
+            status: 400,
+            headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+          }
+        );
+      }
+    }
+
+    // 2.3 Redeem Invitation Code for Authenticated Account
+    if (pathname === "/v1/auth/redeem-invite" && request.method === "POST") {
+      try {
+        const body = (await request.json()) as { code?: string; email?: string };
+        const authHeader = request.headers.get("Authorization") || "";
+        const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+        const session = await auth.verifySessionToken(token);
+        const emailOrId = session?.email || session?.uid || body.email || "";
+
+        if (!emailOrId) {
+          return new Response(JSON.stringify({ error: "Unauthorized: session required" }), {
+            status: 401,
+            headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+          });
+        }
+
+        const result = await auth.redeemInviteCodeForUser(emailOrId, body.code || "");
+        return new Response(JSON.stringify(result), {
+          status: 200,
+          headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+        });
+      } catch (err) {
+        return new Response(
+          JSON.stringify({ error: err instanceof Error ? err.message : "Redemption failed" }),
+          {
+            status: 400,
+            headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+          }
+        );
+      }
+    }
+
+    // 2.4 Whitelist Email Management (Admin / Owner)
+    if (pathname === "/v1/auth/whitelist" && request.method === "GET") {
+      try {
+        const authHeader = request.headers.get("Authorization") || "";
+        const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+        const session = await auth.verifySessionToken(token);
+        if (!session || (session.role !== "owner" && session.role !== "admin")) {
+          return new Response(JSON.stringify({ error: "Forbidden: Owner or Admin privilege required" }), {
+            status: 403,
+            headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+          });
+        }
+        const list = await db.listWhitelistedEmails();
+        return new Response(JSON.stringify({ whitelist: list }), {
+          status: 200,
+          headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ error: "Failed to fetch whitelist" }), {
+          status: 500,
+          headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+        });
+      }
+    }
+
+    if (pathname === "/v1/auth/whitelist" && request.method === "POST") {
+      try {
+        const authHeader = request.headers.get("Authorization") || "";
+        const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+        const session = await auth.verifySessionToken(token);
+        if (!session || (session.role !== "owner" && session.role !== "admin")) {
+          return new Response(JSON.stringify({ error: "Forbidden: Owner or Admin privilege required" }), {
+            status: 403,
+            headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+          });
+        }
+        const body = (await request.json()) as { email: string; role?: string; notes?: string };
+        if (!body.email || !body.email.includes("@")) {
+          return new Response(JSON.stringify({ error: "Valid email required" }), {
+            status: 400,
+            headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+          });
+        }
+        await db.whitelistEmail(body.email, body.role || "operator", session.email, body.notes);
+        await db.updateUserInvitationStatus(body.email, "invited", body.role || "operator");
+        return new Response(JSON.stringify({ success: true, email: body.email, role: body.role || "operator" }), {
+          status: 200,
+          headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ error: "Failed to whitelist email" }), {
+          status: 500,
+          headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+        });
+      }
     }
 
     // 3. Telegram Webhook: /telegram/webhook

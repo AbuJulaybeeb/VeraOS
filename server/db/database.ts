@@ -55,13 +55,24 @@ export interface StoredUser {
   id: string;
   name: string;
   email: string;
-  password_hash: string;
+  password_hash?: string;
+  google_id?: string;
   role: string;
   avatar?: string;
   stellar_wallet?: string;
   auth_provider: "password" | "stellar" | "google";
+  invitation_status: "admin" | "invited" | "pending" | "revoked";
   created_at: string;
   last_login_at: string;
+}
+
+export interface InvitedEmail {
+  email: string;
+  role: string;
+  status: "ACTIVE" | "REVOKED";
+  notes?: string;
+  invited_by?: string;
+  created_at: string;
 }
 
 // Minimal Cloudflare D1 types interface for type safety without external dependencies
@@ -143,11 +154,47 @@ export class VeraDatabase {
         name: "Enterprise Admin",
         email: "admin@veraos.network",
         password_hash: "admin123",
-        role: "Lead Platform Auditor",
+        role: "owner",
         stellar_wallet: "GCEYAUYCI3WTE5GOD7CDLRJQPATQCLHMXY4Q3CEQ64RP5SVDWPFF5L2L",
         auth_provider: "password",
+        invitation_status: "admin",
         created_at: new Date().toISOString(),
         last_login_at: new Date().toISOString(),
+      },
+    ],
+  ]);
+  private static fallbackInvitedEmails: Map<string, InvitedEmail> = new Map([
+    [
+      "owner@veraos.network",
+      {
+        email: "owner@veraos.network",
+        role: "owner",
+        status: "ACTIVE",
+        notes: "Primary Platform Owner",
+        invited_by: "genesis",
+        created_at: new Date().toISOString(),
+      },
+    ],
+    [
+      "admin@veraos.network",
+      {
+        email: "admin@veraos.network",
+        role: "owner",
+        status: "ACTIVE",
+        notes: "Security Admin",
+        invited_by: "genesis",
+        created_at: new Date().toISOString(),
+      },
+    ],
+    [
+      "auditor@stellar.org",
+      {
+        email: "auditor@stellar.org",
+        role: "operator",
+        status: "ACTIVE",
+        notes: "Stellar Protocol Auditor",
+        invited_by: "genesis",
+        created_at: new Date().toISOString(),
       },
     ],
   ]);
@@ -383,6 +430,25 @@ export class VeraDatabase {
     return newCode;
   }
 
+  async incrementInviteCodeUses(code: string): Promise<void> {
+    const normalized = code.trim().toUpperCase();
+    if (this.d1) {
+      try {
+        await this.d1
+          .prepare("UPDATE invite_codes SET uses_count = uses_count + 1 WHERE code = ?")
+          .bind(normalized)
+          .run();
+      } catch (err) {
+        console.warn("[DB] D1 increment invite error:", err);
+      }
+    }
+    const invite = VeraDatabase.fallbackCodes.get(normalized);
+    if (invite) {
+      invite.uses_count += 1;
+      VeraDatabase.fallbackCodes.set(normalized, invite);
+    }
+  }
+
   // --- 3. Verifications ---
 
   async saveVerification(record: StoredVerification): Promise<void> {
@@ -524,13 +590,16 @@ export class VeraDatabase {
     if (this.d1) {
       try {
         const query = `
-          INSERT INTO users (id, name, email, password_hash, role, avatar, stellar_wallet, auth_provider, created_at, last_login_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          INSERT INTO users (id, name, email, password_hash, role, avatar, stellar_wallet, auth_provider, google_id, invitation_status, created_at, last_login_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
           ON CONFLICT(email) DO UPDATE SET
             name = excluded.name,
-            password_hash = excluded.password_hash,
+            password_hash = coalesce(excluded.password_hash, users.password_hash),
             role = excluded.role,
+            avatar = coalesce(excluded.avatar, users.avatar),
             stellar_wallet = coalesce(excluded.stellar_wallet, users.stellar_wallet),
+            google_id = coalesce(excluded.google_id, users.google_id),
+            invitation_status = excluded.invitation_status,
             last_login_at = excluded.last_login_at
         `;
         await this.d1
@@ -539,22 +608,57 @@ export class VeraDatabase {
             user.id,
             user.name,
             cleanEmail,
-            user.password_hash,
+            user.password_hash || "NO_PASSWORD_SET",
             user.role,
             user.avatar || null,
             user.stellar_wallet || null,
             user.auth_provider,
+            user.google_id || null,
+            user.invitation_status || "pending",
             user.created_at,
             user.last_login_at
           )
           .run();
-      } catch (err) {
-        console.warn("[DB] D1 saveUserAccount error:", err);
+      } catch {
+        // Fallback for earlier D1 schemas before 0002 migration
+        try {
+          const fallbackQuery = `
+            INSERT INTO users (id, name, email, password_hash, role, avatar, stellar_wallet, auth_provider, created_at, last_login_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(email) DO UPDATE SET
+              name = excluded.name,
+              password_hash = coalesce(excluded.password_hash, users.password_hash),
+              role = excluded.role,
+              avatar = coalesce(excluded.avatar, users.avatar),
+              stellar_wallet = coalesce(excluded.stellar_wallet, users.stellar_wallet),
+              last_login_at = excluded.last_login_at
+          `;
+          await this.d1
+            .prepare(fallbackQuery)
+            .bind(
+              user.id,
+              user.name,
+              cleanEmail,
+              user.password_hash || "NO_PASSWORD_SET",
+              user.role,
+              user.avatar || null,
+              user.stellar_wallet || null,
+              user.auth_provider,
+              user.created_at,
+              user.last_login_at
+            )
+            .run();
+        } catch (err) {
+          console.warn("[DB] D1 saveUserAccount error:", err);
+        }
       }
     }
     const acc = { ...user, email: cleanEmail };
     VeraDatabase.fallbackAccounts.set(cleanEmail, acc);
     VeraDatabase.fallbackAccounts.set(user.id, acc);
+    if (user.google_id) {
+      VeraDatabase.fallbackAccounts.set(`google_${user.google_id}`, acc);
+    }
   }
 
   async getUserByEmail(email: string): Promise<StoredUser | null> {
@@ -582,6 +686,112 @@ export class VeraDatabase {
       }
     }
     return VeraDatabase.fallbackAccounts.get(id) || null;
+  }
+
+  async getUserByGoogleId(googleId: string): Promise<StoredUser | null> {
+    if (this.d1) {
+      try {
+        const stmt = this.d1.prepare("SELECT * FROM users WHERE google_id = ?");
+        const res = await stmt.bind(googleId).first<StoredUser>();
+        if (res) return res;
+      } catch (err) {
+        console.warn("[DB] D1 getUserByGoogleId error:", err);
+      }
+    }
+    return VeraDatabase.fallbackAccounts.get(`google_${googleId}`) || null;
+  }
+
+  async isEmailWhitelisted(email: string): Promise<{ invited: boolean; role?: string }> {
+    const clean = email.toLowerCase().trim();
+    if (this.d1) {
+      try {
+        const stmt = this.d1.prepare("SELECT * FROM invited_emails WHERE lower(email) = ? AND status = 'ACTIVE'");
+        const res = await stmt.bind(clean).first<InvitedEmail>();
+        if (res) return { invited: true, role: res.role };
+      } catch {
+        // Table might not exist yet
+      }
+    }
+    const entry = VeraDatabase.fallbackInvitedEmails.get(clean);
+    if (entry && entry.status === "ACTIVE") {
+      return { invited: true, role: entry.role };
+    }
+    return { invited: false };
+  }
+
+  async whitelistEmail(email: string, role = "operator", invitedBy = "admin", notes?: string): Promise<void> {
+    const clean = email.toLowerCase().trim();
+    const now = new Date().toISOString();
+    if (this.d1) {
+      try {
+        const query = `
+          INSERT INTO invited_emails (email, role, status, notes, invited_by, created_at)
+          VALUES (?, ?, 'ACTIVE', ?, ?, ?)
+          ON CONFLICT(email) DO UPDATE SET
+            role = excluded.role,
+            status = 'ACTIVE',
+            notes = excluded.notes
+        `;
+        await this.d1.prepare(query).bind(clean, role, notes || null, invitedBy, now).run();
+      } catch (err) {
+        console.warn("[DB] D1 whitelistEmail error:", err);
+      }
+    }
+    VeraDatabase.fallbackInvitedEmails.set(clean, {
+      email: clean,
+      role,
+      status: "ACTIVE",
+      notes,
+      invited_by: invitedBy,
+      created_at: now,
+    });
+  }
+
+  async listWhitelistedEmails(): Promise<InvitedEmail[]> {
+    if (this.d1) {
+      try {
+        const stmt = this.d1.prepare("SELECT * FROM invited_emails ORDER BY created_at DESC");
+        const res = await stmt.all<InvitedEmail>();
+        if (res && res.results) return res.results;
+      } catch (err) {
+        console.warn("[DB] D1 listWhitelistedEmails error:", err);
+      }
+    }
+    return Array.from(VeraDatabase.fallbackInvitedEmails.values());
+  }
+
+  async updateUserInvitationStatus(
+    userIdOrEmail: string,
+    status: "admin" | "invited" | "pending" | "revoked",
+    role?: string
+  ): Promise<boolean> {
+    const clean = userIdOrEmail.toLowerCase().trim();
+    if (this.d1) {
+      try {
+        let query = "UPDATE users SET invitation_status = ?";
+        const params: unknown[] = [status];
+        if (role) {
+          query += ", role = ?";
+          params.push(role);
+        }
+        query += " WHERE id = ? OR lower(email) = ?";
+        params.push(clean, clean);
+        await this.d1.prepare(query).bind(...params).run();
+      } catch (err) {
+        console.warn("[DB] D1 updateUserInvitationStatus error:", err);
+      }
+    }
+    const acc = VeraDatabase.fallbackAccounts.get(clean);
+    if (acc) {
+      acc.invitation_status = status;
+      if (role) acc.role = role;
+      VeraDatabase.fallbackAccounts.set(acc.email, acc);
+      VeraDatabase.fallbackAccounts.set(acc.id, acc);
+      if (acc.google_id) {
+        VeraDatabase.fallbackAccounts.set(`google_${acc.google_id}`, acc);
+      }
+    }
+    return true;
   }
 
   async updateUserWallet(emailOrId: string, walletAddress: string): Promise<boolean> {

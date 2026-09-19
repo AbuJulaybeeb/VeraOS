@@ -289,18 +289,42 @@ export const Sidebar: React.FC<SidebarProps> = ({
             title="Click to switch or manage account"
           >
             <div className="flex items-center gap-space-sm min-w-0">
-              <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0">
-                <span className="material-symbols-outlined text-on-primary text-[18px]">
-                  person
-                </span>
-              </div>
+              {user.avatar ? (
+                <img
+                  src={user.avatar}
+                  alt={user.name}
+                  referrerPolicy="no-referrer"
+                  className="w-8 h-8 rounded-full object-cover shrink-0 border border-white/15"
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0">
+                  <span className="material-symbols-outlined text-on-primary text-[18px]">
+                    person
+                  </span>
+                </div>
+              )}
               <div className="truncate">
                 <p className="font-body-sm text-body-sm font-medium text-on-surface truncate">
                   {user.name}
                 </p>
-                <p className="font-label-caps text-label-caps text-outline truncate">
-                  {user.role}
-                </p>
+                <div className="flex items-center gap-1.5 truncate">
+                  <span className="font-label-caps text-label-caps text-outline truncate">
+                    {user.role}
+                  </span>
+                  {user.invitationStatus && (
+                    <span
+                      className={`text-[9px] font-mono uppercase px-1 rounded ${
+                        user.invitationStatus === "admin"
+                          ? "text-[#ffb95f]"
+                          : user.invitationStatus === "invited"
+                          ? "text-secondary"
+                          : "text-amber-400"
+                      }`}
+                    >
+                      • {user.invitationStatus === "admin" ? "Owner" : user.invitationStatus === "invited" ? "Invited" : "Pending"}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
             <button

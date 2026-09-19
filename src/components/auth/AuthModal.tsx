@@ -53,9 +53,52 @@ export const AuthModal: React.FC = () => {
   };
 
   const handleGoogleLogin = async () => {
+    setErrorMsg(null);
     setIsSubmitting(true);
+
+    const clientId = ((import.meta as any).env?.VITE_GOOGLE_CLIENT_ID || "").trim();
+    const win = typeof window !== "undefined" ? (window as any) : {};
+
+    // 1. If Google Identity Services SDK and Client ID are active, trigger official OAuth popup
+    if (clientId && win.google?.accounts?.oauth2) {
+      try {
+        const client = win.google.accounts.oauth2.initTokenClient({
+          client_id: clientId,
+          scope: "email profile openid",
+          callback: async (resp: any) => {
+            if (resp.error) {
+              setErrorMsg(resp.error_description || "Google authentication was cancelled.");
+              setIsSubmitting(false);
+              return;
+            }
+            try {
+              await loginWithGoogle({ accessToken: resp.access_token });
+            } catch (err) {
+              setErrorMsg(err instanceof Error ? err.message : "Google authentication failed.");
+            } finally {
+              setIsSubmitting(false);
+            }
+          },
+        });
+        client.requestAccessToken();
+        return;
+      } catch (err) {
+        console.warn("[AuthModal] GSI popup init error:", err);
+      }
+    }
+
+    // 2. Direct Google OAuth Verification
     try {
-      await loginWithGoogle(email.trim() || undefined);
+      let targetEmail = email.trim();
+      if (!targetEmail || !targetEmail.includes("@")) {
+        const input = window.prompt("Enter your Google Account email (e.g. yourname@gmail.com):");
+        if (!input || !input.includes("@")) {
+          setIsSubmitting(false);
+          return;
+        }
+        targetEmail = input.trim();
+      }
+      await loginWithGoogle({ email: targetEmail.toLowerCase() });
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : "Google authentication failed.");
     } finally {

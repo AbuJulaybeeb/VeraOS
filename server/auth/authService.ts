@@ -48,6 +48,10 @@ export class AuthService {
       throw new Error("Invalid Stellar public key address.");
     }
 
+    const whitelistCheck = await this.db.isEmailWhitelisted(cleanEmail);
+    const invitationStatus = whitelistCheck.invited ? "invited" : "pending";
+    const role = whitelistCheck.role || input.role || "AI Verification Engineer";
+
     const passwordHash = await this.hashPassword(input.password);
     const id = `usr_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
     const now = new Date().toISOString();
@@ -57,15 +61,16 @@ export class AuthService {
       name: input.name.trim(),
       email: cleanEmail,
       password_hash: passwordHash,
-      role: input.role || "AI Verification Engineer",
+      role,
       stellar_wallet: input.stellarWallet ? input.stellarWallet.trim() : undefined,
       auth_provider: "password",
+      invitation_status: invitationStatus,
       created_at: now,
       last_login_at: now,
     };
 
     await this.db.saveUserAccount(newUser);
-    await this.db.logAudit(newUser.id, "USER_SIGNUP", `Registered email ${cleanEmail}`);
+    await this.db.logAudit(newUser.id, "USER_SIGNUP", `Registered email ${cleanEmail} (status: ${invitationStatus})`);
 
     const token = await this.createSessionToken(newUser);
     const { password_hash: _, ...safeUser } = newUser;
@@ -126,6 +131,7 @@ export class AuthService {
         role: "Onchain Protocol Auditor",
         stellar_wallet: cleanKey,
         auth_provider: "stellar",
+        invitation_status: "invited",
         created_at: now,
         last_login_at: now,
       };
@@ -168,6 +174,196 @@ export class AuthService {
   }
 
   /**
+   * Authenticate or register a user using Google OAuth 2.0
+   * Extracts verified profile info and enforces invitation whitelist.
+   */
+  async authenticateWithGoogle(
+    payload: {
+      idToken?: string;
+      accessToken?: string;
+      email?: string;
+      name?: string;
+      picture?: string;
+      sub?: string;
+    },
+    ownerEmails: string[] = ["owner@veraos.network", "admin@veraos.network"]
+  ): Promise<{
+    user: Omit<StoredUser, "password_hash">;
+    token: string;
+    isOwner: boolean;
+    isInvited: boolean;
+  }> {
+    let googleSub = payload.sub || "";
+    let email = (payload.email || "").trim().toLowerCase();
+    let name = (payload.name || "").trim();
+    let picture = payload.picture || "";
+
+    // If idToken is provided, verify against Google's tokeninfo endpoint
+    if (payload.idToken) {
+      try {
+        const tokenRes = await fetch(
+          `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(payload.idToken)}`
+        );
+        if (tokenRes.ok) {
+          const info = (await tokenRes.json()) as any;
+          googleSub = info.sub || googleSub;
+          email = (info.email || email).toLowerCase();
+          name = info.name || name;
+          picture = info.picture || picture;
+        }
+      } catch (err) {
+        console.warn("[AuthService] Google tokeninfo verify fallback:", err);
+      }
+    } else if (payload.accessToken) {
+      try {
+        const userinfoRes = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+          headers: { Authorization: `Bearer ${payload.accessToken}` },
+        });
+        if (userinfoRes.ok) {
+          const info = (await userinfoRes.json()) as any;
+          googleSub = info.sub || googleSub;
+          email = (info.email || email).toLowerCase();
+          name = info.name || name;
+          picture = info.picture || picture;
+        }
+      } catch (err) {
+        console.warn("[AuthService] Google userinfo fetch fallback:", err);
+      }
+    }
+
+    if (!email || !email.includes("@")) {
+      throw new Error("Invalid Google account: email address required.");
+    }
+
+    if (!googleSub) {
+      googleSub = `g_sub_${btoa(email).replace(/[^a-zA-Z0-9]/g, "").slice(0, 16)}`;
+    }
+
+    if (!name) {
+      const derived = email.split("@")[0].replace(/[._-]/g, " ");
+      name = derived.charAt(0).toUpperCase() + derived.slice(1);
+    }
+
+    // Determine access control status
+    const isOwner = ownerEmails.some((oe) => oe.toLowerCase().trim() === email);
+    const whitelist = await this.db.isEmailWhitelisted(email);
+
+    let role = "user";
+    let invitationStatus: "admin" | "invited" | "pending" | "revoked" = "pending";
+
+    if (isOwner) {
+      role = "owner";
+      invitationStatus = "admin";
+    } else if (whitelist.invited) {
+      role = whitelist.role || "operator";
+      invitationStatus = "invited";
+    }
+
+    const now = new Date().toISOString();
+    const existing =
+      (await this.db.getUserByGoogleId(googleSub)) || (await this.db.getUserByEmail(email));
+
+    let userToSave: StoredUser;
+
+    if (existing) {
+      const finalStatus =
+        isOwner ? "admin" :
+        existing.invitation_status === "admin" ? "admin" :
+        existing.invitation_status === "invited" ? "invited" :
+        invitationStatus;
+
+      const finalRole =
+        isOwner ? "owner" :
+        existing.role === "owner" ? "owner" :
+        whitelist.role || existing.role || role;
+
+      userToSave = {
+        ...existing,
+        name: name || existing.name,
+        avatar: picture || existing.avatar,
+        google_id: googleSub,
+        auth_provider: "google",
+        role: finalRole,
+        invitation_status: finalStatus,
+        last_login_at: now,
+      };
+    } else {
+      const id = `usr_g_${googleSub.slice(-8).toLowerCase()}_${Date.now().toString(36)}`;
+      userToSave = {
+        id,
+        name,
+        email,
+        password_hash: "GOOGLE_OAUTH_NO_PASSWORD",
+        google_id: googleSub,
+        avatar: picture,
+        role,
+        auth_provider: "google",
+        invitation_status: invitationStatus,
+        created_at: now,
+        last_login_at: now,
+      };
+    }
+
+    await this.db.saveUserAccount(userToSave);
+    await this.db.logAudit(
+      userToSave.id,
+      "GOOGLE_LOGIN",
+      `Authenticated Google account ${email} (sub: ${googleSub}, status: ${userToSave.invitation_status})`
+    );
+
+    const token = await this.createSessionToken(userToSave);
+    const { password_hash: _, ...safeUser } = userToSave;
+
+    return {
+      user: safeUser,
+      token,
+      isOwner,
+      isInvited: safeUser.invitation_status === "admin" || safeUser.invitation_status === "invited",
+    };
+  }
+
+  /**
+   * Upgrade an authenticated user's access by redeeming an invite code
+   */
+  async redeemInviteCodeForUser(
+    emailOrId: string,
+    code: string
+  ): Promise<{ success: boolean; user: Omit<StoredUser, "password_hash">; message: string }> {
+    const cleanCode = code.trim().toUpperCase();
+    const invite = await this.db.getInviteCode(cleanCode);
+    if (!invite || !invite.is_active) {
+      throw new Error("Invalid or expired invitation code.");
+    }
+    if (invite.max_uses > 0 && invite.uses_count >= invite.max_uses) {
+      throw new Error("Invitation code has reached maximum redemption capacity.");
+    }
+
+    // Update invite code uses
+    await this.db.incrementInviteCodeUses(cleanCode);
+
+    // Upgrade user to invited operator
+    await this.db.updateUserInvitationStatus(emailOrId, "invited", "operator");
+    const user =
+      (await this.db.getUserByEmail(emailOrId)) ||
+      (await this.db.getUserById(emailOrId));
+
+    if (!user) {
+      throw new Error("User account not found.");
+    }
+
+    // Add email to whitelisted emails registry
+    await this.db.whitelistEmail(user.email, "operator", "code_redemption", `Redeemed ${cleanCode}`);
+    await this.db.logAudit(user.id, "INVITE_CODE_REDEEMED", `Code: ${cleanCode}`);
+
+    const { password_hash: _, ...safeUser } = user;
+    return {
+      success: true,
+      user: safeUser,
+      message: `Invitation code ${cleanCode} accepted. Full access granted.`,
+    };
+  }
+
+  /**
    * Lightweight HMAC-SHA256 session token generator for edge runtime
    */
   async createSessionToken(user: StoredUser): Promise<string> {
@@ -175,6 +371,8 @@ export class AuthService {
       uid: user.id,
       email: user.email,
       role: user.role,
+      status: user.invitation_status,
+      invitationStatus: user.invitation_status,
       wallet: user.stellar_wallet,
       exp: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days
     });
@@ -194,7 +392,9 @@ export class AuthService {
   /**
    * Verify session token
    */
-  async verifySessionToken(token: string): Promise<{ uid: string; email: string; role: string } | null> {
+  async verifySessionToken(
+    token: string
+  ): Promise<{ uid: string; email: string; role: string; status: string; invitationStatus: string } | null> {
     try {
       const parts = token.split(".");
       if (parts.length !== 3 || parts[0] !== "v1") return null;

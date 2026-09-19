@@ -8,6 +8,8 @@ export interface User {
   avatar?: string;
   walletAddress?: string;
   authProvider?: "password" | "google" | "stellar";
+  googleId?: string;
+  invitationStatus: "admin" | "invited" | "pending" | "revoked";
   createdAt?: string;
 }
 
@@ -23,9 +25,17 @@ interface AuthContextType {
   openAuthModal: (mode?: "signin" | "signup") => void;
   closeAuthModal: () => void;
   login: (email: string, pass: string) => Promise<boolean>;
-  loginWithGoogle: (customEmail?: string) => Promise<boolean>;
+  loginWithGoogle: (options?: {
+    credential?: string;
+    accessToken?: string;
+    email?: string;
+    name?: string;
+    picture?: string;
+    sub?: string;
+  }) => Promise<boolean>;
   signup: (name: string, email: string, pass: string) => Promise<boolean>;
   connectWallet: (customAddress?: string) => Promise<boolean>;
+  redeemInviteCode: (code: string) => Promise<{ success: boolean; message: string }>;
   logout: () => void;
 }
 
@@ -104,6 +114,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         avatar: data.user.avatar,
         walletAddress: data.user.stellar_wallet,
         authProvider: data.user.auth_provider || "password",
+        googleId: data.user.google_id,
+        invitationStatus: data.user.invitation_status || "invited",
       };
       setUser(activeUser);
       setIsAuthModalOpen(false);
@@ -124,6 +136,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           avatar: existing.avatar,
           walletAddress: existing.walletAddress,
           authProvider: "password",
+          invitationStatus: existing.invitationStatus || "invited",
         };
         setUser(activeUser);
         setIsAuthModalOpen(false);
@@ -156,6 +169,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         avatar: data.user.avatar,
         walletAddress: data.user.stellar_wallet,
         authProvider: data.user.auth_provider || "password",
+        googleId: data.user.google_id,
+        invitationStatus: data.user.invitation_status || "pending",
       };
       setUser(activeUser);
       setIsAuthModalOpen(false);
@@ -174,6 +189,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         role: "AI Verification Engineer",
         passwordHash: pass,
         authProvider: "password",
+        invitationStatus: "pending",
         createdAt: new Date().toISOString(),
       };
       saveStoredUsers([...users, newAccount]);
@@ -183,6 +199,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         email: newAccount.email,
         role: newAccount.role,
         authProvider: "password",
+        invitationStatus: "pending",
       });
       setIsAuthModalOpen(false);
       return true;
@@ -248,6 +265,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           role: data.user.role,
           walletAddress: data.user.stellar_wallet || address,
           authProvider: "stellar",
+          invitationStatus: "invited",
         });
         setIsAuthModalOpen(false);
         return true;
@@ -263,6 +281,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       role: "Onchain Protocol Auditor",
       walletAddress: address,
       authProvider: "stellar",
+      invitationStatus: "invited",
     };
 
     setUser(walletUser);
@@ -270,27 +289,95 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return true;
   };
 
-  const loginWithGoogle = async (customEmail?: string): Promise<boolean> => {
-    await new Promise((r) => setTimeout(r, 350));
-    const email = (customEmail?.trim() || "operator@veraos.network").toLowerCase();
-    const derivedName = email.split("@")[0].replace(/[._-]/g, " ");
-    const displayName = derivedName.charAt(0).toUpperCase() + derivedName.slice(1);
+  const loginWithGoogle = async (options?: {
+    credential?: string;
+    accessToken?: string;
+    email?: string;
+    name?: string;
+    picture?: string;
+    sub?: string;
+  }): Promise<boolean> => {
+    try {
+      const payload: Record<string, unknown> = {};
+      if (options?.credential) payload.idToken = options.credential;
+      if (options?.accessToken) payload.accessToken = options.accessToken;
+      if (options?.email) payload.email = options.email;
+      if (options?.name) payload.name = options.name;
+      if (options?.picture) payload.picture = options.picture;
+      if (options?.sub) payload.sub = options.sub;
 
-    const googleUser: User = {
-      id: `usr_g_${Date.now().toString(36)}`,
-      name: displayName,
-      email,
-      role: "Infrastructure Lead",
-      authProvider: "google",
-    };
+      const res = await fetch("/v1/auth/google", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
-    setUser(googleUser);
-    setIsAuthModalOpen(false);
-    return true;
+      const data = (await res.json()) as any;
+      if (!res.ok) {
+        throw new Error(data.error || "Google authentication failed.");
+      }
+
+      if (data.token) {
+        localStorage.setItem("vera_session_token_v1", data.token);
+      }
+
+      const activeUser: User = {
+        id: data.user.id,
+        name: data.user.name,
+        email: data.user.email,
+        role: data.user.role,
+        avatar: data.user.avatar,
+        walletAddress: data.user.stellar_wallet,
+        authProvider: "google",
+        googleId: data.user.google_id,
+        invitationStatus:
+          data.user.invitation_status || (data.isOwner ? "admin" : data.isInvited ? "invited" : "pending"),
+        createdAt: data.user.created_at,
+      };
+
+      setUser(activeUser);
+      setIsAuthModalOpen(false);
+      return true;
+    } catch (err) {
+      console.error("[AuthContext] Google auth failed:", err);
+      throw err;
+    }
+  };
+
+  const redeemInviteCode = async (code: string): Promise<{ success: boolean; message: string }> => {
+    const token = localStorage.getItem("vera_session_token_v1") || "";
+    const res = await fetch("/v1/auth/redeem-invite", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ code, email: user?.email }),
+    });
+
+    const data = (await res.json()) as any;
+    if (!res.ok) {
+      throw new Error(data.error || "Failed to redeem invitation code.");
+    }
+
+    if (data.user) {
+      setUser((prev) =>
+        prev
+          ? {
+              ...prev,
+              role: data.user.role || "operator",
+              invitationStatus: "invited",
+            }
+          : null
+      );
+    }
+    return { success: true, message: data.message || "Invitation verified." };
   };
 
   const logout = () => {
     setUser(null);
+    localStorage.removeItem(STORAGE_AUTH_KEY);
+    localStorage.removeItem("vera_session_token_v1");
   };
 
   return (
@@ -306,6 +393,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loginWithGoogle,
         signup,
         connectWallet,
+        redeemInviteCode,
         logout,
       }}
     >
