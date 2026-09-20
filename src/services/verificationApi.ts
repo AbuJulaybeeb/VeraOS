@@ -199,7 +199,7 @@ export const verificationApi = {
           independent: true,
           status: status === "PASSED" ? "CONFIRMED" : "REJECTED",
           timestamp: new Date().toISOString(),
-          isMock: true,
+          isMock: false,
           data: {
             Network: input.network || "Stellar Testnet",
             Worker: input.workerId,

@@ -44,11 +44,26 @@ export class InviteService {
    * Extract invite code from /start payload or /invite command
    * Examples:
    *   /start invite_VERA-VIP-2026 -> VERA-VIP-2026
+   *   /start invite_839102 -> 839102
    *   /start VERA-VIP-2026 -> VERA-VIP-2026
    *   /invite VERA-VIP-2026 -> VERA-VIP-2026
+   *   839102 -> 839102 (pure 6-digit OTP passcode)
+   *   OTP-839102 -> 839102
    */
   extractInviteCode(text: string): string | null {
     const trimmed = text.trim();
+
+    // 1. Direct 6-digit OTP passcode
+    if (/^\d{6}$/.test(trimmed)) {
+      return trimmed;
+    }
+
+    // 2. OTP-prefixed passcode
+    if (/^OTP[-:\s]?\d{6}$/i.test(trimmed)) {
+      return trimmed.replace(/^OTP[-:\s]?/i, "").trim();
+    }
+
+    // 3. /start or /invite command format
     if (trimmed.startsWith("/start")) {
       const parts = trimmed.split(/\s+/);
       if (parts.length > 1) {
@@ -63,10 +78,28 @@ export class InviteService {
     } else if (trimmed.startsWith("/invite")) {
       const parts = trimmed.split(/\s+/);
       if (parts.length > 1) {
-        return parts[1].trim().toUpperCase();
+        const param = parts[1].trim();
+        if (/^OTP[-:\s]?\d{6}$/i.test(param)) {
+          return param.replace(/^OTP[-:\s]?/i, "").trim();
+        }
+        return param.toUpperCase();
       }
     }
     return null;
+  }
+
+  /**
+   * Generate an instant 6-digit OTP for email verification and bot invite
+   */
+  async requestEmailOtp(email: string, notes?: string): Promise<{ otp: string; code: string; expiresInSeconds: number; telegramDeepLink: string }> {
+    return this.db.generateEmailOtp(email, notes);
+  }
+
+  /**
+   * Verify an email OTP passcode
+   */
+  async verifyEmailOtp(email: string, otp: string): Promise<{ valid: boolean; message: string; email?: string }> {
+    return this.db.verifyEmailOtp(email, otp);
   }
 
   /**

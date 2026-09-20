@@ -53,6 +53,8 @@ export interface VerificationRecord {
   status: VerificationStatus;
   quorum: string;
   latencyMs: number;
+  stellarTxHash?: string;
+  ledgerNumber?: number;
   attempts: VerificationAttempt[];
 }
 

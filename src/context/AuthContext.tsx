@@ -36,6 +36,7 @@ interface AuthContextType {
   signup: (name: string, email: string, pass: string) => Promise<boolean>;
   connectWallet: (customAddress?: string) => Promise<boolean>;
   redeemInviteCode: (code: string) => Promise<{ success: boolean; message: string }>;
+  loginWithOtp: (email: string, otp: string) => Promise<boolean>;
   logout: () => void;
 }
 
@@ -383,6 +384,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return { success: true, message: data.message || "Invitation verified." };
   };
 
+  const loginWithOtp = async (email: string, otp: string): Promise<boolean> => {
+    const res = await fetch("/v1/invite/verify-otp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: email.trim().toLowerCase(), otp: otp.trim() }),
+    });
+
+    const data = (await res.json()) as any;
+    if (!res.ok || !data.verified) {
+      throw new Error(data.message || "Invalid or expired passcode.");
+    }
+
+    if (data.token) {
+      localStorage.setItem("vera_session_token_v1", data.token);
+    }
+
+    const authedUser: User = {
+      id: data.user?.id || `usr_${Date.now().toString(36)}`,
+      name: data.user?.name || email.split("@")[0],
+      email: data.user?.email || email,
+      role: data.user?.role || "Operator",
+      invitationStatus: "invited",
+      createdAt: data.user?.created_at || new Date().toISOString(),
+    };
+
+    setUser(authedUser);
+    setIsAuthModalOpen(false);
+    return true;
+  };
+
   const logout = () => {
     setUser(null);
     try {
@@ -407,6 +438,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signup,
         connectWallet,
         redeemInviteCode,
+        loginWithOtp,
         logout,
       }}
     >

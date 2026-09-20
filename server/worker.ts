@@ -144,6 +144,102 @@ export default {
       }
     }
 
+    // 2.0.2 Request Email OTP Passcode: /v1/invite/request-otp
+    if (pathname === "/v1/invite/request-otp" && request.method === "POST") {
+      try {
+        const body = (await request.json()) as any;
+        const email = (body.email || "").trim().toLowerCase();
+        if (!email || !email.includes("@")) {
+          return new Response(JSON.stringify({ success: false, message: "Valid email required" }), {
+            status: 400,
+            headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+          });
+        }
+        const name = (body.name || "").trim();
+        const org = (body.org || "").trim();
+        const notes = `Requested by ${name || email}${org ? ` (${org})` : ""}`;
+        const otpData = await db.generateEmailOtp(email, notes);
+
+        return new Response(
+          JSON.stringify({
+            success: true,
+            email,
+            otp: otpData.otp,
+            code: otpData.code,
+            telegramDeepLink: otpData.telegramDeepLink,
+            expiresInSeconds: otpData.expiresInSeconds,
+            message: "Your 6-digit access passcode has been generated.",
+          }),
+          { status: 200, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } }
+        );
+      } catch (err: any) {
+        return new Response(JSON.stringify({ success: false, message: err?.message || "Failed to generate OTP" }), {
+          status: 500,
+          headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+        });
+      }
+    }
+
+    // 2.0.3 Verify Email OTP Passcode: /v1/invite/verify-otp
+    if (pathname === "/v1/invite/verify-otp" && request.method === "POST") {
+      try {
+        const body = (await request.json()) as any;
+        const email = (body.email || "").trim().toLowerCase();
+        const otp = (body.otp || "").trim();
+        if (!email || !otp) {
+          return new Response(JSON.stringify({ success: false, message: "Email and passcode required" }), {
+            status: 400,
+            headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+          });
+        }
+        const verifyRes = await db.verifyEmailOtp(email, otp);
+        if (!verifyRes.valid) {
+          return new Response(JSON.stringify({ success: false, message: verifyRes.message }), {
+            status: 400,
+            headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+          });
+        }
+
+        let user = await db.getUserByEmail(email);
+        if (!user) {
+          user = await db.createUser({
+            id: `usr_${Date.now().toString(36)}`,
+            name: email.split("@")[0],
+            email,
+            role: "Operator",
+            auth_provider: "password",
+            invitation_status: "invited",
+            created_at: new Date().toISOString(),
+            last_login_at: new Date().toISOString(),
+          });
+        } else {
+          await db.updateUserInvitationStatus(email, "invited", "operator");
+        }
+
+        const token = await auth.createSessionToken({
+          uid: user.id,
+          email: user.email,
+          role: user.role,
+        });
+
+        const { password_hash: _, ...safeUser } = user;
+        return new Response(
+          JSON.stringify({
+            success: true,
+            token,
+            user: safeUser,
+            message: "Passcode verified! Clearance activated.",
+          }),
+          { status: 200, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } }
+        );
+      } catch (err: any) {
+        return new Response(JSON.stringify({ success: false, message: err?.message || "Verification failed" }), {
+          status: 500,
+          headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+        });
+      }
+    }
+
     // 2.1 Real Database Authentication APIs (Cloudflare D1 backed)
     if (pathname === "/v1/auth/signup" && request.method === "POST") {
       try {

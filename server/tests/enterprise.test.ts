@@ -107,6 +107,35 @@ test("InviteService: Gatekeeping, code validation, and redemption", async () => 
   const deniedMsg = service.getAccessDeniedMessage("Stranger");
   assert.ok(deniedMsg.includes("Private Beta"), "Should mention Private Beta");
   assert.ok(deniedMsg.includes("/start invite_"), "Should mention invite redemption format");
+
+  // 7. Email OTP Flow: Generate and extract 6-digit OTP
+  const otpData = await service.requestEmailOtp("new_user@company.com");
+  assert.ok(otpData.otp);
+  assert.match(otpData.otp, /^\d{6}$/, "OTP must be exactly 6 digits");
+  assert.ok(otpData.telegramDeepLink.includes(otpData.otp));
+
+  // Extract from plain 6-digit string
+  assert.equal(service.extractInviteCode(otpData.otp), otpData.otp);
+  // Extract from OTP-prefixed string
+  assert.equal(service.extractInviteCode(`OTP-${otpData.otp}`), otpData.otp);
+  // Extract from /start command
+  assert.equal(service.extractInviteCode(`/start invite_${otpData.otp}`), otpData.otp);
+
+  // Redeem via Telegram bot
+  const botRedeem = await service.redeemInvite("556677", otpData.otp, {
+    username: "telegram_dev",
+    first_name: "Dev",
+  });
+  assert.equal(botRedeem.success, true);
+  assert.equal(botRedeem.user?.status, "ACTIVE");
+
+  // Verify access for newly redeemed OTP user
+  const devAccess = await service.checkAccess("556677");
+  assert.equal(devAccess.allowed, true);
+
+  // Verify OTP on web
+  const webVerify = await service.verifyEmailOtp("new_user@company.com", otpData.otp);
+  assert.equal(webVerify.valid, true);
 });
 
 test("GeminiClient: Semantic parsing and natural language intent classification", async () => {

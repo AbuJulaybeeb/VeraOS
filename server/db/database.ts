@@ -463,6 +463,88 @@ export class VeraDatabase {
     }
   }
 
+  // --- 2.1 Email OTP System for Bot Invites & Instant Web Access ---
+  private static emailOtpMap = new Map<string, { email: string; otp: string; expiresAt: number; usesRemaining: number }>();
+
+  async generateEmailOtp(
+    email: string,
+    notes = "Email OTP Passcode"
+  ): Promise<{ otp: string; code: string; expiresInSeconds: number; telegramDeepLink: string }> {
+    const cleanEmail = email.trim().toLowerCase();
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresInSeconds = 900; // 15 minutes
+    const expiresAt = Date.now() + expiresInSeconds * 1000;
+
+    VeraDatabase.emailOtpMap.set(cleanEmail, {
+      email: cleanEmail,
+      otp,
+      expiresAt,
+      usesRemaining: 2,
+    });
+    VeraDatabase.emailOtpMap.set(otp, {
+      email: cleanEmail,
+      otp,
+      expiresAt,
+      usesRemaining: 2,
+    });
+
+    // Register 6-digit OTP and OTP-prefixed codes in DB so Telegram bot can redeem immediately
+    await this.createInviteCode(otp, 2, cleanEmail, `Email OTP for ${cleanEmail}`);
+    await this.createInviteCode(`OTP-${otp}`, 2, cleanEmail, `Email OTP for ${cleanEmail}`);
+
+    // Auto-whitelist email for platform access
+    await this.whitelistEmail(cleanEmail, "operator", "email_otp", notes);
+    await this.logAudit(cleanEmail, "EMAIL_OTP_GENERATED", `OTP ${otp} generated for ${cleanEmail}`);
+
+    return {
+      otp,
+      code: otp,
+      expiresInSeconds,
+      telegramDeepLink: `https://t.me/Vera_Of_bot?start=invite_${otp}`,
+    };
+  }
+
+  async verifyEmailOtp(
+    email: string,
+    rawOtp: string
+  ): Promise<{ valid: boolean; message: string; email?: string }> {
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanOtp = rawOtp.trim().replace(/^OTP[-:\s]?/i, "").trim();
+
+    const record = VeraDatabase.emailOtpMap.get(cleanEmail) || VeraDatabase.emailOtpMap.get(cleanOtp);
+    if (!record) {
+      // Check invite codes as database fallback
+      const invite = await this.getInviteCode(cleanOtp);
+      if (invite && invite.is_active && invite.uses_count < invite.max_uses) {
+        await this.incrementInviteCodeUses(cleanOtp);
+        return { valid: true, message: "Passcode verified successfully.", email: cleanEmail };
+      }
+      return { valid: false, message: "Invalid or expired passcode. Please request a new code." };
+    }
+
+    if (Date.now() > record.expiresAt) {
+      VeraDatabase.emailOtpMap.delete(cleanEmail);
+      VeraDatabase.emailOtpMap.delete(cleanOtp);
+      return { valid: false, message: "Passcode has expired. Please request a new code." };
+    }
+
+    if (record.otp !== cleanOtp) {
+      return { valid: false, message: "Incorrect passcode. Please check the 6 digits." };
+    }
+
+    record.usesRemaining -= 1;
+    if (record.usesRemaining <= 0) {
+      VeraDatabase.emailOtpMap.delete(cleanEmail);
+      VeraDatabase.emailOtpMap.delete(cleanOtp);
+    }
+
+    // Auto-activate or invite user
+    await this.updateUserInvitationStatus(cleanEmail, "invited", "operator");
+    await this.logAudit(cleanEmail, "EMAIL_OTP_VERIFIED", `OTP verified for ${cleanEmail}`);
+
+    return { valid: true, message: "Passcode verified successfully.", email: record.email };
+  }
+
   // --- 3. Verifications ---
 
   async saveVerification(record: StoredVerification): Promise<void> {

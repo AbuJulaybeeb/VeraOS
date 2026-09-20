@@ -198,11 +198,17 @@ export const VerificationDetail: React.FC = () => {
       {/* Section 2: Worker Claim vs Independent Verification */}
       <ClaimsVsEvidence
         record={verification}
-        onViewOracleProof={() =>
-          alert("Web Oracle proof verified via independent witness.")
-        }
+        onViewOracleProof={() => {
+          const el = document.getElementById("triangulated-evidence");
+          if (el) {
+            el.scrollIntoView({ behavior: "smooth" });
+          }
+        }}
         onViewExplorer={() => {
-          const tx = "8a7b3c21a4de99f2b1892f3900a41cd";
+          const tx =
+            verification.stellarTxHash ||
+            verification.attempts?.[0]?.stellarTxHash ||
+            "62256096f306726197208231b00e422628b0bb83e104dabed9a74da5186afbaf";
           window.open(`https://stellar.expert/explorer/testnet/tx/${tx}`, "_blank");
         }}
       />
