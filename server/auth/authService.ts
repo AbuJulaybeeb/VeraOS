@@ -4,11 +4,14 @@
  * 100% compatible with Cloudflare Workers, Node.js, and edge runtimes.
  */
 
-import { VeraDatabase, StoredUser, defaultVeraDb } from "../db/database.ts";
+import { VeraDatabase, type StoredUser, defaultVeraDb } from "../db/database.ts";
 import { stellarWalletService } from "../stellar/walletService.ts";
 
 export class AuthService {
-  constructor(private db: VeraDatabase = defaultVeraDb) {}
+  private db: VeraDatabase;
+  constructor(db: VeraDatabase = defaultVeraDb) {
+    this.db = db;
+  }
 
   /**
    * Hash a password using SHA-256 via Web Crypto

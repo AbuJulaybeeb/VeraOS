@@ -9,6 +9,10 @@ import {
   ResubmitRequestSchema,
   normalizeVerificationRequest,
 } from "../types/schemas.ts";
+import { defaultVeraDb } from "../db/database.ts";
+import { AuthService } from "../auth/authService.ts";
+
+const authService = new AuthService(defaultVeraDb);
 
 
 
@@ -57,7 +61,9 @@ export async function handleApiRequest(
   const isVerify = url.pathname.startsWith("/v1/verify");
   const isWebhook = url.pathname.startsWith("/telegram/webhook") || url.pathname.startsWith("/v1/telegram/webhook");
   const isHealth = url.pathname === "/health" || url.pathname === "/v1/health";
-  if (!isVerify && !isWebhook && !isHealth) {
+  const isAuth = url.pathname.startsWith("/v1/auth");
+  const isInvite = url.pathname.startsWith("/v1/invite");
+  if (!isVerify && !isWebhook && !isHealth && !isAuth && !isInvite) {
     return false;
   }
 
@@ -75,6 +81,134 @@ export async function handleApiRequest(
   const pathname = url.pathname;
 
   try {
+    // ----------------------------------------------------
+    // AUTHENTICATION & INVITE ENDPOINTS
+    // ----------------------------------------------------
+    if (pathname === "/v1/auth/google" && req.method === "POST") {
+      try {
+        const body = await parseJsonBody<any>(req);
+        const ownerEmails = (process.env.OWNER_EMAILS || "owner@veraos.network,alex@example.com")
+          .split(",")
+          .map((e) => e.trim().toLowerCase())
+          .filter(Boolean);
+        const result = await authService.authenticateWithGoogle(body, ownerEmails);
+        sendJson(res, 200, result);
+        return true;
+      } catch (err: any) {
+        sendJson(res, 400, { error: err?.message || "Google authentication failed" });
+        return true;
+      }
+    }
+
+    if (pathname === "/v1/auth/login" && req.method === "POST") {
+      try {
+        const body = await parseJsonBody<any>(req);
+        const result = await authService.login(body.email, body.password);
+        sendJson(res, 200, result);
+        return true;
+      } catch (err: any) {
+        sendJson(res, 401, { error: err?.message || "Login failed" });
+        return true;
+      }
+    }
+
+    if (pathname === "/v1/auth/signup" && req.method === "POST") {
+      try {
+        const body = await parseJsonBody<any>(req);
+        const result = await authService.signup(body);
+        sendJson(res, 201, result);
+        return true;
+      } catch (err: any) {
+        sendJson(res, 400, { error: err?.message || "Signup failed" });
+        return true;
+      }
+    }
+
+    if (pathname === "/v1/invite/request-otp" && req.method === "POST") {
+      try {
+        const body = await parseJsonBody<any>(req);
+        const email = (body.email || "").trim().toLowerCase();
+        if (!email || !email.includes("@")) {
+          sendJson(res, 400, { success: false, message: "Valid email required" });
+          return true;
+        }
+        const otpData = await defaultVeraDb.generateEmailOtp(email, body.notes);
+        sendJson(res, 200, {
+          success: true,
+          email,
+          otp: otpData.otp,
+          code: otpData.code,
+          telegramDeepLink: otpData.telegramDeepLink,
+          expiresInSeconds: otpData.expiresInSeconds,
+          message: "6-digit access passcode generated.",
+        });
+        return true;
+      } catch (err: any) {
+        sendJson(res, 500, { success: false, message: err?.message || "Failed to generate passcode" });
+        return true;
+      }
+    }
+
+    if (pathname === "/v1/invite/verify-otp" && req.method === "POST") {
+      try {
+        const body = await parseJsonBody<any>(req);
+        const email = (body.email || "").trim().toLowerCase();
+        const otp = (body.otp || "").trim();
+        const verifyRes = await defaultVeraDb.verifyEmailOtp(email, otp);
+        if (!verifyRes.valid) {
+          sendJson(res, 400, { success: false, message: verifyRes.message });
+          return true;
+        }
+        let user = await defaultVeraDb.getUserByEmail(email);
+        if (!user) {
+          const newUser = {
+            id: `usr_${Date.now().toString(36)}`,
+            name: email.split("@")[0],
+            email,
+            password_hash: "OTP_AUTH",
+            role: "Operator",
+            auth_provider: "password" as const,
+            invitation_status: "invited" as const,
+            created_at: new Date().toISOString(),
+            last_login_at: new Date().toISOString(),
+          };
+          await defaultVeraDb.saveUserAccount(newUser);
+          user = newUser;
+        }
+        sendJson(res, 200, {
+          success: true,
+          verified: true,
+          token: `otp_token_${Date.now()}`,
+          user,
+          message: "Passcode verified. Access cleared.",
+        });
+        return true;
+      } catch (err: any) {
+        sendJson(res, 500, { success: false, message: err?.message || "Verification error" });
+        return true;
+      }
+    }
+
+    if (pathname === "/v1/invite/generate" && req.method === "POST") {
+      try {
+        const body = await parseJsonBody<any>(req);
+        const createdBy = (body.createdBy || "operator").trim();
+        const maxUses = Number(body.maxUses) || 1;
+        const notes = (body.notes || "Generated invite link").trim();
+        const invite = await defaultVeraDb.generateInviteCode(createdBy, maxUses, notes);
+        sendJson(res, 200, {
+          success: true,
+          code: invite.code,
+          maxUses: invite.max_uses,
+          telegramInviteLink: `https://t.me/Vera_Of_bot?start=invite_${invite.code}`,
+        });
+        return true;
+      } catch (err: any) {
+        sendJson(res, 500, { success: false, message: err?.message || "Failed to generate code" });
+        return true;
+      }
+    }
+
     // ----------------------------------------------------
     // GET /health or /v1/health
     // ----------------------------------------------------

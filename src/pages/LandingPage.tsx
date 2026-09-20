@@ -172,13 +172,24 @@ if result.verdict.status != "VERIFIED":
             )}
 
             {/* Primary CTA */}
-            <Link
-              to="/verify/new"
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold text-white bg-gradient-to-r from-[#C96A2B] via-[#D87431] to-[#E08A3E] hover:from-[#D87431] hover:to-[#E59247] shadow-[0_0_18px_rgba(201,106,43,0.4)] active:scale-[0.98] transition-all whitespace-nowrap"
-            >
-              <span>Verify a Task</span>
-              <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
-            </Link>
+            {isAuthenticated ? (
+              <Link
+                to="/verify/new"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold text-white bg-gradient-to-r from-[#C96A2B] via-[#D87431] to-[#E08A3E] hover:from-[#D87431] hover:to-[#E59247] shadow-[0_0_18px_rgba(201,106,43,0.4)] active:scale-[0.98] transition-all whitespace-nowrap"
+              >
+                <span>Verify a Task</span>
+                <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+              </Link>
+            ) : (
+              <button
+                type="button"
+                onClick={() => openAuthModal("signin")}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold text-white bg-gradient-to-r from-[#C96A2B] via-[#D87431] to-[#E08A3E] hover:from-[#D87431] hover:to-[#E59247] shadow-[0_0_18px_rgba(201,106,43,0.4)] active:scale-[0.98] transition-all whitespace-nowrap cursor-pointer"
+              >
+                <span>Sign In to Verify</span>
+                <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+              </button>
+            )}
 
             {/* Mobile Menu Button */}
             <button
@@ -257,13 +268,24 @@ if result.verdict.status != "VERIFIED":
 
           {/* Hero CTAs */}
           <div className="flex flex-wrap items-center justify-center gap-3.5 mb-8">
-            <Link
-              to="/verify/new"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#C96A2B] hover:bg-[#E08A3E] text-white text-sm font-semibold transition-all shadow-[0_0_24px_rgba(201,106,43,0.45)] active:scale-[0.98]"
-            >
-              <span>Verify a task</span>
-              <span className="material-symbols-outlined text-[16px]">verified</span>
-            </Link>
+            {isAuthenticated ? (
+              <Link
+                to="/verify/new"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#C96A2B] hover:bg-[#E08A3E] text-white text-sm font-semibold transition-all shadow-[0_0_24px_rgba(201,106,43,0.45)] active:scale-[0.98]"
+              >
+                <span>Verify a task</span>
+                <span className="material-symbols-outlined text-[16px]">verified</span>
+              </Link>
+            ) : (
+              <button
+                type="button"
+                onClick={() => openAuthModal("signin")}
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#C96A2B] hover:bg-[#E08A3E] text-white text-sm font-semibold transition-all shadow-[0_0_24px_rgba(201,106,43,0.45)] active:scale-[0.98] cursor-pointer"
+              >
+                <span>Sign in to verify tasks</span>
+                <span className="material-symbols-outlined text-[16px]">verified</span>
+              </button>
+            )}
 
             <button
               type="button"
@@ -1093,13 +1115,24 @@ if result.verdict.status != "VERIFIED":
             </p>
 
             <div className="flex flex-wrap items-center justify-center gap-4">
-              <Link
-                to="/verify/new"
-                className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl bg-[#C96A2B] hover:bg-[#E08A3E] text-white text-sm font-semibold transition-all shadow-[0_0_25px_rgba(201,106,43,0.5)] active:scale-[0.98]"
-              >
-                <span>Verify a task</span>
-                <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
-              </Link>
+              {isAuthenticated ? (
+                <Link
+                  to="/verify/new"
+                  className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl bg-[#C96A2B] hover:bg-[#E08A3E] text-white text-sm font-semibold transition-all shadow-[0_0_25px_rgba(201,106,43,0.5)] active:scale-[0.98]"
+                >
+                  <span>Verify a task</span>
+                  <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => openAuthModal("signin")}
+                  className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl bg-[#C96A2B] hover:bg-[#E08A3E] text-white text-sm font-semibold transition-all shadow-[0_0_25px_rgba(201,106,43,0.5)] active:scale-[0.98] cursor-pointer"
+                >
+                  <span>Sign in to verify tasks</span>
+                  <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+                </button>
+              )}
 
               <button
                 type="button"

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { verificationApi } from "../../services/verificationApi";
 import { VerificationRecord } from "../../types/verification";
 import { TELEGRAM_BOT_URL } from "../../config/env";
+import { useAuth } from "../../context/AuthContext";
 
 interface PresetOption {
   label: string;
@@ -39,6 +40,7 @@ const PRESET_OPTIONS: PresetOption[] = [
 ];
 
 export const InteractiveVerifyWidget: React.FC = () => {
+  const { isAuthenticated, openAuthModal } = useAuth();
   const [taskPrompt, setTaskPrompt] = useState(PRESET_OPTIONS[0].task);
   const [workerOutput, setWorkerOutput] = useState(PRESET_OPTIONS[0].output);
   const [loading, setLoading] = useState(false);
@@ -54,6 +56,12 @@ export const InteractiveVerifyWidget: React.FC = () => {
 
   const handleRunVerification = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isAuthenticated) {
+      openAuthModal("signin");
+      setError("Please sign in to execute live task verification against the Stellar ledger.");
+      return;
+    }
+
     if (!taskPrompt.trim() || !workerOutput.trim()) {
       setError("Please provide both a task specification and worker output.");
       return;
@@ -153,6 +161,22 @@ export const InteractiveVerifyWidget: React.FC = () => {
         {error && (
           <div className="p-3 rounded-lg bg-red-950/50 border border-red-800/50 text-xs text-red-400">
             {error}
+          </div>
+        )}
+
+        {!isAuthenticated && (
+          <div className="p-3.5 rounded-xl bg-[#2C1710]/80 border border-[#E08A3E]/40 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2 text-[#E08A3E]">
+              <span className="material-symbols-outlined text-[18px]">lock</span>
+              <span>Sign in required to run verified tasks on Stellar ledger</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => openAuthModal("signin")}
+              className="px-3.5 py-1.5 rounded-lg bg-[#C96A2B] hover:bg-[#E08A3E] text-white font-semibold text-xs transition-colors whitespace-nowrap cursor-pointer shadow-sm"
+            >
+              Sign In to Verify
+            </button>
           </div>
         )}
 

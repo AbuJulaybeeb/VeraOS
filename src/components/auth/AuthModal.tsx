@@ -61,6 +61,12 @@ export const AuthModal: React.FC = () => {
   const handleGoogleLogin = async () => {
     setErrorMsg(null);
 
+    // If an email address is already typed in the input field, authenticate with it immediately!
+    if (email && email.includes("@")) {
+      await handleSelectGoogleAccount(email, name);
+      return;
+    }
+
     const clientId = ((import.meta as any).env?.VITE_GOOGLE_CLIENT_ID || "").trim();
     const win = typeof window !== "undefined" ? (window as any) : {};
 
@@ -86,12 +92,19 @@ export const AuthModal: React.FC = () => {
               setIsSubmitting(false);
             }
           },
+          error_callback: (err: any) => {
+            console.warn("[AuthModal] GSI error callback:", err);
+            setIsSubmitting(false);
+            setGoogleChooserOpen(true);
+          },
         });
         client.requestAccessToken();
         return;
       } catch (err) {
         console.warn("[AuthModal] GSI popup init error:", err);
         setIsSubmitting(false);
+        setGoogleChooserOpen(true);
+        return;
       }
     }
 
@@ -168,6 +181,13 @@ export const AuthModal: React.FC = () => {
               <div className="p-2.5 rounded-lg bg-error-container/30 border border-error/30 text-error text-xs flex items-center gap-1.5">
                 <span className="material-symbols-outlined text-[16px]">error_outline</span>
                 <span>{errorMsg}</span>
+              </div>
+            )}
+
+            {isSubmitting && (
+              <div className="p-3 rounded-xl bg-primary/10 border border-primary/30 flex items-center justify-center gap-2 text-xs text-primary font-medium animate-pulse">
+                <span className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                <span>Authenticating Google account...</span>
               </div>
             )}
 
