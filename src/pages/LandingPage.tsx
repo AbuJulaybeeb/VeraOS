@@ -225,13 +225,26 @@ if result.verdict.status != "VERIFIED":
                 <span>Telegram Bot & Invites</span>
                 <span className="material-symbols-outlined text-[14px]">send</span>
               </button>
-              <Link
-                to="/dashboard"
-                onClick={() => setMobileMenuOpen(false)}
-                className="w-full text-center px-4 py-2 rounded-xl bg-[#C96A2B] text-white font-semibold text-xs"
-              >
-                Open Dashboard
-              </Link>
+              {isAuthenticated ? (
+                <Link
+                  to="/dashboard"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="w-full text-center px-4 py-2 rounded-xl bg-[#C96A2B] text-white font-semibold text-xs block"
+                >
+                  Open Dashboard
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    openAuthModal("signin");
+                  }}
+                  className="w-full text-center px-4 py-2 rounded-xl bg-[#C96A2B] text-white font-semibold text-xs cursor-pointer"
+                >
+                  Sign In to Dashboard
+                </button>
+              )}
             </div>
           </div>
         )}
