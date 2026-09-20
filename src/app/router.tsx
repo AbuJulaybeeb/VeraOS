@@ -1,6 +1,8 @@
 import React, { Suspense, lazy } from "react";
-import { createBrowserRouter, Navigate } from "react-router-dom";
+import { createBrowserRouter, Navigate, Outlet } from "react-router-dom";
 import { AppShell } from "../components/layout/AppShell";
+import { AuthModal } from "../components/auth/AuthModal";
+import { AgentConnectModal } from "../components/agent/AgentConnectModal";
 
 const LandingPage = lazy(() =>
   import("../pages/LandingPage").then((m) => ({ default: m.LandingPage }))
@@ -54,7 +56,21 @@ const PageLoader = () => (
   </div>
 );
 
+const RootLayout: React.FC = () => {
+  return (
+    <>
+      <Outlet />
+      <AuthModal />
+      <AgentConnectModal />
+    </>
+  );
+};
+
 export const router = createBrowserRouter([
+  {
+    element: <RootLayout />,
+    errorElement: <RouteErrorFallback />,
+    children: [
   // Landing Page
   {
     path: "/",
@@ -191,6 +207,8 @@ export const router = createBrowserRouter([
           </Suspense>
         ),
       },
+    ],
+  },
     ],
   },
 ]);

@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { Button } from "../ui/Button";
 import { StellarWalletModal } from "../wallet/StellarWalletModal";
@@ -508,21 +507,21 @@ export const AuthModal: React.FC = () => {
             {/* Legal Terms & Privacy Notice */}
             <p className="text-[11px] text-center text-[#B9A99B] pt-2 leading-relaxed border-t border-white/5">
               By continuing, you agree to VeraOS{" "}
-              <Link
-                to="/terms"
+              <a
+                href="/terms"
                 onClick={closeAuthModal}
                 className="text-[#E08A3E] hover:underline"
               >
                 Terms &amp; Conditions
-              </Link>{" "}
+              </a>{" "}
               and acknowledge our{" "}
-              <Link
-                to="/privacy"
+              <a
+                href="/privacy"
                 onClick={closeAuthModal}
                 className="text-[#E08A3E] hover:underline"
               >
                 Privacy Policy
-              </Link>
+              </a>
               .
             </p>
           </>
