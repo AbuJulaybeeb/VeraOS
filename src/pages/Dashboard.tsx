@@ -3,12 +3,13 @@ import { Link, useNavigate } from "react-router-dom";
 import { useVerificationsList } from "../hooks/useVerification";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
-import { TELEGRAM_BOT_URL } from "../config/env";
+import { InviteLinkModal } from "../components/invite/InviteLinkModal";
 
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [inviteModalOpen, setInviteModalOpen] = useState(false);
 
   const { verifications, loading, refetch } = useVerificationsList(
     statusFilter,
@@ -93,15 +94,14 @@ export const Dashboard: React.FC = () => {
             <span className="material-symbols-outlined text-[14px] text-primary">vpn_key</span>
             <span>Invite Portal</span>
           </Link>
-          <a
-            href={TELEGRAM_BOT_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#21110B] hover:bg-[#2C1710] border border-[#4A2B1D] text-xs font-semibold text-[#E08A3E] transition-colors whitespace-nowrap"
+          <button
+            type="button"
+            onClick={() => setInviteModalOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#21110B] hover:bg-[#2C1710] border border-[#4A2B1D] text-xs font-semibold text-[#E08A3E] transition-colors whitespace-nowrap cursor-pointer shadow-sm"
           >
-            <span>Open Telegram Bot</span>
-            <span className="material-symbols-outlined text-[14px]">arrow_outward</span>
-          </a>
+            <span className="material-symbols-outlined text-[14px]">send</span>
+            <span>Open Telegram Bot (Invite Link)</span>
+          </button>
         </div>
       </div>
 
@@ -325,6 +325,11 @@ export const Dashboard: React.FC = () => {
           </div>
         )}
       </div>
+
+      <InviteLinkModal
+        isOpen={inviteModalOpen}
+        onClose={() => setInviteModalOpen(false)}
+      />
     </div>
   );
 };

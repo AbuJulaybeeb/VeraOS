@@ -33,12 +33,12 @@ export const Docs: React.FC = () => {
             Dashboard
           </Link>
           <a
-            href={TELEGRAM_BOT_URL}
+            href={`${TELEGRAM_BOT_URL}?start=invite_VERA-VIP-2026`}
             target="_blank"
             rel="noopener noreferrer"
             className="text-[#E08A3E] hover:underline flex items-center gap-1"
           >
-            <span>Telegram Bot</span>
+            <span>Telegram Bot (Auto-Invite)</span>
             <span className="material-symbols-outlined text-xs">open_in_new</span>
           </a>
           <a

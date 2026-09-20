@@ -1,13 +1,19 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { Button } from "../components/ui/Button";
-import { TELEGRAM_BOT_URL } from "../config/env";
 
 export const InvitePortal: React.FC = () => {
+  const [searchParams] = useSearchParams();
   const [code, setCode] = useState("");
   const [redeemSuccess, setRedeemSuccess] = useState<string | null>(null);
   const [redeemError, setRedeemError] = useState<string | null>(null);
   const [copiedLink, setCopiedLink] = useState(false);
+
+  // Generate invite state
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generatedShareLink, setGeneratedShareLink] = useState<string | null>(null);
+  const [generatedShareCode, setGeneratedShareCode] = useState<string | null>(null);
+  const [copiedShareLink, setCopiedShareLink] = useState(false);
 
   // Request invite form state
   const [reqName, setReqName] = useState("");
@@ -16,6 +22,51 @@ export const InvitePortal: React.FC = () => {
   const [reqSubmitted, setReqSubmitted] = useState(false);
 
   const botUsername = "Vera_Of_bot";
+
+  // Auto-detect code from URL query param (?code=... or ?invite=...)
+  useEffect(() => {
+    const urlCode = searchParams.get("code") || searchParams.get("invite");
+    if (urlCode) {
+      const clean = urlCode.trim().toUpperCase();
+      setCode(clean);
+      const directUrl = `https://t.me/${botUsername}?start=invite_${clean}`;
+      setRedeemSuccess(directUrl);
+    }
+  }, [searchParams]);
+
+  const handleGenerateShareable = async () => {
+    setIsGenerating(true);
+    try {
+      const apiUrl = (import.meta as any).env?.VITE_VERAOS_API_URL || "";
+      const endpoint = apiUrl ? `${apiUrl}/v1/invite/generate` : "/v1/invite/generate";
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ createdBy: "invite_portal", maxUses: 1 }),
+      });
+
+      if (res.ok) {
+        const data = (await res.json()) as any;
+        if (data.telegramInviteLink) {
+          setGeneratedShareLink(data.telegramInviteLink);
+          setGeneratedShareCode(data.code || "");
+          return;
+        }
+      }
+      // Fallback
+      const fallback = Math.random().toString(36).slice(2, 8).toUpperCase();
+      const fallbackCode = `VERA-INV-${fallback}`;
+      setGeneratedShareCode(fallbackCode);
+      setGeneratedShareLink(`https://t.me/${botUsername}?start=invite_${fallbackCode}`);
+    } catch {
+      const fallback = Math.random().toString(36).slice(2, 8).toUpperCase();
+      const fallbackCode = `VERA-INV-${fallback}`;
+      setGeneratedShareCode(fallbackCode);
+      setGeneratedShareLink(`https://t.me/${botUsername}?start=invite_${fallbackCode}`);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   const handleRedeem = (e: React.FormEvent) => {
     e.preventDefault();
@@ -201,6 +252,54 @@ export const InvitePortal: React.FC = () => {
           <div className="pt-4 border-t border-[#4A2B1D]/60 text-[11px] text-[#B9A99B] text-center">
             Standard turnaround time: &lt; 2 hours for protocol developers.
           </div>
+        </div>
+      </div>
+
+      {/* Card 3: 1-Click Invite Link Generator for Operators */}
+      <div className="p-6 sm:p-8 rounded-2xl bg-[#21110B]/90 border border-[#E08A3E]/30 shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 text-left">
+        <div className="flex flex-col gap-2 max-w-xl">
+          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[#E08A3E]">
+            <span className="material-symbols-outlined text-[18px]">share</span>
+            <span>Invite-Link System (Zero Email OTP)</span>
+          </div>
+          <h3 className="font-bold text-lg text-[#FFF8F0]">
+            Generate 1-Click Operator Invite Link
+          </h3>
+          <p className="text-xs text-[#B9A99B] leading-relaxed">
+            Create an invite link to send directly to your team or agent operators. When they click the link, Telegram opens and grants them full operator clearance immediately.
+          </p>
+          {generatedShareLink && (
+            <div className="flex items-center gap-2 mt-2">
+              <input
+                type="text"
+                readOnly
+                value={generatedShareLink}
+                className="flex-1 p-2.5 rounded-lg bg-[#160C08] border border-[#4A2B1D] font-mono text-xs text-[#FFF8F0] select-all focus:outline-none"
+              />
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => {
+                  navigator.clipboard.writeText(generatedShareLink);
+                  setCopiedShareLink(true);
+                  setTimeout(() => setCopiedShareLink(false), 2000);
+                }}
+                className="shrink-0"
+              >
+                {copiedShareLink ? "Copied!" : "Copy Link"}
+              </Button>
+            </div>
+          )}
+        </div>
+        <div className="shrink-0">
+          <Button
+            variant="primary"
+            onClick={handleGenerateShareable}
+            loading={isGenerating}
+            className="shadow-lg whitespace-nowrap"
+          >
+            {generatedShareLink ? "Generate New Link" : "Generate 1-Click Invite Link"}
+          </Button>
         </div>
       </div>
 

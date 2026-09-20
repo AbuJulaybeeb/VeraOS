@@ -7,6 +7,7 @@ import { AgentHeaderWidget } from "../components/agent/AgentHeaderWidget";
 import { InteractiveVerifyWidget } from "../components/verification/InteractiveVerifyWidget";
 import { HeroFlowingWave } from "../components/landing/HeroFlowingWave";
 import { TELEGRAM_BOT_URL, GITHUB_REPO_URL } from "../config/env";
+import { InviteLinkModal } from "../components/invite/InviteLinkModal";
 
 export const LandingPage: React.FC = () => {
   const { user, isAuthenticated, openAuthModal, logout } = useAuth();
@@ -16,6 +17,7 @@ export const LandingPage: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [activeScenario, setActiveScenario] = useState<"deceptive" | "valid">("deceptive");
+  const [inviteModalOpen, setInviteModalOpen] = useState(false);
 
   const handleCopyCode = () => {
     let code = "";
@@ -130,18 +132,17 @@ if result.verdict.status != "VERIFIED":
           {/* Right Action Group */}
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             {/* Live Telegram Bot Link */}
-            <a
-              href={TELEGRAM_BOT_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#20110A] border border-[#4A2B1D]/80 text-[#B9A99B] hover:text-[#FFF8F0] text-xs font-medium transition-colors"
-              title="Open Live Telegram Bot (@Vera_Of_bot)"
+            <button
+              type="button"
+              onClick={() => setInviteModalOpen(true)}
+              className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#20110A] border border-[#4A2B1D]/80 text-[#B9A99B] hover:text-[#FFF8F0] text-xs font-medium transition-colors cursor-pointer"
+              title="Open Telegram Bot Invite Gateway"
             >
               <svg className="w-3.5 h-3.5 fill-[#E08A3E]" viewBox="0 0 24 24">
                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z" />
               </svg>
-              <span>Telegram</span>
-            </a>
+              <span>Telegram Bot</span>
+            </button>
 
             {/* Wallet-Style Agent Connector */}
             <AgentHeaderWidget />
@@ -202,16 +203,17 @@ if result.verdict.status != "VERIFIED":
             <a href="#developers" onClick={() => setMobileMenuOpen(false)} className="px-3 py-2 text-xs font-medium text-[#B9A99B] hover:text-white">Developers</a>
             <Link to="/docs" onClick={() => setMobileMenuOpen(false)} className="px-3 py-2 text-xs font-medium text-[#B9A99B] hover:text-white">Docs</Link>
             <div className="pt-2 border-t border-[#4A2B1D]/50 flex flex-col gap-2">
-              <a
-                href={TELEGRAM_BOT_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center justify-between px-3 py-2 rounded-xl bg-[#20110A] text-xs text-[#E08A3E] font-medium"
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  setInviteModalOpen(true);
+                }}
+                className="flex items-center justify-between px-3 py-2 rounded-xl bg-[#20110A] text-xs text-[#E08A3E] font-medium text-left cursor-pointer"
               >
-                <span>Open Telegram Bot (@Vera_Of_bot)</span>
-                <span className="material-symbols-outlined text-[14px]">arrow_outward</span>
-              </a>
+                <span>Telegram Bot & Invites</span>
+                <span className="material-symbols-outlined text-[14px]">send</span>
+              </button>
               <Link
                 to="/dashboard"
                 onClick={() => setMobileMenuOpen(false)}
@@ -263,17 +265,16 @@ if result.verdict.status != "VERIFIED":
               <span className="material-symbols-outlined text-[16px]">verified</span>
             </Link>
 
-            <a
-              href={TELEGRAM_BOT_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#1A0E08]/80 hover:bg-[#2C1710] border border-[#4A2B1D] text-[#FFF8F0] text-sm font-medium transition-all shadow-sm group"
+            <button
+              type="button"
+              onClick={() => setInviteModalOpen(true)}
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#1A0E08]/80 hover:bg-[#2C1710] border border-[#4A2B1D] text-[#FFF8F0] text-sm font-medium transition-all shadow-sm group cursor-pointer"
             >
               <svg className="w-4 h-4 fill-[#E08A3E] group-hover:scale-110 transition-transform" viewBox="0 0 24 24">
                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z" />
               </svg>
-              <span>Open Telegram</span>
-            </a>
+              <span>Launch Bot (Invite Link)</span>
+            </button>
 
             <button
               type="button"
@@ -656,15 +657,14 @@ if result.verdict.status != "VERIFIED":
                 <div className="text-emerald-400 font-mono font-medium">@Vera_Of_bot: ✅ VERIFIED (Stellar Tx #620194)</div>
               </div>
             </div>
-            <a
-              href={TELEGRAM_BOT_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#E08A3E] hover:text-[#FFF8F0] transition-colors"
+            <button
+              type="button"
+              onClick={() => setInviteModalOpen(true)}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#E08A3E] hover:text-[#FFF8F0] transition-colors cursor-pointer"
             >
-              <span>Open @Vera_Of_bot</span>
-              <span className="material-symbols-outlined text-[14px]">arrow_outward</span>
-            </a>
+              <span>Launch @Vera_Of_bot (Invite Link)</span>
+              <span className="material-symbols-outlined text-[14px]">send</span>
+            </button>
           </div>
 
           {/* Card 3: Developer API */}
@@ -1101,17 +1101,16 @@ if result.verdict.status != "VERIFIED":
                 <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
               </Link>
 
-              <a
-                href={TELEGRAM_BOT_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl bg-[#1A0E08] hover:bg-[#2C1710] border border-[#4A2B1D] text-[#FFF8F0] text-sm font-medium transition-colors"
+              <button
+                type="button"
+                onClick={() => setInviteModalOpen(true)}
+                className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl bg-[#1A0E08] hover:bg-[#2C1710] border border-[#4A2B1D] text-[#FFF8F0] text-sm font-medium transition-colors cursor-pointer"
               >
                 <svg className="w-4 h-4 fill-[#E08A3E]" viewBox="0 0 24 24">
                   <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z" />
                 </svg>
-                <span>Open Telegram</span>
-              </a>
+                <span>Launch Bot (Invite Link)</span>
+              </button>
             </div>
           </div>
         </div>
@@ -1163,7 +1162,15 @@ if result.verdict.status != "VERIFIED":
             <div>
               <div className="font-bold text-[#FFF8F0] uppercase tracking-wider mb-3">Connect</div>
               <ul className="space-y-2 text-[#B9A99B]">
-                <li><a href={TELEGRAM_BOT_URL} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Telegram Bot (@Vera_Of_bot)</a></li>
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => setInviteModalOpen(true)}
+                    className="hover:text-white transition-colors cursor-pointer text-left"
+                  >
+                    Telegram Bot (@Vera_Of_bot)
+                  </button>
+                </li>
                 <li><Link to="/agents" className="hover:text-white transition-colors">Agent Registry</Link></li>
                 <li><Link to="/agents/connect" className="hover:text-white transition-colors">Connect Agent</Link></li>
               </ul>
@@ -1181,6 +1188,12 @@ if result.verdict.status != "VERIFIED":
           </div>
         </div>
       </footer>
+
+      {/* Telegram Bot Invite Link Modal */}
+      <InviteLinkModal
+        isOpen={inviteModalOpen}
+        onClose={() => setInviteModalOpen(false)}
+      />
     </div>
   );
 };

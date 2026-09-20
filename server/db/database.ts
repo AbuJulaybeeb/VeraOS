@@ -430,6 +430,20 @@ export class VeraDatabase {
     return newCode;
   }
 
+  async generateInviteCode(
+    createdBy = "operator",
+    maxUses = 1,
+    notes = "Generated 1-click invite"
+  ): Promise<InviteCode> {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    let randomPart = "";
+    for (let i = 0; i < 6; i++) {
+      randomPart += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    const code = `VERA-INV-${randomPart}`;
+    return this.createInviteCode(code, maxUses, createdBy, notes);
+  }
+
   async incrementInviteCodeUses(code: string): Promise<void> {
     const normalized = code.trim().toUpperCase();
     if (this.d1) {

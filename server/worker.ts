@@ -109,6 +109,41 @@ export default {
       }
     }
 
+    // 2.0.1 Generate 1-Click Invite Link API: /v1/invite/generate
+    if (pathname === "/v1/invite/generate" && request.method === "POST") {
+      try {
+        let body: any = {};
+        try {
+          body = await request.json();
+        } catch {
+          body = {};
+        }
+
+        const createdBy = (body.createdBy || "operator").trim();
+        const maxUses = Number(body.maxUses) || 1;
+        const notes = (body.notes || "Generated 1-click invite link").trim();
+
+        const invite = await db.generateInviteCode(createdBy, maxUses, notes);
+        const origin = new URL(request.url).origin;
+
+        return new Response(
+          JSON.stringify({
+            success: true,
+            code: invite.code,
+            maxUses: invite.max_uses,
+            telegramInviteLink: `https://t.me/Vera_Of_bot?start=invite_${invite.code}`,
+            webInviteLink: `${origin}/invite?code=${invite.code}`,
+          }),
+          { status: 200, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } }
+        );
+      } catch (err: any) {
+        return new Response(JSON.stringify({ success: false, message: err?.message || "Failed to generate invite code" }), {
+          status: 500,
+          headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+        });
+      }
+    }
+
     // 2.1 Real Database Authentication APIs (Cloudflare D1 backed)
     if (pathname === "/v1/auth/signup" && request.method === "POST") {
       try {

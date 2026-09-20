@@ -182,12 +182,12 @@ export const VerificationDetail: React.FC = () => {
           </div>
         </div>
         <a
-          href={TELEGRAM_BOT_URL}
+          href={`${TELEGRAM_BOT_URL}?start=invite_VERA-VIP-2026`}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#21110B] hover:bg-[#2C1710] border border-[#4A2B1D] text-xs font-semibold text-[#E08A3E] transition-colors whitespace-nowrap self-stretch sm:self-auto justify-center"
         >
-          <span>Open Telegram</span>
+          <span>Open Telegram (Auto-Invite)</span>
           <span className="material-symbols-outlined text-[14px]">arrow_outward</span>
         </a>
       </div>

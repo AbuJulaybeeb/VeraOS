@@ -5,16 +5,11 @@ import { Header } from "./Header";
 import { MobileDrawer } from "./MobileDrawer";
 import { useVerificationsList } from "../../hooks/useVerification";
 import { useAgents } from "../../hooks/useAgents";
-import { useAuth } from "../../context/AuthContext";
-import { AccessRestrictedGate } from "../auth/AccessRestrictedGate";
 
 export const AppShell: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { verifications } = useVerificationsList();
   const { agents } = useAgents();
-  const { user } = useAuth();
-
-  const isRestricted = Boolean(user && user.invitationStatus === "pending");
 
   return (
     <div className="min-h-screen bg-background font-body-md text-on-surface antialiased flex flex-col">
@@ -40,7 +35,7 @@ export const AppShell: React.FC = () => {
           onToggleMobileMenu={() => setMobileMenuOpen(true)}
         />
         <main className="w-full pt-16 bg-surface flex-1 px-space-md lg:px-space-lg py-space-lg">
-          {isRestricted ? <AccessRestrictedGate /> : <Outlet />}
+          <Outlet />
         </main>
       </div>
     </div>

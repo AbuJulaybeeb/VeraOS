@@ -1,10 +1,10 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "../../lib/utils";
 import { useAuth } from "../../context/AuthContext";
 import { useAgentContext } from "../../context/AgentContext";
 import { ThemeToggle } from "../../context/ThemeContext";
-import { TELEGRAM_BOT_URL } from "../../config/env";
+import { InviteLinkModal } from "../invite/InviteLinkModal";
 
 interface SidebarProps {
   verificationsCount?: number;
@@ -20,6 +20,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const location = useLocation();
   const { user, openAuthModal, logout } = useAuth();
   const { activeAgent, openConnectModal } = useAgentContext();
+  const [inviteModalOpen, setInviteModalOpen] = useState(false);
 
   const navItems = [
     {
@@ -197,26 +198,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </span>
         </Link>
 
-        {/* Telegram Bot Interface Link */}
-        <a
-          href={TELEGRAM_BOT_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={onCloseMobile}
-          className="flex items-center justify-between px-space-sm py-2 rounded-lg text-[#E08A3E] hover:bg-surface-container hover:text-white transition-colors"
+        {/* Telegram Bot Interface & Invite Gateway */}
+        <button
+          type="button"
+          onClick={() => {
+            if (onCloseMobile) onCloseMobile();
+            setInviteModalOpen(true);
+          }}
+          className="w-full flex items-center justify-between px-space-sm py-2 rounded-lg text-[#E08A3E] hover:bg-surface-container hover:text-white transition-colors cursor-pointer text-left"
         >
           <div className="flex items-center gap-space-sm">
             <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/>
             </svg>
             <span className="font-body-sm text-body-sm font-medium">
-              Telegram Bot
+              Telegram Bot & Invites
             </span>
           </div>
-          <span className="material-symbols-outlined text-[16px] opacity-75">
-            arrow_outward
+          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#E08A3E]/20 text-[#E08A3E] border border-[#E08A3E]/30">
+            Invite Link
           </span>
-        </a>
+        </button>
 
         {/* Connected AI Agent Status (Wallet-Style) */}
         {activeAgent && activeAgent.status === "CONNECTED" ? (
@@ -366,6 +368,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         )}
       </div>
+
+      <InviteLinkModal
+        isOpen={inviteModalOpen}
+        onClose={() => setInviteModalOpen(false)}
+      />
     </aside>
   );
 };

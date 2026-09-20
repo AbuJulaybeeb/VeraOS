@@ -7,6 +7,7 @@ import { NotificationsPopover, NotificationItem } from "../notifications/Notific
 import { CommandPalette } from "../search/CommandPalette";
 import { AgentHeaderWidget } from "../agent/AgentHeaderWidget";
 import { StellarWalletModal } from "../wallet/StellarWalletModal";
+import { InviteLinkModal } from "../invite/InviteLinkModal";
 
 interface HeaderProps {
   onToggleMobileMenu: () => void;
@@ -53,6 +54,7 @@ export const Header: React.FC<HeaderProps> = ({
   const [searchOpen, setSearchOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [walletModalOpen, setWalletModalOpen] = useState(false);
+  const [inviteModalOpen, setInviteModalOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
 
@@ -202,6 +204,17 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
+          {/* Telegram Bot Invite Link Button */}
+          <button
+            type="button"
+            onClick={() => setInviteModalOpen(true)}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high border border-[#E08A3E]/30 text-xs font-medium text-[#E08A3E] hover:text-[#ff9b49] transition-all cursor-pointer shadow-sm"
+            title="Generate 1-Click Telegram Bot Invite Link"
+          >
+            <span className="material-symbols-outlined text-[16px] text-[#E08A3E]">send</span>
+            <span className="hidden xl:inline">Bot Invites</span>
+          </button>
+
           {/* New Verification Button */}
           <Button
             variant="primary"
@@ -350,6 +363,19 @@ export const Header: React.FC<HeaderProps> = ({
                   <button
                     onClick={() => {
                       setProfileDropdownOpen(false);
+                      setInviteModalOpen(true);
+                    }}
+                    className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors flex items-center gap-2"
+                  >
+                    <span className="material-symbols-outlined text-[16px] text-[#E08A3E]">
+                      send
+                    </span>
+                    <span>Telegram Bot & Invites</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setProfileDropdownOpen(false);
                       openAuthModal("signup");
                     }}
                     className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors flex items-center gap-2"
@@ -389,6 +415,12 @@ export const Header: React.FC<HeaderProps> = ({
       <StellarWalletModal
         isOpen={walletModalOpen}
         onClose={() => setWalletModalOpen(false)}
+      />
+
+      {/* Telegram Bot Invite Link Modal */}
+      <InviteLinkModal
+        isOpen={inviteModalOpen}
+        onClose={() => setInviteModalOpen(false)}
       />
     </>
   );

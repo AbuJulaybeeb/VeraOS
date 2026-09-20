@@ -185,3 +185,46 @@ test("Google Auth & Access Control: Whitelist management", async () => {
   assert.equal(found?.role, "operator");
   assert.equal(found?.notes, "Added by owner");
 });
+
+test("Google Auth & Access Control: 1-Click invite link generation and immediate access grant", async () => {
+  const db = new VeraDatabase();
+  const auth = new AuthService(db);
+
+  // 1. Generate dynamic invite link code
+  const generated = await db.generateInviteCode("test_operator", 1, "Testing 1-click invite link");
+  assert.ok(generated.code.startsWith("VERA-INV-"), "Code should have VERA-INV- prefix");
+  assert.equal(generated.max_uses, 1);
+  assert.equal(generated.uses_count, 0);
+  assert.equal(generated.is_active, true);
+
+  // 2. Query code from database
+  const retrieved = await db.getInviteCode(generated.code);
+  assert.ok(retrieved);
+  assert.equal(retrieved?.code, generated.code);
+
+  // 3. Register uninvited Google user
+  const uninvited = await auth.authenticateWithGoogle(
+    {
+      sub: "88991122334455667788",
+      email: "invitee.friend@gmail.com",
+      name: "Invited Friend",
+    },
+    ["owner@veraos.network"]
+  );
+  assert.equal(uninvited.isInvited, false);
+  assert.equal(uninvited.user.invitation_status, "pending");
+
+  // 4. Friend clicks invite link and redeems code
+  const redeemRes = await auth.redeemInviteCodeForUser(
+    "invitee.friend@gmail.com",
+    generated.code
+  );
+  assert.equal(redeemRes.success, true);
+  assert.equal(redeemRes.user.invitation_status, "invited");
+  assert.equal(redeemRes.user.role, "operator");
+
+  // 5. Code usage count incremented, cannot be reused if max_uses reached
+  const updatedCode = await db.getInviteCode(generated.code);
+  assert.equal(updatedCode?.uses_count, 1);
+});
+
