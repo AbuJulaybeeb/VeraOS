@@ -1138,7 +1138,7 @@ if result.verdict.status != "VERIFIED":
             </p>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-8 text-xs">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 text-xs">
             <div>
               <div className="font-bold text-[#FFF8F0] uppercase tracking-wider mb-3">Product</div>
               <ul className="space-y-2 text-[#B9A99B]">
@@ -1173,6 +1173,17 @@ if result.verdict.status != "VERIFIED":
                 </li>
                 <li><Link to="/agents" className="hover:text-white transition-colors">Agent Registry</Link></li>
                 <li><Link to="/agents/connect" className="hover:text-white transition-colors">Connect Agent</Link></li>
+                <li><Link to="/invite" className="hover:text-white transition-colors">Invite Portal</Link></li>
+              </ul>
+            </div>
+
+            <div>
+              <div className="font-bold text-[#FFF8F0] uppercase tracking-wider mb-3">Legal &amp; Trust</div>
+              <ul className="space-y-2 text-[#B9A99B]">
+                <li><Link to="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
+                <li><Link to="/terms" className="hover:text-white transition-colors">Terms &amp; Conditions</Link></li>
+                <li><Link to="/docs" className="hover:text-white transition-colors">Security Invariants</Link></li>
+                <li><a href="https://stellar.expert/explorer/testnet" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Ledger Explorer</a></li>
               </ul>
             </div>
           </div>
@@ -1181,6 +1192,14 @@ if result.verdict.status != "VERIFIED":
         <div className="max-w-6xl mx-auto pt-8 mt-8 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#B9A99B]">
           <span>© 2026 VeraOS. Open-source verification infrastructure built on Stellar.</span>
           <div className="flex items-center gap-4">
+            <Link to="/privacy" className="hover:text-white transition-colors">
+              Privacy Policy
+            </Link>
+            <span>•</span>
+            <Link to="/terms" className="hover:text-white transition-colors">
+              Terms &amp; Conditions
+            </Link>
+            <span>•</span>
             <span className="flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
               <span>Stellar Testnet Live</span>

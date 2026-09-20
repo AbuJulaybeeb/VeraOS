@@ -367,6 +367,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           </div>
         )}
+
+        {/* Legal & Compliance Quick Links */}
+        <div className="flex items-center justify-center gap-3 pt-1 text-[11px] text-outline">
+          <Link
+            to="/privacy"
+            onClick={onCloseMobile}
+            className="hover:text-primary transition-colors"
+          >
+            Privacy Policy
+          </Link>
+          <span>•</span>
+          <Link
+            to="/terms"
+            onClick={onCloseMobile}
+            className="hover:text-primary transition-colors"
+          >
+            Terms of Service
+          </Link>
+        </div>
       </div>
 
       <InviteLinkModal

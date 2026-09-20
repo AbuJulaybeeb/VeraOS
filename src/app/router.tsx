@@ -35,6 +35,12 @@ const Docs = lazy(() =>
 const InvitePortal = lazy(() =>
   import("../pages/InvitePortal").then((m) => ({ default: m.InvitePortal }))
 );
+const PrivacyPolicy = lazy(() =>
+  import("../pages/PrivacyPolicy").then((m) => ({ default: m.PrivacyPolicy }))
+);
+const TermsConditions = lazy(() =>
+  import("../pages/TermsConditions").then((m) => ({ default: m.TermsConditions }))
+);
 const NotFound = lazy(() =>
   import("../pages/NotFound").then((m) => ({ default: m.NotFound }))
 );
@@ -78,6 +84,28 @@ export const router = createBrowserRouter([
     element: (
       <Suspense fallback={<PageLoader />}>
         <InvitePortal />
+      </Suspense>
+    ),
+  },
+
+  // Legal: Privacy Policy
+  {
+    path: "/privacy",
+    errorElement: <RouteErrorFallback />,
+    element: (
+      <Suspense fallback={<PageLoader />}>
+        <PrivacyPolicy />
+      </Suspense>
+    ),
+  },
+
+  // Legal: Terms & Conditions
+  {
+    path: "/terms",
+    errorElement: <RouteErrorFallback />,
+    element: (
+      <Suspense fallback={<PageLoader />}>
+        <TermsConditions />
       </Suspense>
     ),
   },
