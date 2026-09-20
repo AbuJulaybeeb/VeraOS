@@ -39,6 +39,8 @@ const NotFound = lazy(() =>
   import("../pages/NotFound").then((m) => ({ default: m.NotFound }))
 );
 
+import { RouteErrorFallback } from "../components/common/RouteErrorFallback";
+
 const PageLoader = () => (
   <div className="min-h-[50vh] flex flex-col items-center justify-center gap-3 text-on-surface-variant">
     <span className="w-8 h-8 border-2 border-primary-container border-t-transparent rounded-full animate-spin" />
@@ -50,6 +52,7 @@ export const router = createBrowserRouter([
   // Landing Page
   {
     path: "/",
+    errorElement: <RouteErrorFallback />,
     element: (
       <Suspense fallback={<PageLoader />}>
         <LandingPage />
@@ -60,6 +63,7 @@ export const router = createBrowserRouter([
   // Documentation Site
   {
     path: "/docs",
+    errorElement: <RouteErrorFallback />,
     element: (
       <Suspense fallback={<PageLoader />}>
         <Docs />
@@ -70,6 +74,7 @@ export const router = createBrowserRouter([
   // Enterprise Invitation Portal
   {
     path: "/invite",
+    errorElement: <RouteErrorFallback />,
     element: (
       <Suspense fallback={<PageLoader />}>
         <InvitePortal />
@@ -80,6 +85,7 @@ export const router = createBrowserRouter([
   // Authenticated App Shell Routes
   {
     element: <AppShell />,
+    errorElement: <RouteErrorFallback />,
     children: [
       {
         path: "/dashboard",

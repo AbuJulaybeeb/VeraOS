@@ -811,7 +811,65 @@ export default {
     // 5. Static Assets (Frontend UI): Serve via env.STATIC_ASSETS or env.ASSETS
     const assetBinding = env.STATIC_ASSETS || env.ASSETS;
     if (assetBinding) {
-      return assetBinding.fetch(request);
+      try {
+        const assetRes = await assetBinding.fetch(request);
+        // SPA Fallback: If requesting an HTML navigation path and the asset returned 404, serve root index.html
+        if (
+          assetRes.status === 404 &&
+          request.method === "GET" &&
+          !pathname.startsWith("/v1/") &&
+          !pathname.startsWith("/api/") &&
+          !pathname.includes(".")
+        ) {
+          const rootReq = new Request(new URL("/", request.url), request);
+          const rootRes = await assetBinding.fetch(rootReq);
+          if (rootRes.status < 400) {
+            return rootRes;
+          }
+        }
+        return assetRes;
+      } catch (err) {
+        console.error("Asset fetch error:", err);
+      }
+    }
+
+    // 6. Fallback if assets binding is unavailable
+    if (request.method === "GET" && !pathname.startsWith("/v1/")) {
+      return new Response(
+        `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>VeraOS — Verification Engine Active</title>
+  <style>
+    body { margin:0; background:#0E0704; color:#F3E5D5; font-family:system-ui,-apple-system,sans-serif; display:flex; align-items:center; justify-content:center; min-height:100vh; padding:20px; }
+    .card { max-width:480px; width:100%; background:#1C0F0A; border:1px solid rgba(224,138,62,0.3); border-radius:20px; padding:32px; box-shadow:0 24px 60px rgba(0,0,0,0.8); text-align:center; }
+    h1 { font-size:22px; margin:0 0 12px; color:#FFF8F0; }
+    p { font-size:14px; color:#B9A99B; line-height:1.6; margin:0 0 20px; }
+    .status { display:inline-block; padding:4px 12px; border-radius:100px; background:rgba(34,197,94,0.15); color:#4ade80; border:1px solid rgba(34,197,94,0.3); font-size:12px; font-weight:600; margin-bottom:16px; }
+    .btn { display:inline-block; padding:10px 20px; border-radius:10px; background:#C96A2B; color:#fff; text-decoration:none; font-weight:600; font-size:13px; margin:4px; }
+    .btn-alt { background:#21110B; border:1px solid rgba(255,255,255,0.1); color:#F3E5D5; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="status">● Cloudflare Edge Worker Online</div>
+    <h1>VeraOS Audit Engine</h1>
+    <p>The backend verification engine, Cloudflare D1 persistence, and Telegram bot service are active on Cloudflare edge.</p>
+    <a href="https://t.me/Vera_Of_bot" class="btn" target="_blank">Open Telegram Bot (@Vera_Of_bot)</a>
+    <a href="/v1/health" class="btn btn-alt">Check API Health</a>
+  </div>
+</body>
+</html>`,
+        {
+          status: 200,
+          headers: {
+            "Content-Type": "text/html; charset=utf-8",
+            "Access-Control-Allow-Origin": "*",
+          },
+        }
+      );
     }
 
     return new Response("Not Found", { status: 404 });

@@ -36,12 +36,43 @@ interface AgentContextType {
 
 const STORAGE_ACTIVE_AGENT_KEY = "vera_active_agent_id_v1";
 
+function safeGetStorage(key: string): string | null {
+  try {
+    if (typeof window !== "undefined" && typeof localStorage !== "undefined") {
+      return localStorage.getItem(key);
+    }
+  } catch {
+    // ignore access denied or private browsing error
+  }
+  return null;
+}
+
+function safeSetStorage(key: string, value: string): void {
+  try {
+    if (typeof window !== "undefined" && typeof localStorage !== "undefined") {
+      localStorage.setItem(key, value);
+    }
+  } catch {
+    // ignore
+  }
+}
+
+function safeRemoveStorage(key: string): void {
+  try {
+    if (typeof window !== "undefined" && typeof localStorage !== "undefined") {
+      localStorage.removeItem(key);
+    }
+  } catch {
+    // ignore
+  }
+}
+
 const AgentContext = createContext<AgentContextType | undefined>(undefined);
 
 export const AgentProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [activeAgentId, setActiveAgentId] = useState<string | null>(() => {
-    return localStorage.getItem(STORAGE_ACTIVE_AGENT_KEY);
+    return safeGetStorage(STORAGE_ACTIVE_AGENT_KEY);
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -60,7 +91,7 @@ export const AgentProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const firstConnected = data.find((a) => a.status === "CONNECTED");
         if (firstConnected) {
           setActiveAgentId(firstConnected.id);
-          localStorage.setItem(STORAGE_ACTIVE_AGENT_KEY, firstConnected.id);
+          safeSetStorage(STORAGE_ACTIVE_AGENT_KEY, firstConnected.id);
         }
       }
     } catch (err) {
@@ -102,7 +133,7 @@ export const AgentProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const connected = await agentsApi.connectWithConsent(data);
       await fetchAgents();
       setActiveAgentId(connected.id);
-      localStorage.setItem(STORAGE_ACTIVE_AGENT_KEY, connected.id);
+      safeSetStorage(STORAGE_ACTIVE_AGENT_KEY, connected.id);
       return connected;
     },
     [fetchAgents]
@@ -116,10 +147,10 @@ export const AgentProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const remaining = agents.find((a) => a.id !== agentId && a.status === "CONNECTED");
         if (remaining) {
           setActiveAgentId(remaining.id);
-          localStorage.setItem(STORAGE_ACTIVE_AGENT_KEY, remaining.id);
+          safeSetStorage(STORAGE_ACTIVE_AGENT_KEY, remaining.id);
         } else {
           setActiveAgentId(null);
-          localStorage.removeItem(STORAGE_ACTIVE_AGENT_KEY);
+          safeRemoveStorage(STORAGE_ACTIVE_AGENT_KEY);
         }
       }
     },
@@ -132,7 +163,7 @@ export const AgentProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const selectActiveAgent = useCallback((agentId: string) => {
     setActiveAgentId(agentId);
-    localStorage.setItem(STORAGE_ACTIVE_AGENT_KEY, agentId);
+    safeSetStorage(STORAGE_ACTIVE_AGENT_KEY, agentId);
   }, []);
 
   return (

@@ -75,10 +75,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [authModalMode, setAuthModalMode] = useState<"signin" | "signup">("signup");
 
   useEffect(() => {
-    if (user) {
-      localStorage.setItem(STORAGE_AUTH_KEY, JSON.stringify(user));
-    } else {
-      localStorage.removeItem(STORAGE_AUTH_KEY);
+    try {
+      if (user) {
+        localStorage.setItem(STORAGE_AUTH_KEY, JSON.stringify(user));
+      } else {
+        localStorage.removeItem(STORAGE_AUTH_KEY);
+      }
+    } catch {
+      // ignore storage access errors
     }
   }, [user]);
 
@@ -345,7 +349,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const redeemInviteCode = async (code: string): Promise<{ success: boolean; message: string }> => {
-    const token = localStorage.getItem("vera_session_token_v1") || "";
+    let token = "";
+    try {
+      token = localStorage.getItem("vera_session_token_v1") || "";
+    } catch {
+      // ignore
+    }
     const res = await fetch("/v1/auth/redeem-invite", {
       method: "POST",
       headers: {
@@ -376,8 +385,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem(STORAGE_AUTH_KEY);
-    localStorage.removeItem("vera_session_token_v1");
+    try {
+      localStorage.removeItem(STORAGE_AUTH_KEY);
+      localStorage.removeItem("vera_session_token_v1");
+    } catch {
+      // ignore
+    }
   };
 
   return (
