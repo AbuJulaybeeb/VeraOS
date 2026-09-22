@@ -43,8 +43,9 @@ export interface TelegramUpdate {
 }
 
 export interface UserSession {
-  state: "IDLE" | "AWAITING_VERIFY_INPUT" | "AWAITING_CORRECT_INPUT" | "AWAITING_RESUBMIT_INPUT";
+  state: "IDLE" | "AWAITING_VERIFY_TASK" | "AWAITING_VERIFY_OUTPUT" | "AWAITING_CORRECT_INPUT" | "AWAITING_RESUBMIT_INPUT";
   verificationId?: string;
+  pendingTask?: string;
   updatedAt: number;
 }
 
@@ -318,9 +319,19 @@ export class VeraTelegramBot {
     const session = this.getSession(chatId);
 
     // 2. Handle Interactive Conversational States
-    if (session.state === "AWAITING_VERIFY_INPUT" && !rawText.startsWith("/")) {
+    if (session.state === "AWAITING_VERIFY_TASK" && !rawText.startsWith("/")) {
+      // Step 1 received: store task, ask for agent output
+      this.setSession(chatId, { state: "AWAITING_VERIFY_OUTPUT", pendingTask: rawText });
+      const reply = "Now paste the agent's output.";
+      await this.sendMessage(chatId, reply);
+      return { handled: true, reply };
+    }
+
+    if (session.state === "AWAITING_VERIFY_OUTPUT" && !rawText.startsWith("/")) {
+      // Step 2 received: run verification with stored task + this output
+      const task = session.pendingTask || rawText;
       this.clearSession(chatId);
-      return this.executeVerification(chatId, userId, rawText);
+      return this.executeVerificationWithTaskAndOutput(chatId, userId, task, rawText);
     }
 
     if (session.state === "AWAITING_CORRECT_INPUT" && !rawText.startsWith("/")) {
@@ -374,19 +385,21 @@ export class VeraTelegramBot {
   // --- Command: /start ---
   private async handleStart(chatId: number): Promise<{ handled: boolean; reply: string }> {
     const reply =
-      "🛡 VeraOS\n\n" +
-      "The verification layer for AI agents.\n\n" +
-      "I independently check agent work\n" +
-      "against real evidence before it can be trusted.\n\n" +
-      "Commands:\n\n" +
-      "/verify — Start a verification\n" +
-      "/status — Check a verification\n" +
-      "/evidence — View evidence\n" +
-      "/correct — Request correction\n" +
-      "/resubmit — Re-run verification\n" +
-      "/help — Show commands";
+      "🛡 Welcome to VeraOS.\n\n" +
+      "I verify AI agent work using independent evidence.\n\n" +
+      "Use /verify to start a verification.";
 
-    await this.sendMessage(chatId, reply);
+    const keyboard: InlineKeyboardMarkup = {
+      inline_keyboard: [
+        [
+          { text: "Start Verification", callback_data: "start_verification" },
+          { text: "View Verifications", callback_data: "view_verifications" },
+        ],
+        [{ text: "Help", callback_data: "help" }],
+      ],
+    };
+
+    await this.sendMessage(chatId, reply, keyboard);
     return { handled: true, reply };
   }
 
@@ -408,9 +421,9 @@ export class VeraTelegramBot {
   // --- Command: /verify ---
   private async handleVerifyCommand(chatId: number, userId: number, arg: string): Promise<{ handled: boolean; reply: string }> {
     if (!arg) {
-      // Conversational flow: Prompt user for input
-      this.setSession(chatId, { state: "AWAITING_VERIFY_INPUT" });
-      const reply = "What should be verified?";
+      // Step 1: Ask for the task
+      this.setSession(chatId, { state: "AWAITING_VERIFY_TASK" });
+      const reply = "What should the agent accomplish?";
       await this.sendMessage(chatId, reply);
       return { handled: true, reply };
     }
@@ -418,7 +431,101 @@ export class VeraTelegramBot {
     return this.executeVerification(chatId, userId, arg);
   }
 
-  // --- Execution: Run Verification ---
+  // --- Execution: Run Verification with separate task + output ---
+  private async executeVerificationWithTaskAndOutput(chatId: number, userId: number, task: string, workerOutput: string): Promise<{ handled: boolean; reply: string }> {
+    try {
+      const progressReply = "Verification started.\n\n⏳ Checking evidence...";
+      await this.sendMessage(chatId, progressReply);
+
+      const res = await fetch(`${this.apiBaseUrl}/v1/verify`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          task,
+          worker: {
+            id: `tg_user_${userId}`,
+            name: "Telegram Operator",
+            output: workerOutput,
+          },
+          telegramUserId: userId,
+          telegramChatId: chatId,
+        }),
+      });
+
+      if (!res.ok) {
+        const errJson = (await res.json().catch(() => ({}))) as { message?: string };
+        const reply = `⚠️ Verification unavailable\n\n${errJson.message || "VeraOS could not process the verification request."}`;
+        await this.sendMessage(chatId, reply);
+        return { handled: true, reply };
+      }
+
+      const data = (await res.json()) as {
+        verificationId: string;
+        id: string;
+        verdict: { status: "VERIFIED" | "FAILED" | "PARTIAL" | "UNVERIFIABLE"; summary: string };
+        checks: Array<{ id: string; status: string; expected: string; observed: string; explanation: string }>;
+      };
+
+      const displayId = data.verificationId || data.id;
+      const isVerified = data.verdict.status === "VERIFIED";
+      const txCheck = data.checks?.[0];
+
+      let expectedStr = "—";
+      let observedStr = "—";
+      let diffStr = "—";
+
+      if (txCheck) {
+        if (txCheck.expected) expectedStr = String(txCheck.expected);
+        if (txCheck.observed) observedStr = String(txCheck.observed);
+        const expMatch = txCheck.explanation?.match(/Expected:\s*([^\n]+)/i);
+        const obsMatch = txCheck.explanation?.match(/Observed:\s*([^\n]+)/i);
+        const diffMatch = txCheck.explanation?.match(/Difference:\s*([^\n]+)/i);
+        if (expMatch) expectedStr = expMatch[1].trim();
+        if (obsMatch) observedStr = obsMatch[1].trim();
+        if (diffMatch) diffStr = diffMatch[1].trim();
+      }
+
+      let finalReply: string;
+      let keyboard: InlineKeyboardMarkup | undefined;
+
+      if (isVerified) {
+        finalReply =
+          `✅ VERIFICATION PASSED\n\n` +
+          `Worker claimed: ${expectedStr}\n` +
+          `Independent evidence: ${observedStr}\n\n` +
+          `Verification: ${displayId}`;
+        keyboard = {
+          inline_keyboard: [
+            [{ text: "View evidence", callback_data: `view_evidence:${displayId}` }],
+          ],
+        };
+      } else {
+        finalReply =
+          `❌ VERIFICATION FAILED\n\n` +
+          `Worker claimed: ${expectedStr}\n` +
+          `Independent evidence: ${observedStr}\n` +
+          `Difference: ${diffStr}\n\n` +
+          `Verification: ${displayId}`;
+        keyboard = {
+          inline_keyboard: [
+            [
+              { text: "View evidence", callback_data: `view_evidence:${displayId}` },
+              { text: "Send correction", callback_data: `request_correction:${displayId}` },
+            ],
+          ],
+        };
+      }
+
+      await this.sendMessage(chatId, finalReply, keyboard);
+      return { handled: true, reply: finalReply };
+    } catch {
+      const reply = "⚠️ Verification unavailable\n\nVeraOS could not retrieve the required evidence.\n\nPlease try again shortly.";
+      await this.sendMessage(chatId, reply);
+      return { handled: true, reply };
+    }
+  }
+
+  // --- Execution: Run Verification (legacy single-input path) ---
   private async executeVerification(chatId: number, userId: number, input: string): Promise<{ handled: boolean; reply: string }> {
     let task = input;
     let workerOutput = input;
@@ -867,6 +974,20 @@ export class VeraTelegramBot {
     const data = query.data || "";
     const chatId = query.message?.chat.id || query.from.id;
     const userId = query.from.id;
+
+    if (data === "start_verification") {
+      return this.handleVerifyCommand(chatId, userId, "");
+    }
+
+    if (data === "view_verifications") {
+      const reply = "Use /status <verification_id> to check a specific verification.";
+      await this.sendMessage(chatId, reply);
+      return { handled: true, reply };
+    }
+
+    if (data === "help") {
+      return this.handleHelp(chatId);
+    }
 
     if (data.startsWith("view_evidence:")) {
       const id = data.split(":")[1];

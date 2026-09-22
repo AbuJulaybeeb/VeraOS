@@ -4,16 +4,9 @@ import { Sidebar } from "./Sidebar";
 interface MobileDrawerProps {
   isOpen: boolean;
   onClose: () => void;
-  verificationsCount?: number;
-  agentsCount?: number;
 }
 
-export const MobileDrawer: React.FC<MobileDrawerProps> = ({
-  isOpen,
-  onClose,
-  verificationsCount,
-  agentsCount,
-}) => {
+export const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose }) => {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
@@ -37,11 +30,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
       {/* Drawer */}
       <div className="fixed inset-y-0 left-0 max-w-full flex">
         <div className="w-72">
-          <Sidebar
-            verificationsCount={verificationsCount}
-            agentsCount={agentsCount}
-            onCloseMobile={onClose}
-          />
+          <Sidebar onCloseMobile={onClose} />
         </div>
       </div>
     </div>

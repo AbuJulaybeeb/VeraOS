@@ -67,12 +67,17 @@ export const TriangulatedEvidence: React.FC<TriangulatedEvidenceProps> = ({ reco
             fingerprint
           </span>
           <h2 className="font-headline-md text-headline-md font-bold text-on-surface">
-            Triangulated Evidence Artifacts
+            Independent Evidence
           </h2>
         </div>
-        <span className="font-body-sm text-body-sm text-outline">
-          Multi-source cryptographically signed audit trail
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="px-2 py-0.5 rounded bg-surface-container-high font-label-caps text-label-caps text-outline uppercase border border-white/5">
+            DEMO DATA
+          </span>
+          <span className="font-body-sm text-body-sm text-outline">
+            Values shown are from demo scenarios
+          </span>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-space-md">
@@ -173,7 +178,7 @@ export const TriangulatedEvidence: React.FC<TriangulatedEvidenceProps> = ({ reco
               </div>
               <div className="flex justify-between py-1 bg-surface-container/50 px-2 rounded">
                 <span className="text-outline">Timestamp</span>
-                <span className="text-on-surface">14:32:01 UTC</span>
+                <span className="text-on-surface">demo scenario</span>
               </div>
               <div className="flex flex-col py-1 bg-surface-container/50 px-2 rounded">
                 <span className="text-outline">Endpoint</span>

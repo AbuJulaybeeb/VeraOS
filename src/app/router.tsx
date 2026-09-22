@@ -1,5 +1,5 @@
 import React, { Suspense, lazy } from "react";
-import { createBrowserRouter, Navigate } from "react-router-dom";
+import { createBrowserRouter } from "react-router-dom";
 import { AppShell } from "../components/layout/AppShell";
 
 const LandingPage = lazy(() =>
@@ -39,7 +39,6 @@ const NotFound = lazy(() =>
 const PageLoader = () => (
   <div className="min-h-[50vh] flex flex-col items-center justify-center gap-3 text-on-surface-variant">
     <span className="w-8 h-8 border-2 border-primary-container border-t-transparent rounded-full animate-spin" />
-    <span className="font-code-sm text-code-sm">Loading telemetry interface...</span>
   </div>
 );
 
@@ -78,7 +77,11 @@ export const router = createBrowserRouter([
       },
       {
         path: "/verifications",
-        element: <Navigate to="/dashboard" replace />,
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <Dashboard />
+          </Suspense>
+        ),
       },
       {
         path: "/verify/new",

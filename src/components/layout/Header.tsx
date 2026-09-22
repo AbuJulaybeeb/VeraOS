@@ -16,29 +16,29 @@ const INITIAL_NOTIFICATIONS: NotificationItem[] = [
   {
     id: "notif_1",
     type: "critical",
-    title: "Verification #V-1048: Invariant Breaches",
+    title: "[Demo] Verification #V-1048: Invariant Breaches",
     message: "Seamless Protocol TVL deficit (-$1.75M) and 90% compensation payout deficit.",
-    time: "2m ago",
+    time: "demo",
     path: "/verify/v_test_89bf2e",
-    read: false,
+    read: true,
   },
   {
     id: "notif_2",
     type: "success",
-    title: "Stellar Ledger Confirmed",
+    title: "[Demo] Stellar Ledger Confirmed",
     message: "Transaction verified on Stellar Testnet. 5.00 USDC transfer confirmed on ledger.",
-    time: "14m ago",
+    time: "demo",
     path: "/verify/v_test_pass_001",
-    read: false,
+    read: true,
   },
   {
     id: "notif_3",
     type: "warning",
-    title: "Unverified Bounty Claim",
+    title: "[Demo] Unverified Bounty Claim",
     message: "Worker ScoutAgent reported 5 USDC payment without independent Stellar receipt.",
-    time: "32m ago",
+    time: "demo",
     path: "/verify/v_test_unver_003",
-    read: false,
+    read: true,
   },
 ];
 
@@ -74,7 +74,7 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <>
-      <header className="fixed top-0 right-0 left-0 lg:left-72 h-16 bg-surface/85 backdrop-blur-xl z-40 flex items-center justify-between px-space-md lg:px-space-lg border-b border-white/5 shadow-[0_1px_8px_rgba(0,0,0,0.3)]">
+      <header className="fixed top-0 right-0 left-0 lg:left-72 h-16 bg-surface/85 backdrop-blur-xl z-40 flex items-center justify-between px-4 sm:px-space-md lg:px-space-lg border-b border-white/5 shadow-[0_1px_8px_rgba(0,0,0,0.3)]">
         {/* Left: Mobile trigger & Breadcrumbs */}
         <div className="flex items-center gap-space-sm">
           <button
@@ -129,12 +129,12 @@ export const Header: React.FC<HeaderProps> = ({
             type="button"
             onClick={() => setSearchOpen(true)}
             className="flex items-center gap-space-sm px-space-sm py-1.5 rounded-lg bg-surface-container text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors text-left cursor-pointer"
-            title="Search telemetry and traces (⌘K)"
-            aria-label="Search telemetry and traces (⌘K)"
+            title="Search (⌘K)"
+            aria-label="Search (⌘K)"
           >
             <span className="material-symbols-outlined text-[18px]">search</span>
-            <span className="hidden md:inline font-body-sm text-body-sm">Search telemetry, traces...</span>
-            <span className="hidden md:inline font-code-sm text-code-sm px-1.5 py-0.5 rounded bg-surface-container-highest text-outline">
+            <span className="hidden lg:inline font-body-sm text-body-sm">Search...</span>
+            <span className="hidden lg:inline font-code-sm text-code-sm px-1.5 py-0.5 rounded bg-surface-container-highest text-outline">
               ⌘K
             </span>
           </button>

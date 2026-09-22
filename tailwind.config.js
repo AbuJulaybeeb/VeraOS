@@ -76,16 +76,16 @@ export default {
       fontFamily: {
         "code-sm": ["JetBrains Mono", "monospace"],
         "body-sm": ["Inter", "sans-serif"],
-        "label-caps": ["JetBrains Mono", "monospace"],
-        "headline-lg-mobile": ["Geist", "sans-serif"],
-        "headline-md": ["Geist", "sans-serif"],
-        "display-hero": ["Geist", "sans-serif"],
+        "label-caps": ["Poppins", "sans-serif"],
+        "headline-lg-mobile": ["Poppins", "sans-serif"],
+        "headline-md": ["Poppins", "sans-serif"],
+        "display-hero": ["Poppins", "sans-serif"],
         "code-md": ["JetBrains Mono", "monospace"],
-        "headline-lg": ["Geist", "sans-serif"],
+        "headline-lg": ["Poppins", "sans-serif"],
         "body-lg": ["Inter", "sans-serif"],
         "body-md": ["Inter", "sans-serif"],
-        "headline-sm": ["Geist", "sans-serif"],
-        "display-hero-mobile": ["Geist", "sans-serif"]
+        "headline-sm": ["Poppins", "sans-serif"],
+        "display-hero-mobile": ["Poppins", "sans-serif"]
       },
       fontSize: {
         "code-sm": ["11px", { lineHeight: "16px", letterSpacing: "0.02em", fontWeight: "500" }],
