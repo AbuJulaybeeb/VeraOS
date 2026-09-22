@@ -177,7 +177,7 @@ if result.verdict.status != "VERIFIED":
               to="/verify/new"
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold text-white bg-gradient-to-r from-[#C96A2B] via-[#D87431] to-[#E08A3E] hover:from-[#D87431] hover:to-[#E59247] shadow-[0_0_18px_rgba(201,106,43,0.4)] active:scale-[0.98] transition-all whitespace-nowrap"
             >
-              <span>Verify a Task</span>
+              <span>Get Started</span>
               <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
             </Link>
 
