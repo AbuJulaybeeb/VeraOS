@@ -17,7 +17,7 @@ export const Dashboard: React.FC = () => {
   );
 
   const filterTabs = [
-    { label: "All Verifications", value: "ALL" },
+    { label: "All", value: "ALL" },
     { label: "Passed", value: "PASSED" },
     { label: "Failed", value: "FAILED" },
     { label: "Unverified", value: "UNVERIFIED" },

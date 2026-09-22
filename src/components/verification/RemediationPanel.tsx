@@ -271,9 +271,7 @@ export const RemediationPanel: React.FC<RemediationPanelProps> = ({
             verified_user
           </span>
           <span>
-            Automatic worker webhook{" "}
-            <code className="text-on-surface">https://agent.acme.ai/remediate</code> will
-            receive cryptographic retry envelope.
+            Agent will receive the correction directive via webhook when resubmission is dispatched.
           </span>
         </div>
 
