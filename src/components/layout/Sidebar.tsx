@@ -91,11 +91,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 Vera<span className="text-primary-container">OS</span>
               </span>
             </Link>
-            <div className="flex items-center gap-space-xs px-2 py-0.5 rounded-full bg-surface-container">
-              <span className="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse" />
-              <span className="font-label-caps text-label-caps uppercase text-secondary font-medium">
-                Live
-              </span>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-space-xs px-2 py-0.5 rounded-full bg-surface-container">
+                <span className="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse" />
+                <span className="font-label-caps text-label-caps uppercase text-secondary font-medium">
+                  Live
+                </span>
+              </div>
+              {onCloseMobile && (
+                <button
+                  type="button"
+                  onClick={onCloseMobile}
+                  className="lg:hidden p-1 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors cursor-pointer"
+                  aria-label="Close sidebar"
+                >
+                  <span className="material-symbols-outlined text-[20px]">close</span>
+                </button>
+              )}
             </div>
           </div>
 

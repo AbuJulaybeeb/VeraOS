@@ -145,8 +145,10 @@ if result.verdict.status != "VERIFIED":
               <span>Open Telegram</span>
             </a>
 
-            {/* Wallet-Style Agent Connector */}
-            <AgentHeaderWidget />
+            {/* Wallet-Style Agent Connector (Tablet & Desktop) */}
+            <div className="hidden sm:block">
+              <AgentHeaderWidget />
+            </div>
 
             {/* User Auth or Sign In */}
             {isAuthenticated ? (
@@ -175,9 +177,10 @@ if result.verdict.status != "VERIFIED":
             {/* Primary CTA */}
             <Link
               to="/verify/new"
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold text-white bg-gradient-to-r from-[#C96A2B] via-[#D87431] to-[#E08A3E] hover:from-[#D87431] hover:to-[#E59247] shadow-[0_0_18px_rgba(201,106,43,0.4)] active:scale-[0.98] transition-all whitespace-nowrap"
+              className="inline-flex items-center gap-1 sm:gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs font-semibold text-white bg-gradient-to-r from-[#C96A2B] via-[#D87431] to-[#E08A3E] hover:from-[#D87431] hover:to-[#E59247] shadow-[0_0_18px_rgba(201,106,43,0.4)] active:scale-[0.98] transition-all whitespace-nowrap"
             >
-              <span>Verify a Task</span>
+              <span className="hidden xs:inline">Verify a Task</span>
+              <span className="xs:hidden">Verify</span>
               <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
             </Link>
 
@@ -185,7 +188,7 @@ if result.verdict.status != "VERIFIED":
             <button
               type="button"
               onClick={() => setMobileMenuOpen((prev) => !prev)}
-              className="lg:hidden w-8 h-8 rounded-full flex items-center justify-center bg-[#20110A] border border-[#4A2B1D] text-[#B9A99B] hover:text-[#FFF8F0]"
+              className="lg:hidden w-8 h-8 rounded-full flex items-center justify-center bg-[#20110A] border border-[#4A2B1D] text-[#B9A99B] hover:text-[#FFF8F0] shrink-0"
               aria-label="Toggle navigation"
             >
               <span className="material-symbols-outlined text-[18px]">
@@ -203,13 +206,17 @@ if result.verdict.status != "VERIFIED":
             <a href="#use-cases" onClick={() => setMobileMenuOpen(false)} className="px-3 py-2 text-xs font-medium text-[#B9A99B] hover:text-white">Use cases</a>
             <a href="#developers" onClick={() => setMobileMenuOpen(false)} className="px-3 py-2 text-xs font-medium text-[#B9A99B] hover:text-white">Developers</a>
             <Link to="/docs" onClick={() => setMobileMenuOpen(false)} className="px-3 py-2 text-xs font-medium text-[#B9A99B] hover:text-white">Docs</Link>
+            
             <div className="pt-2 border-t border-[#4A2B1D]/50 flex flex-col gap-2">
+              <div className="px-1 py-1">
+                <AgentHeaderWidget />
+              </div>
               <a
                 href={TELEGRAM_PERMANENT_INVITE_URL}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center justify-between px-3 py-2 rounded-xl bg-[#20110A] text-xs text-[#E08A3E] font-medium text-left cursor-pointer"
+                className="flex items-center justify-between px-3 py-2 rounded-xl bg-[#20110A] text-xs text-[#E08A3E] font-medium text-left cursor-pointer border border-[#4A2B1D]/60"
               >
                 <span>Open Telegram (Invite Link)</span>
                 <span className="material-symbols-outlined text-[14px]">send</span>
@@ -221,6 +228,29 @@ if result.verdict.status != "VERIFIED":
               >
                 Open Dashboard
               </Link>
+              {isAuthenticated ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    logout();
+                    setMobileMenuOpen(false);
+                  }}
+                  className="w-full text-center px-4 py-1.5 rounded-xl bg-surface-container text-[#B9A99B] hover:text-white text-xs block"
+                >
+                  Sign Out ({user?.name || user?.email})
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    openAuthModal("signin");
+                    setMobileMenuOpen(false);
+                  }}
+                  className="w-full text-center px-4 py-1.5 rounded-xl bg-surface-container text-[#FFF8F0] text-xs block font-medium"
+                >
+                  Sign In / Sign Up
+                </button>
+              )}
             </div>
           </div>
         )}

@@ -231,7 +231,7 @@ export const Account: React.FC = () => {
   }
 
   return (
-    <div className="p-space-md md:p-space-lg max-w-6xl mx-auto flex flex-col gap-6 pb-20">
+    <div className="p-3 sm:p-6 md:p-8 max-w-6xl mx-auto flex flex-col gap-6 pb-20 min-w-0 w-full overflow-x-hidden">
       {/* Header Banner */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/5 pb-6">
         <div className="flex items-center gap-4">
@@ -490,7 +490,7 @@ export const Account: React.FC = () => {
 
               <div className="grid grid-cols-1 gap-3">
                 {/* Google Account */}
-                <div className="p-3.5 rounded-xl bg-surface-container-low border border-white/5 flex items-center justify-between gap-4">
+                <div className="p-3.5 rounded-xl bg-surface-container-low border border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center shrink-0">
                       <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -537,7 +537,7 @@ export const Account: React.FC = () => {
                 </div>
 
                 {/* Stellar Web3 Wallet */}
-                <div className="p-3.5 rounded-xl bg-surface-container-low border border-white/5 flex items-center justify-between gap-4">
+                <div className="p-3.5 rounded-xl bg-surface-container-low border border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-xl bg-purple-500/20 border border-purple-500/30 flex items-center justify-center shrink-0 text-purple-400">
                       <span className="material-symbols-outlined text-[20px]">account_balance_wallet</span>

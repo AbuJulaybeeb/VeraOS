@@ -24,7 +24,8 @@ export function startServer(port = PORT) {
   const telegramMode = process.env.TELEGRAM_MODE?.toLowerCase();
   const shouldPoll =
     telegramMode === "embedded_polling" ||
-    process.env.RUN_TELEGRAM_IN_SERVER === "true";
+    process.env.RUN_TELEGRAM_IN_SERVER === "true" ||
+    (Boolean(process.env.TELEGRAM_BOT_TOKEN) && telegramMode !== "disabled" && process.env.NODE_ENV !== "test");
 
   if (shouldPoll && process.env.TELEGRAM_BOT_TOKEN && !veraTelegramBot.isPollingActive()) {
     veraTelegramBot.setApiBaseUrl(`http://localhost:${port}`);

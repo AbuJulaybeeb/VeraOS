@@ -30,11 +30,11 @@ export const AppShell: React.FC = () => {
       />
 
       {/* Main Content Area */}
-      <div className="lg:pl-72 flex flex-col min-h-screen">
+      <div className="lg:pl-72 flex flex-col min-h-screen min-w-0 w-full overflow-x-hidden">
         <Header
           onToggleMobileMenu={() => setMobileMenuOpen(true)}
         />
-        <main className="w-full pt-16 bg-surface flex-1 px-space-md lg:px-space-lg py-space-lg">
+        <main className="w-full pt-16 bg-surface flex-1 px-3 sm:px-6 lg:px-8 py-4 sm:py-6 min-w-0 overflow-x-hidden">
           <Outlet />
         </main>
       </div>

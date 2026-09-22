@@ -139,7 +139,7 @@ export const AuthModal: React.FC = () => {
       />
 
       {/* Modal Dialog */}
-      <div className="relative w-full max-w-md rounded-2xl bg-surface-container border border-white/10 shadow-2xl p-space-lg flex flex-col gap-5 z-10">
+      <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl bg-surface-container border border-white/10 shadow-2xl p-space-md sm:p-space-lg flex flex-col gap-5 z-10">
         {/* Close Button */}
         <button
           onClick={closeAuthModal}

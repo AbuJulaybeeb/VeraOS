@@ -78,18 +78,18 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <>
-      <header className="fixed top-0 right-0 left-0 lg:left-72 h-16 bg-surface/85 backdrop-blur-xl z-40 flex items-center justify-between px-space-md lg:px-space-lg border-b border-white/5 shadow-[0_1px_8px_rgba(0,0,0,0.3)]">
+      <header className="fixed top-0 right-0 left-0 lg:left-72 h-16 bg-surface/85 backdrop-blur-xl z-40 flex items-center justify-between px-3 sm:px-6 lg:px-8 border-b border-white/5 shadow-[0_1px_8px_rgba(0,0,0,0.3)] min-w-0">
         {/* Left: Mobile trigger & Breadcrumbs */}
-        <div className="flex items-center gap-space-sm">
+        <div className="flex items-center gap-2 sm:gap-space-sm min-w-0">
           <button
             onClick={onToggleMobileMenu}
-            className="lg:hidden p-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors"
+            className="lg:hidden p-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors shrink-0"
             aria-label="Open mobile navigation"
           >
             <span className="material-symbols-outlined text-[22px]">menu</span>
           </button>
 
-          <div className="lg:hidden flex items-center gap-space-xs">
+          <div className="lg:hidden flex items-center gap-1.5 shrink-0">
             <div className="w-7 h-7 rounded-xl bg-primary-container flex items-center justify-center">
               <span className="material-symbols-outlined text-on-primary-container text-[18px]">
                 verified
@@ -101,7 +101,7 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
 
           <nav
-            className="hidden sm:flex items-center gap-2 font-body-sm text-body-sm text-on-surface-variant ml-2"
+            className="hidden md:flex items-center gap-1.5 font-body-sm text-body-sm text-on-surface-variant ml-2 truncate"
             aria-label="Breadcrumb"
           >
             {breadcrumbs.map((crumb, idx) => (
@@ -114,12 +114,12 @@ export const Header: React.FC<HeaderProps> = ({
                 {crumb.path ? (
                   <Link
                     to={crumb.path}
-                    className="hover:text-on-surface transition-colors"
+                    className="hover:text-on-surface transition-colors truncate max-w-[120px]"
                   >
                     {crumb.label}
                   </Link>
                 ) : (
-                  <span className="text-on-surface font-medium">{crumb.label}</span>
+                  <span className="text-on-surface font-medium truncate max-w-[120px]">{crumb.label}</span>
                 )}
               </React.Fragment>
             ))}
@@ -127,17 +127,17 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* Right Actions */}
-        <div className="flex items-center gap-space-sm relative">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 relative">
           {/* Functional Search Bar */}
           <button
             type="button"
             onClick={() => setSearchOpen(true)}
-            className="flex items-center gap-space-sm px-space-sm py-1.5 rounded-lg bg-surface-container text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors text-left cursor-pointer"
+            className="flex items-center gap-2 p-2 sm:px-3 sm:py-1.5 rounded-lg bg-surface-container text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors text-left cursor-pointer"
             title="Search telemetry and traces (⌘K)"
             aria-label="Search telemetry and traces (⌘K)"
           >
             <span className="material-symbols-outlined text-[18px]">search</span>
-            <span className="hidden md:inline font-body-sm text-body-sm">Search telemetry, traces...</span>
+            <span className="hidden md:inline font-body-sm text-body-sm">Search traces...</span>
             <span className="hidden md:inline font-code-sm text-code-sm px-1.5 py-0.5 rounded bg-surface-container-highest text-outline">
               ⌘K
             </span>
@@ -172,63 +172,69 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Theme Mode Toggle (Dark / White Theme) */}
           <ThemeToggle />
 
-          {/* Connect AI Agent Widget (Wallet-style) */}
-          <AgentHeaderWidget />
+          {/* Connect AI Agent Widget (Desktop) */}
+          <div className="hidden lg:block">
+            <AgentHeaderWidget />
+          </div>
 
           {/* Connect Stellar Wallet (Freighter, Albedo, Lobstr) */}
-          {user?.walletAddress ? (
-            <button
-              type="button"
-              onClick={() => setWalletModalOpen(true)}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high border border-white/10 text-xs font-mono text-[#00E5FF] transition-all cursor-pointer"
-              title={`Stellar Wallet Connected: ${user.walletAddress}`}
-            >
-              <span className="material-symbols-outlined text-[15px] text-[#00E5FF]">
-                account_balance_wallet
-              </span>
-              <span className="hidden xl:inline">
-                {user.walletAddress.slice(0, 4)}...{user.walletAddress.slice(-4)}
-              </span>
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setWalletModalOpen(true)}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-xs font-medium text-on-surface-variant hover:text-on-surface transition-all cursor-pointer border border-white/5"
-              title="Connect Stellar Wallet (Freighter, Albedo, Lobstr)"
-            >
-              <span className="material-symbols-outlined text-[15px] text-[#00E5FF]">
-                account_balance_wallet
-              </span>
-              <span className="hidden md:inline">Stellar</span>
-            </button>
-          )}
+          <div className="hidden xl:block">
+            {user?.walletAddress ? (
+              <button
+                type="button"
+                onClick={() => setWalletModalOpen(true)}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high border border-white/10 text-xs font-mono text-[#00E5FF] transition-all cursor-pointer"
+                title={`Stellar Wallet Connected: ${user.walletAddress}`}
+              >
+                <span className="material-symbols-outlined text-[15px] text-[#00E5FF]">
+                  account_balance_wallet
+                </span>
+                <span>
+                  {user.walletAddress.slice(0, 4)}...{user.walletAddress.slice(-4)}
+                </span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setWalletModalOpen(true)}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-xs font-medium text-on-surface-variant hover:text-on-surface transition-all cursor-pointer border border-white/5"
+                title="Connect Stellar Wallet (Freighter, Albedo, Lobstr)"
+              >
+                <span className="material-symbols-outlined text-[15px] text-[#00E5FF]">
+                  account_balance_wallet
+                </span>
+                <span>Stellar</span>
+              </button>
+            )}
+          </div>
 
-          {/* Telegram Bot Invite Link Button */}
-          <button
-            type="button"
-            onClick={() => setInviteModalOpen(true)}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high border border-[#E08A3E]/30 text-xs font-medium text-[#E08A3E] hover:text-[#ff9b49] transition-all cursor-pointer shadow-sm"
-            title="Generate 1-Click Telegram Bot Invite Link"
+          {/* Telegram Bot 1-Click Action */}
+          <a
+            href="https://t.me/Vera_Of_bot?start=invite_VERA-OFFICIAL"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#21110B] hover:bg-[#2C1710] border border-[#E08A3E]/40 text-xs font-semibold text-[#E08A3E] hover:text-[#ff9b49] transition-all cursor-pointer shadow-sm"
+            title="Launch Telegram Bot (@Vera_Of_bot with Permanent Invite)"
           >
-            <span className="material-symbols-outlined text-[16px] text-[#E08A3E]">send</span>
-            <span className="hidden xl:inline">Bot Invites</span>
-          </button>
+            <span className="material-symbols-outlined text-[15px] text-[#E08A3E]">send</span>
+            <span className="hidden xs:inline">Bot</span>
+          </a>
 
-          {/* New Verification Button */}
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={() => navigate("/verify/new")}
-            icon={
-              <span className="material-symbols-outlined text-[18px]">
-                add_circle
-              </span>
-            }
-          >
-            <span className="hidden sm:inline">New Verification</span>
-            <span className="sm:hidden">Verify</span>
-          </Button>
+          {/* New Verification Button (Tablet & Desktop) */}
+          <div className="hidden sm:block">
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => navigate("/verify/new")}
+              icon={
+                <span className="material-symbols-outlined text-[18px]">
+                  add_circle
+                </span>
+              }
+            >
+              <span>Verify</span>
+            </Button>
+          </div>
 
           {/* Functional Profile / Auth Avatar */}
           <div className="relative">

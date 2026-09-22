@@ -4,17 +4,25 @@ import { useVerificationsList } from "../hooks/useVerification";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
 import { InviteLinkModal } from "../components/invite/InviteLinkModal";
+import { MekikiVerificationCard } from "../components/verification/MekikiVerificationCard";
 
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
+  const [networkFilter, setNetworkFilter] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
 
   const { verifications, loading, refetch } = useVerificationsList(
     statusFilter,
     searchQuery
   );
+
+  const displayedVerifications = verifications.filter((v) => {
+    if (networkFilter === "ALL") return true;
+    return (v.network || "").toLowerCase().includes(networkFilter.toLowerCase());
+  });
 
   const filterTabs = [
     { label: "All Verifications", value: "ALL" },
@@ -156,175 +164,243 @@ export const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Filters and Search Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm bg-surface-container-low p-space-sm rounded-xl border border-white/5">
-        <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0">
-          {filterTabs.map((tab) => (
+      {/* Network & Status Filter Bars (Mekiki Style) */}
+      <div className="flex flex-col gap-3">
+        {/* Network Ecosystem Strip */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none text-xs">
+          <span className="text-outline font-semibold uppercase tracking-wider shrink-0 text-[11px] mr-1">
+            Network:
+          </span>
+          {[
+            { label: "All Networks", value: "ALL" },
+            { label: "Stellar Testnet", value: "Stellar" },
+            { label: "Soroban RPC", value: "Soroban" },
+          ].map((net) => (
             <button
-              key={tab.value}
-              onClick={() => setStatusFilter(tab.value)}
-              className={`px-3 py-1.5 rounded-lg font-body-sm text-body-sm font-medium transition-colors whitespace-nowrap ${
-                statusFilter === tab.value
-                  ? "bg-primary-container text-on-primary font-semibold shadow-sm"
-                  : "text-on-surface-variant hover:text-on-surface hover:bg-surface-container"
+              key={net.value}
+              onClick={() => setNetworkFilter(net.value)}
+              className={`shrink-0 px-3.5 py-1.5 rounded-full border transition-all text-xs font-medium cursor-pointer ${
+                networkFilter === net.value
+                  ? "bg-primary-container text-white border-primary-container shadow-sm font-semibold"
+                  : "bg-surface-container text-on-surface-variant border-white/5 hover:text-on-surface hover:bg-surface-container-high"
               }`}
             >
-              {tab.label}
+              {net.label}
             </button>
           ))}
         </div>
 
-        <div className="relative min-w-[240px]">
-          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]">
-            search
-          </span>
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Filter by ID, worker, task..."
-            className="w-full pl-9 pr-3 py-1.5 rounded-lg bg-surface-container border border-white/5 font-body-sm text-body-sm text-on-surface placeholder:text-outline focus:outline-none focus:ring-1 focus:ring-primary-container"
-          />
+        {/* Filter Controls Row */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-surface-container-low p-2.5 sm:p-3 rounded-2xl border border-white/5">
+          {/* Status Tabs */}
+          <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+            {filterTabs.map((tab) => (
+              <button
+                key={tab.value}
+                onClick={() => setStatusFilter(tab.value)}
+                className={`px-3 py-1.5 rounded-xl font-body-sm text-xs sm:text-sm font-medium transition-colors whitespace-nowrap cursor-pointer ${
+                  statusFilter === tab.value
+                    ? "bg-primary-container text-on-primary font-semibold shadow-sm"
+                    : "text-on-surface-variant hover:text-on-surface hover:bg-surface-container"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Search Bar & View Mode Toggle */}
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <div className="relative flex-1 sm:w-64">
+              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]">
+                search
+              </span>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Filter by ID, worker, task..."
+                className="w-full pl-9 pr-3 py-1.5 rounded-xl bg-surface-container border border-white/5 font-body-sm text-xs sm:text-sm text-on-surface placeholder:text-outline focus:outline-none focus:ring-1 focus:ring-primary-container"
+              />
+            </div>
+
+            {/* View Mode Toggle (Grid vs Table) */}
+            <div className="inline-flex rounded-xl bg-surface-container p-0.5 border border-white/5 shrink-0">
+              <button
+                type="button"
+                onClick={() => setViewMode("grid")}
+                className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                  viewMode === "grid"
+                    ? "bg-primary-container text-white shadow-sm"
+                    : "text-on-surface-variant hover:text-on-surface"
+                }`}
+                title="Mekiki Cards Grid"
+                aria-label="Grid View"
+              >
+                <span className="material-symbols-outlined text-[18px]">grid_view</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("table")}
+                className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                  viewMode === "table"
+                    ? "bg-primary-container text-white shadow-sm"
+                    : "text-on-surface-variant hover:text-on-surface"
+                }`}
+                title="Dense Table View"
+                aria-label="Table View"
+              >
+                <span className="material-symbols-outlined text-[18px]">table_rows</span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Verifications Table / Card List */}
-      <div className="rounded-xl bg-surface-container-lowest border border-white/5 shadow-xl overflow-hidden">
-        {loading ? (
-          <div className="p-12 flex flex-col items-center justify-center gap-3 text-on-surface-variant">
-            <span className="w-8 h-8 border-2 border-primary-container border-t-transparent rounded-full animate-spin" />
-            <span className="font-code-sm text-code-sm">Loading verification registry...</span>
+      {/* Verifications Display */}
+      {loading ? (
+        <div className="p-16 rounded-2xl bg-surface-container-lowest border border-white/5 flex flex-col items-center justify-center gap-3 text-on-surface-variant">
+          <span className="w-8 h-8 border-2 border-primary-container border-t-transparent rounded-full animate-spin" />
+          <span className="font-code-sm text-code-sm">Loading verification registry...</span>
+        </div>
+      ) : displayedVerifications.length === 0 ? (
+        <div className="p-16 rounded-2xl bg-surface-container-lowest border border-white/5 flex flex-col items-center justify-center text-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-surface-container flex items-center justify-center text-outline">
+            <span className="material-symbols-outlined text-[28px]">
+              playlist_remove
+            </span>
           </div>
-        ) : verifications.length === 0 ? (
-          <div className="p-16 flex flex-col items-center justify-center text-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-surface-container flex items-center justify-center text-outline">
-              <span className="material-symbols-outlined text-[28px]">
-                playlist_remove
-              </span>
-            </div>
-            <div>
-              <h3 className="font-headline-sm text-headline-sm font-semibold text-on-surface">
-                NO VERIFICATIONS FOUND
-              </h3>
-              <p className="font-body-sm text-body-sm text-on-surface-variant max-w-sm mt-1">
-                {searchQuery || statusFilter !== "ALL"
-                  ? "No verification records match your filter criteria. Reset filters or search term."
-                  : "Create your first verification to start independently checking AI agent outputs."}
-              </p>
-            </div>
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={() => {
-                setStatusFilter("ALL");
-                setSearchQuery("");
-                navigate("/verify/new");
-              }}
-            >
-              Create Verification
-            </Button>
+          <div>
+            <h3 className="font-headline-sm text-headline-sm font-semibold text-on-surface">
+              NO VERIFICATIONS FOUND
+            </h3>
+            <p className="font-body-sm text-body-sm text-on-surface-variant max-w-sm mt-1">
+              {searchQuery || statusFilter !== "ALL" || networkFilter !== "ALL"
+                ? "No verification records match your filter criteria. Reset filters or search term."
+                : "Create your first verification to start independently checking AI agent outputs."}
+            </p>
           </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left font-body-sm text-body-sm">
-              <thead className="bg-surface-container-low/80 border-b border-white/5 font-label-caps text-label-caps text-outline uppercase tracking-wider">
-                <tr>
-                  <th className="py-3.5 px-4 font-semibold">ID</th>
-                  <th className="py-3.5 px-4 font-semibold">Worker Agent</th>
-                  <th className="py-3.5 px-4 font-semibold">Task Specification</th>
-                  <th className="py-3.5 px-4 font-semibold">Network</th>
-                  <th className="py-3.5 px-4 font-semibold">Attempt</th>
-                  <th className="py-3.5 px-4 font-semibold">Verdict</th>
-                  <th className="py-3.5 px-4 font-semibold text-right">Action</th>
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() => {
+              setStatusFilter("ALL");
+              setNetworkFilter("ALL");
+              setSearchQuery("");
+              navigate("/verify/new");
+            }}
+          >
+            Create Verification
+          </Button>
+        </div>
+      ) : viewMode === "grid" ? (
+        /* Mekiki-Style Responsive Card Grid */
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
+          {displayedVerifications.map((item) => (
+            <MekikiVerificationCard key={item.id} item={item} />
+          ))}
+        </div>
+      ) : (
+        /* Dense Data Table View */
+        <div className="rounded-2xl bg-surface-container-lowest border border-white/5 shadow-xl overflow-x-auto">
+          <table className="w-full text-left font-body-sm text-body-sm">
+            <thead className="bg-surface-container-low/80 border-b border-white/5 font-label-caps text-label-caps text-outline uppercase tracking-wider">
+              <tr>
+                <th className="py-3.5 px-4 font-semibold">ID</th>
+                <th className="py-3.5 px-4 font-semibold">Worker Agent</th>
+                <th className="py-3.5 px-4 font-semibold">Task Specification</th>
+                <th className="py-3.5 px-4 font-semibold">Network</th>
+                <th className="py-3.5 px-4 font-semibold">Attempt</th>
+                <th className="py-3.5 px-4 font-semibold">Verdict</th>
+                <th className="py-3.5 px-4 font-semibold text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/5">
+              {displayedVerifications.map((item) => (
+                <tr
+                  key={item.id}
+                  onClick={() => navigate(`/verify/${item.id}`)}
+                  className="hover:bg-surface-container/50 transition-colors cursor-pointer group"
+                >
+                  {/* ID */}
+                  <td className="py-3.5 px-4 font-code-sm text-code-sm font-semibold text-primary font-mono whitespace-nowrap">
+                    {item.displayId}
+                  </td>
+
+                  {/* Worker */}
+                  <td className="py-3.5 px-4 whitespace-nowrap">
+                    <div className="flex items-center gap-2">
+                      <span className="material-symbols-outlined text-[16px] text-outline">
+                        smart_toy
+                      </span>
+                      <span className="font-medium text-on-surface">
+                        {item.workerName}
+                      </span>
+                    </div>
+                  </td>
+
+                  {/* Task Prompt */}
+                  <td className="py-3.5 px-4 max-w-xs md:max-w-md truncate text-on-surface-variant">
+                    <span className="truncate block" title={item.taskPrompt}>
+                      {item.taskPrompt}
+                    </span>
+                  </td>
+
+                  {/* Network */}
+                  <td className="py-3.5 px-4 font-code-sm text-code-sm text-outline whitespace-nowrap">
+                    {item.network}
+                  </td>
+
+                  {/* Attempt */}
+                  <td className="py-3.5 px-4 font-code-sm text-code-sm whitespace-nowrap">
+                    <span className="px-2 py-0.5 rounded bg-surface-container text-on-surface">
+                      {item.currentAttempt} / {item.maxAttempts}
+                    </span>
+                  </td>
+
+                  {/* Status */}
+                  <td className="py-3.5 px-4 whitespace-nowrap">
+                    {item.status === "PASSED" && (
+                      <Badge variant="passed" dot>
+                        VERIFIED
+                      </Badge>
+                    )}
+                    {item.status === "FAILED" && (
+                      <Badge variant="failed" dot>
+                        FAILED
+                      </Badge>
+                    )}
+                    {item.status === "UNVERIFIED" && (
+                      <Badge variant="unverified" dot>
+                        UNVERIFIED
+                      </Badge>
+                    )}
+                    {item.status === "RUNNING" && (
+                      <Badge variant="running" dot pulse>
+                        RUNNING
+                      </Badge>
+                    )}
+                  </td>
+
+                  {/* Action */}
+                  <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                    <Link
+                      to={`/verify/${item.id}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="inline-flex items-center gap-1 text-code-sm text-primary hover:text-primary-container px-2.5 py-1 rounded hover:bg-surface-container transition-colors"
+                    >
+                      <span>Inspect</span>
+                      <span className="material-symbols-outlined text-[14px]">
+                        arrow_forward
+                      </span>
+                    </Link>
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-white/5">
-                {verifications.map((item) => (
-                  <tr
-                    key={item.id}
-                    onClick={() => navigate(`/verify/${item.id}`)}
-                    className="hover:bg-surface-container/50 transition-colors cursor-pointer group"
-                  >
-                    {/* ID */}
-                    <td className="py-3.5 px-4 font-code-sm text-code-sm font-semibold text-primary font-mono whitespace-nowrap">
-                      {item.displayId}
-                    </td>
-
-                    {/* Worker */}
-                    <td className="py-3.5 px-4 whitespace-nowrap">
-                      <div className="flex items-center gap-2">
-                        <span className="material-symbols-outlined text-[16px] text-outline">
-                          smart_toy
-                        </span>
-                        <span className="font-medium text-on-surface">
-                          {item.workerName}
-                        </span>
-                      </div>
-                    </td>
-
-                    {/* Task Prompt */}
-                    <td className="py-3.5 px-4 max-w-xs md:max-w-md truncate text-on-surface-variant">
-                      <span className="truncate block" title={item.taskPrompt}>
-                        {item.taskPrompt}
-                      </span>
-                    </td>
-
-                    {/* Network */}
-                    <td className="py-3.5 px-4 font-code-sm text-code-sm text-outline whitespace-nowrap">
-                      {item.network}
-                    </td>
-
-                    {/* Attempt */}
-                    <td className="py-3.5 px-4 font-code-sm text-code-sm whitespace-nowrap">
-                      <span className="px-2 py-0.5 rounded bg-surface-container text-on-surface">
-                        {item.currentAttempt} / {item.maxAttempts}
-                      </span>
-                    </td>
-
-                    {/* Status */}
-                    <td className="py-3.5 px-4 whitespace-nowrap">
-                      {item.status === "PASSED" && (
-                        <Badge variant="passed" dot>
-                          VERIFIED
-                        </Badge>
-                      )}
-                      {item.status === "FAILED" && (
-                        <Badge variant="failed" dot>
-                          FAILED
-                        </Badge>
-                      )}
-                      {item.status === "UNVERIFIED" && (
-                        <Badge variant="unverified" dot>
-                          UNVERIFIED
-                        </Badge>
-                      )}
-                      {item.status === "RUNNING" && (
-                        <Badge variant="running" dot pulse>
-                          RUNNING
-                        </Badge>
-                      )}
-                    </td>
-
-                    {/* Action */}
-                    <td className="py-3.5 px-4 text-right whitespace-nowrap">
-                      <Link
-                        to={`/verify/${item.id}`}
-                        onClick={(e) => e.stopPropagation()}
-                        className="inline-flex items-center gap-1 text-code-sm text-primary hover:text-primary-container px-2.5 py-1 rounded hover:bg-surface-container transition-colors"
-                      >
-                        <span>Inspect</span>
-                        <span className="material-symbols-outlined text-[14px]">
-                          arrow_forward
-                        </span>
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       <InviteLinkModal
         isOpen={inviteModalOpen}
