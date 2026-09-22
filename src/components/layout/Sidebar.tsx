@@ -129,18 +129,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </span>
                 <span>{item.label}</span>
               </div>
-              {item.badge !== undefined && (
-                <span
-                  className={cn(
-                    "px-1.5 py-0.5 rounded-md font-code-sm text-code-sm",
-                    item.active
-                      ? "bg-black/30 text-on-primary"
-                      : "bg-surface-container-high text-on-surface"
-                  )}
-                >
-                  {item.badge}
-                </span>
-              )}
             </Link>
           ))}
         </nav>
