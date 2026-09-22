@@ -34,9 +34,8 @@ export const Dashboard: React.FC = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-space-md">
         <div className="flex flex-col gap-1">
           <h1 className="font-headline-lg text-headline-lg font-bold tracking-tight text-on-surface">
-              Overview
-            </h1>
-            <span className="hidden" />
+            Overview
+          </h1>
           <p className="font-body-md text-body-md text-on-surface-variant">
             Verify an agent's work before you trust the result.
           </p>

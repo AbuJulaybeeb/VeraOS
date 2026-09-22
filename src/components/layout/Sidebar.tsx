@@ -7,14 +7,10 @@ import { ThemeToggle } from "../../context/ThemeContext";
 import { InviteLinkModal } from "../invite/InviteLinkModal";
 
 interface SidebarProps {
-  verificationsCount?: number;
-  agentsCount?: number;
   onCloseMobile?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
-  verificationsCount = 5,
-  agentsCount = 4,
   onCloseMobile,
 }) => {
   const location = useLocation();

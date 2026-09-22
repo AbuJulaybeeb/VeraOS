@@ -121,10 +121,10 @@ export const NewVerification: React.FC = () => {
       <div className="rounded-xl bg-surface-container-low p-space-md border border-white/5 flex flex-col gap-space-sm shadow-sm">
         <div className="flex items-center justify-between">
           <span className="font-label-caps text-label-caps uppercase tracking-wider text-outline font-semibold">
-            Quick-Fill Benchmark Presets
+            Demo scenarios
           </span>
-          <span className="font-code-sm text-code-sm text-secondary">
-            Select to prefill form
+          <span className="font-body-sm text-body-sm text-outline">
+            Select to prefill
           </span>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -175,8 +175,7 @@ export const NewVerification: React.FC = () => {
             <span>Task</span>
             <span className="font-label-caps text-label-caps text-outline uppercase">
               What should the agent accomplish?
-            </span>
-          </label>
+            </span>          </label>
           <textarea
             id="taskPrompt"
             rows={3}
@@ -196,7 +195,7 @@ export const NewVerification: React.FC = () => {
             </span>
           )}
           <span className="font-body-sm text-[11px] text-outline">
-            The formal objective assigned to the worker agent, including numerical constraints and settlement rules.
+            What the agent was supposed to do, including any numerical requirements.
           </span>
         </div>
 
@@ -234,7 +233,7 @@ export const NewVerification: React.FC = () => {
               htmlFor="network"
               className="font-headline-sm text-headline-sm font-medium text-on-surface"
             >
-              Target Settlement Network
+              Network
             </label>
             <select
               id="network"
@@ -279,7 +278,7 @@ export const NewVerification: React.FC = () => {
             </span>
           )}
           <span className="font-body-sm text-[11px] text-outline">
-            VeraOS does not trust this text. The kernel extracts claims and checks them against independent RPC and Oracle witnesses.
+            VeraOS does not trust this. It checks the claim against independent on-chain and oracle evidence.
           </span>
         </div>
 
@@ -303,7 +302,7 @@ export const NewVerification: React.FC = () => {
                 </span>
               }
             >
-              Create Verification
+              Verify work
             </Button>
           </div>
         </div>
