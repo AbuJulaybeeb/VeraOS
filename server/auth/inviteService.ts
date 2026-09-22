@@ -3,10 +3,14 @@
  * Protects Telegram bot and API from unauthorized public usage.
  */
 
-import { defaultVeraDb, VeraDatabase, InvitedUser } from "../db/database.ts";
+import { defaultVeraDb, VeraDatabase, type InvitedUser } from "../db/database.ts";
 
 export class InviteService {
-  constructor(private db: VeraDatabase = defaultVeraDb) {}
+  private db: VeraDatabase;
+
+  constructor(db: VeraDatabase = defaultVeraDb) {
+    this.db = db;
+  }
 
   /**
    * Check if a Telegram user is authorized to use the bot

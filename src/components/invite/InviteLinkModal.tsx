@@ -33,7 +33,7 @@ export const InviteLinkModal: React.FC<InviteLinkModalProps> = ({
   const botUsername = TELEGRAM_BOT_URL.split("/").pop() || "Vera_Of_bot";
 
   // Pre-seed or personal link
-  const personalCode = defaultInviteCode || "VERA-VIP-2026";
+  const personalCode = defaultInviteCode || "VERA-OFFICIAL";
   const personalLaunchUrl = `https://t.me/${botUsername}?start=invite_${personalCode}`;
 
   const handleGenerateShareableLink = async () => {

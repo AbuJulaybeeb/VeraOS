@@ -6,7 +6,7 @@ import { ThemeToggle } from "../context/ThemeContext";
 import { AgentHeaderWidget } from "../components/agent/AgentHeaderWidget";
 import { InteractiveVerifyWidget } from "../components/verification/InteractiveVerifyWidget";
 import { HeroFlowingWave } from "../components/landing/HeroFlowingWave";
-import { TELEGRAM_BOT_URL, GITHUB_REPO_URL } from "../config/env";
+import { TELEGRAM_BOT_URL, TELEGRAM_PERMANENT_INVITE_URL, GITHUB_REPO_URL } from "../config/env";
 import { InviteLinkModal } from "../components/invite/InviteLinkModal";
 
 export const LandingPage: React.FC = () => {
@@ -132,17 +132,18 @@ if result.verdict.status != "VERIFIED":
           {/* Right Action Group */}
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             {/* Live Telegram Bot Link */}
-            <button
-              type="button"
-              onClick={() => setInviteModalOpen(true)}
+            <a
+              href={TELEGRAM_PERMANENT_INVITE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
               className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#20110A] border border-[#4A2B1D]/80 text-[#B9A99B] hover:text-[#FFF8F0] text-xs font-medium transition-colors cursor-pointer"
-              title="Open Telegram Bot Invite Gateway"
+              title="Open Telegram Bot with Permanent Invite"
             >
               <svg className="w-3.5 h-3.5 fill-[#E08A3E]" viewBox="0 0 24 24">
                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z" />
               </svg>
-              <span>Telegram Bot</span>
-            </button>
+              <span>Open Telegram</span>
+            </a>
 
             {/* Wallet-Style Agent Connector */}
             <AgentHeaderWidget />
@@ -172,24 +173,13 @@ if result.verdict.status != "VERIFIED":
             )}
 
             {/* Primary CTA */}
-            {isAuthenticated ? (
-              <Link
-                to="/verify/new"
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold text-white bg-gradient-to-r from-[#C96A2B] via-[#D87431] to-[#E08A3E] hover:from-[#D87431] hover:to-[#E59247] shadow-[0_0_18px_rgba(201,106,43,0.4)] active:scale-[0.98] transition-all whitespace-nowrap"
-              >
-                <span>Verify a Task</span>
-                <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
-              </Link>
-            ) : (
-              <button
-                type="button"
-                onClick={() => openAuthModal("signin")}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold text-white bg-gradient-to-r from-[#C96A2B] via-[#D87431] to-[#E08A3E] hover:from-[#D87431] hover:to-[#E59247] shadow-[0_0_18px_rgba(201,106,43,0.4)] active:scale-[0.98] transition-all whitespace-nowrap cursor-pointer"
-              >
-                <span>Sign In to Verify</span>
-                <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
-              </button>
-            )}
+            <Link
+              to="/verify/new"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold text-white bg-gradient-to-r from-[#C96A2B] via-[#D87431] to-[#E08A3E] hover:from-[#D87431] hover:to-[#E59247] shadow-[0_0_18px_rgba(201,106,43,0.4)] active:scale-[0.98] transition-all whitespace-nowrap"
+            >
+              <span>Verify a Task</span>
+              <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+            </Link>
 
             {/* Mobile Menu Button */}
             <button
@@ -214,37 +204,23 @@ if result.verdict.status != "VERIFIED":
             <a href="#developers" onClick={() => setMobileMenuOpen(false)} className="px-3 py-2 text-xs font-medium text-[#B9A99B] hover:text-white">Developers</a>
             <Link to="/docs" onClick={() => setMobileMenuOpen(false)} className="px-3 py-2 text-xs font-medium text-[#B9A99B] hover:text-white">Docs</Link>
             <div className="pt-2 border-t border-[#4A2B1D]/50 flex flex-col gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  setInviteModalOpen(true);
-                }}
+              <a
+                href={TELEGRAM_PERMANENT_INVITE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setMobileMenuOpen(false)}
                 className="flex items-center justify-between px-3 py-2 rounded-xl bg-[#20110A] text-xs text-[#E08A3E] font-medium text-left cursor-pointer"
               >
-                <span>Telegram Bot & Invites</span>
+                <span>Open Telegram (Invite Link)</span>
                 <span className="material-symbols-outlined text-[14px]">send</span>
-              </button>
-              {isAuthenticated ? (
-                <Link
-                  to="/dashboard"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="w-full text-center px-4 py-2 rounded-xl bg-[#C96A2B] text-white font-semibold text-xs block"
-                >
-                  Open Dashboard
-                </Link>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    openAuthModal("signin");
-                  }}
-                  className="w-full text-center px-4 py-2 rounded-xl bg-[#C96A2B] text-white font-semibold text-xs cursor-pointer"
-                >
-                  Sign In to Dashboard
-                </button>
-              )}
+              </a>
+              <Link
+                to="/dashboard"
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-full text-center px-4 py-2 rounded-xl bg-[#C96A2B] text-white font-semibold text-xs block"
+              >
+                Open Dashboard
+              </Link>
             </div>
           </div>
         )}
@@ -281,35 +257,25 @@ if result.verdict.status != "VERIFIED":
 
           {/* Hero CTAs */}
           <div className="flex flex-wrap items-center justify-center gap-3.5 mb-8">
-            {isAuthenticated ? (
-              <Link
-                to="/verify/new"
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#C96A2B] hover:bg-[#E08A3E] text-white text-sm font-semibold transition-all shadow-[0_0_24px_rgba(201,106,43,0.45)] active:scale-[0.98]"
-              >
-                <span>Verify a task</span>
-                <span className="material-symbols-outlined text-[16px]">verified</span>
-              </Link>
-            ) : (
-              <button
-                type="button"
-                onClick={() => openAuthModal("signin")}
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#C96A2B] hover:bg-[#E08A3E] text-white text-sm font-semibold transition-all shadow-[0_0_24px_rgba(201,106,43,0.45)] active:scale-[0.98] cursor-pointer"
-              >
-                <span>Sign in to verify tasks</span>
-                <span className="material-symbols-outlined text-[16px]">verified</span>
-              </button>
-            )}
+            <Link
+              to="/verify/new"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#C96A2B] hover:bg-[#E08A3E] text-white text-sm font-semibold transition-all shadow-[0_0_24px_rgba(201,106,43,0.45)] active:scale-[0.98]"
+            >
+              <span>Verify a task</span>
+              <span className="material-symbols-outlined text-[16px]">verified</span>
+            </Link>
 
-            <button
-              type="button"
-              onClick={() => setInviteModalOpen(true)}
+            <a
+              href={TELEGRAM_PERMANENT_INVITE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#1A0E08]/80 hover:bg-[#2C1710] border border-[#4A2B1D] text-[#FFF8F0] text-sm font-medium transition-all shadow-sm group cursor-pointer"
             >
               <svg className="w-4 h-4 fill-[#E08A3E] group-hover:scale-110 transition-transform" viewBox="0 0 24 24">
                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z" />
               </svg>
-              <span>Launch Bot (Invite Link)</span>
-            </button>
+              <span>Launch Bot (Permanent Invite)</span>
+            </a>
 
             <button
               type="button"
@@ -1128,35 +1094,25 @@ if result.verdict.status != "VERIFIED":
             </p>
 
             <div className="flex flex-wrap items-center justify-center gap-4">
-              {isAuthenticated ? (
-                <Link
-                  to="/verify/new"
-                  className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl bg-[#C96A2B] hover:bg-[#E08A3E] text-white text-sm font-semibold transition-all shadow-[0_0_25px_rgba(201,106,43,0.5)] active:scale-[0.98]"
-                >
-                  <span>Verify a task</span>
-                  <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
-                </Link>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => openAuthModal("signin")}
-                  className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl bg-[#C96A2B] hover:bg-[#E08A3E] text-white text-sm font-semibold transition-all shadow-[0_0_25px_rgba(201,106,43,0.5)] active:scale-[0.98] cursor-pointer"
-                >
-                  <span>Sign in to verify tasks</span>
-                  <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
-                </button>
-              )}
+              <Link
+                to="/verify/new"
+                className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl bg-[#C96A2B] hover:bg-[#E08A3E] text-white text-sm font-semibold transition-all shadow-[0_0_25px_rgba(201,106,43,0.5)] active:scale-[0.98]"
+              >
+                <span>Verify a task</span>
+                <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+              </Link>
 
-              <button
-                type="button"
-                onClick={() => setInviteModalOpen(true)}
+              <a
+                href={TELEGRAM_PERMANENT_INVITE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl bg-[#1A0E08] hover:bg-[#2C1710] border border-[#4A2B1D] text-[#FFF8F0] text-sm font-medium transition-colors cursor-pointer"
               >
                 <svg className="w-4 h-4 fill-[#E08A3E]" viewBox="0 0 24 24">
                   <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z" />
                 </svg>
-                <span>Launch Bot (Invite Link)</span>
-              </button>
+                <span>Launch Bot (Permanent Invite)</span>
+              </a>
             </div>
           </div>
         </div>
@@ -1173,6 +1129,8 @@ if result.verdict.status != "VERIFIED":
                 <svg className="w-3.5 h-3.5 text-[#E08A3E]" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
                   <polygon fill="#E08A3E" fillOpacity="0.2" points="12 2 21 7.5 21 16.5 12 22 3 16.5 3 7.5 12 2" />
                   <polyline points="12 2 12 12 21 7.5" />
+                  <polyline points="12 12 3 7.5" />
+                  <line x1="12" y1="12" x2="12" y2="22" />
                 </svg>
               </div>
               <span className="font-bold text-sm tracking-tight text-[#FFF8F0]">
@@ -1209,13 +1167,15 @@ if result.verdict.status != "VERIFIED":
               <div className="font-bold text-[#FFF8F0] uppercase tracking-wider mb-3">Connect</div>
               <ul className="space-y-2 text-[#B9A99B]">
                 <li>
-                  <button
-                    type="button"
-                    onClick={() => setInviteModalOpen(true)}
-                    className="hover:text-white transition-colors cursor-pointer text-left"
+                  <a
+                    href={TELEGRAM_PERMANENT_INVITE_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-white transition-colors cursor-pointer text-left inline-flex items-center gap-1.5"
                   >
-                    Telegram Bot (@Vera_Of_bot)
-                  </button>
+                    <span>Telegram Bot (@Vera_Of_bot)</span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#E08A3E]/20 text-[#E08A3E] border border-[#E08A3E]/30 font-medium">Invite</span>
+                  </a>
                 </li>
                 <li><Link to="/agents" className="hover:text-white transition-colors">Agent Registry</Link></li>
                 <li><Link to="/agents/connect" className="hover:text-white transition-colors">Connect Agent</Link></li>

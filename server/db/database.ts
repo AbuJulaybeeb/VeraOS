@@ -108,6 +108,18 @@ export class VeraDatabase {
   private static fallbackUsers: Map<string, InvitedUser> = new Map();
   private static fallbackCodes: Map<string, InviteCode> = new Map([
     [
+      "VERA-OFFICIAL",
+      {
+        code: "VERA-OFFICIAL",
+        max_uses: 0,
+        uses_count: 0,
+        created_by: "system",
+        is_active: true,
+        notes: "Permanent Official Website Invite Link",
+        created_at: new Date().toISOString(),
+      },
+    ],
+    [
       "VERA-VIP-2026",
       {
         code: "VERA-VIP-2026",
@@ -339,7 +351,7 @@ export class VeraDatabase {
       return { success: false, message: "This invite code has been deactivated." };
     }
 
-    if (invite.uses_count >= invite.max_uses) {
+    if (invite.max_uses > 0 && invite.uses_count >= invite.max_uses) {
       return {
         success: false,
         message: "This invitation code has already reached its maximum redemption limit.",

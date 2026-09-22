@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS invite_codes (
 -- Seed Initial VIP / Founder Invite Codes
 INSERT OR IGNORE INTO invite_codes (code, max_uses, uses_count, created_by, is_active, notes, created_at)
 VALUES 
+  ('VERA-OFFICIAL', 0, 0, 'system', 1, 'Permanent Official Website Invite Link', datetime('now')),
   ('VERA-VIP-2026', 100, 0, 'admin', 1, 'VIP Enterprise Founder Access', datetime('now')),
   ('STELLAR-AUDITOR-01', 50, 0, 'admin', 1, 'Stellar Ecosystem Protocol Auditor', datetime('now')),
   ('FOUNDER-ALPHA', 10, 0, 'admin', 1, 'Core Founding Team Access', datetime('now'));

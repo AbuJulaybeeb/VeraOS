@@ -1,17 +1,15 @@
 import { useState, useEffect, useCallback } from "react";
 import { VerificationRecord } from "../types/verification";
 import { verificationApi } from "../services/verificationApi";
-import { useAuth } from "../context/AuthContext";
 
 export function useVerification(id?: string) {
-  const { isAuthenticated } = useAuth();
   const [data, setData] = useState<VerificationRecord | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isResubmitting, setIsResubmitting] = useState<boolean>(false);
 
   const fetchRecord = useCallback(async () => {
-    if (!isAuthenticated || !id) {
+    if (!id) {
       setData(null);
       setLoading(false);
       return;
@@ -30,7 +28,7 @@ export function useVerification(id?: string) {
     } finally {
       setLoading(false);
     }
-  }, [id, isAuthenticated]);
+  }, [id]);
 
   useEffect(() => {
     fetchRecord();
@@ -66,17 +64,11 @@ export function useVerification(id?: string) {
 }
 
 export function useVerificationsList(statusFilter?: string, searchQuery?: string) {
-  const { isAuthenticated } = useAuth();
   const [list, setList] = useState<VerificationRecord[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchList = useCallback(async () => {
-    if (!isAuthenticated) {
-      setList([]);
-      setLoading(false);
-      return;
-    }
     setLoading(true);
     setError(null);
     try {
@@ -90,7 +82,7 @@ export function useVerificationsList(statusFilter?: string, searchQuery?: string
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, searchQuery, isAuthenticated]);
+  }, [statusFilter, searchQuery]);
 
   useEffect(() => {
     fetchList();

@@ -4,6 +4,7 @@ import { createServer, type Server } from "node:http";
 import { handleApiRequest } from "../api/routes.ts";
 import { VeraTelegramBot, type TelegramUpdate } from "../telegram/bot.ts";
 import { defaultRepository } from "../storage/memoryRepository.ts";
+import { defaultVeraDb } from "../db/database.ts";
 
 // Real Stellar Testnet transaction hashes
 const RECIPIENT_ADDRESS = "GCEYAUYCI3WTE5GOD7CDLRJQPATQCLHMXY4Q3CEQ64RP5SVDWPFF5L2L";
@@ -26,6 +27,21 @@ test.before(async () => {
 
   await new Promise<void>((resolve) => server.listen(testPort, () => resolve()));
   bot = new VeraTelegramBot("", `http://localhost:${testPort}`);
+
+  // Authorize test users so standard command suites run smoothly
+  const testUserIds = [
+    1001, 1002, 1003, 2001, 3001, 4001, 5001, 6001, 7001, 8001, 8002, 9001, 9500, 9901, 9902, 9903, -1001234567
+  ];
+  for (const uid of testUserIds) {
+    await defaultVeraDb.upsertInvitedUser({
+      id: `usr_test_${uid}`,
+      telegram_id: String(uid),
+      first_name: `TestUser_${uid}`,
+      status: "ACTIVE",
+      invite_code: "VERA-OFFICIAL",
+      created_at: new Date().toISOString(),
+    });
+  }
 });
 
 test.after(async () => {
@@ -500,4 +516,107 @@ test("Telegram Bot Protocol: answerCallbackQuery and setWebhook methods execute 
   assert.equal(setWebhookResult.ok, false);
   assert.ok(setWebhookResult.description?.includes("TELEGRAM_BOT_TOKEN is not configured"));
 });
+
+// =========================================================================
+// PART 4: INVITE GATING & ACCESS CONTROL TESTS
+// =========================================================================
+
+test("Telegram Bot Invite Gating: Uninvited user sending command is blocked with access-restricted message", async () => {
+  const uninvitedUpdate: TelegramUpdate = {
+    update_id: 80,
+    message: {
+      message_id: 880,
+      from: { id: 8881, first_name: "UninvitedUser" },
+      chat: { id: 8881, type: "private" },
+      date: Math.floor(Date.now() / 1000),
+      text: "/start",
+    },
+  };
+
+  const res = await bot.handleUpdate(uninvitedUpdate);
+  assert.equal(res.handled, true);
+  assert.ok(res.reply?.includes("Access Restricted"), "Must block uninvited user with Access Restricted header");
+  assert.ok(res.reply?.includes("Invitation Required"), "Must state invitation is required");
+  assert.ok(res.reply?.includes("Open Telegram") || res.reply?.includes("permanent invite link"), "Must direct user to website");
+
+  // Also verify /verify is blocked
+  const verifyUpdate: TelegramUpdate = {
+    update_id: 81,
+    message: {
+      message_id: 881,
+      from: { id: 8881, first_name: "UninvitedUser" },
+      chat: { id: 8881, type: "private" },
+      date: Math.floor(Date.now() / 1000),
+      text: "/verify Send 5 USDC to GCEYAU...",
+    },
+  };
+  const verifyRes = await bot.handleUpdate(verifyUpdate);
+  assert.equal(verifyRes.handled, true);
+  assert.ok(verifyRes.reply?.includes("Access Restricted"));
+});
+
+test("Telegram Bot Invite Gating: Uninvited user sending /start invite_VERA-OFFICIAL redeems invite and gains full access", async () => {
+  const redeemUpdate: TelegramUpdate = {
+    update_id: 82,
+    message: {
+      message_id: 882,
+      from: { id: 8882, first_name: "NewOperator", username: "new_op" },
+      chat: { id: 8882, type: "private" },
+      date: Math.floor(Date.now() / 1000),
+      text: "/start invite_VERA-OFFICIAL",
+    },
+  };
+
+  const res = await bot.handleUpdate(redeemUpdate);
+  assert.equal(res.handled, true);
+  assert.ok(res.reply?.includes("Welcome to VeraOS Enterprise"), "Must return welcome message on successful redemption");
+
+  // User 8882 should now be authorized to run commands
+  const helpUpdate: TelegramUpdate = {
+    update_id: 83,
+    message: {
+      message_id: 883,
+      from: { id: 8882, first_name: "NewOperator" },
+      chat: { id: 8882, type: "private" },
+      date: Math.floor(Date.now() / 1000),
+      text: "/help",
+    },
+  };
+  const helpRes = await bot.handleUpdate(helpUpdate);
+  assert.equal(helpRes.handled, true);
+  assert.ok(helpRes.reply?.includes("🛡 VeraOS Commands"), "Authorized user can now access bot commands");
+});
+
+test("Telegram Bot Invite Gating: Uninvited user with invalid invite code is rejected", async () => {
+  const invalidUpdate: TelegramUpdate = {
+    update_id: 84,
+    message: {
+      message_id: 884,
+      from: { id: 8883, first_name: "Intruder" },
+      chat: { id: 8883, type: "private" },
+      date: Math.floor(Date.now() / 1000),
+      text: "/start invite_INVALID-CODE-XYZ",
+    },
+  };
+
+  const res = await bot.handleUpdate(invalidUpdate);
+  assert.equal(res.handled, true);
+  assert.ok(res.reply?.includes("Invalid Invite Code") || res.reply?.includes("Access Restricted"));
+});
+
+test("Telegram Bot Invite Gating: Uninvited user callback query is rejected", async () => {
+  const cbUpdate: TelegramUpdate = {
+    update_id: 85,
+    callback_query: {
+      id: "cb_unauth_1",
+      from: { id: 8884, first_name: "UninvitedUser" },
+      data: "view_evidence:V-1001",
+    },
+  };
+
+  const res = await bot.handleUpdate(cbUpdate);
+  assert.equal(res.handled, true);
+  assert.ok(res.reply?.includes("Access restricted"), "Must block uninvited callback query");
+});
+
 

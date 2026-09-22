@@ -2,6 +2,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { TelegramUpdateSchema } from "../types/schemas.ts";
 import type { VerificationRecord } from "../types/domain.ts";
 import { aiService } from "../ai/aiService.ts";
+import { inviteService, InviteService } from "../auth/inviteService.ts";
 
 export interface InlineKeyboardButton {
   text: string;
@@ -62,6 +63,7 @@ export class VeraTelegramBot {
   private botToken: string;
   private apiBaseUrl: string;
   private webhookSecret?: string;
+  private inviteService: InviteService;
 
   private isPolling = false;
   private isStarting = false;
@@ -82,11 +84,17 @@ export class VeraTelegramBot {
   constructor(
     botToken = process.env.TELEGRAM_BOT_TOKEN || "",
     apiBaseUrl = process.env.VERAOS_API_URL || process.env.VERA_API_URL || "http://localhost:5173",
-    webhookSecret = process.env.TELEGRAM_WEBHOOK_SECRET
+    webhookSecret = process.env.TELEGRAM_WEBHOOK_SECRET,
+    inviteServiceInstance = inviteService
   ) {
     this.botToken = botToken;
     this.apiBaseUrl = apiBaseUrl;
     this.webhookSecret = webhookSecret;
+    this.inviteService = inviteServiceInstance;
+  }
+
+  setInviteService(service: InviteService) {
+    this.inviteService = service;
   }
 
   setApiBaseUrl(url: string) {
@@ -361,6 +369,60 @@ export class VeraTelegramBot {
     if (this.isRateLimited(userId)) {
       const reply = "⚠️ Rate limit exceeded. Please wait a moment before sending another command.";
       await this.sendMessage(chatId, reply);
+      return { handled: true, reply };
+    }
+
+    // Check for Invitation Code Redemption (/start invite_<CODE>, /invite <CODE>, or raw code)
+    const inviteCode = this.inviteService.extractInviteCode(rawText);
+    if (inviteCode) {
+      const firstName = message.from?.first_name || "Operator";
+      const username = message.from?.username || "";
+      const redeemRes = await this.inviteService.redeemCode(userId, inviteCode, {
+        username,
+        first_name: firstName,
+      });
+
+      if (redeemRes.success && redeemRes.user) {
+        const reply = this.inviteService.getAccessGrantedMessage(redeemRes.user);
+        await this.sendMessage(chatId, reply, {
+          inline_keyboard: [
+            [
+              { text: "🌐 Open Platform Dashboard", url: `${this.apiBaseUrl}/dashboard` },
+            ],
+          ],
+        });
+        return { handled: true, reply };
+      } else {
+        const reply = `⚠️ Access Restricted — Invalid Invite Code\n\n${redeemRes.message}\n\nPlease visit the VeraOS website to get your permanent invite link:\n👉 ${this.apiBaseUrl}`;
+        await this.sendMessage(chatId, reply, {
+          inline_keyboard: [
+            [
+              { text: "🌐 Open VeraOS Website", url: this.apiBaseUrl },
+            ],
+          ],
+        });
+        return { handled: true, reply };
+      }
+    }
+
+    // Access Control Gate: Verify User Clearance
+    const isAuthorized = await this.inviteService.isAuthorized(userId);
+    if (!isAuthorized) {
+      const reply =
+        `⛔ Access Restricted — Invitation Required\n\n` +
+        `VeraOS Telegram Bot is currently invite-only.\n\n` +
+        `Anyone can explore the main VeraOS platform and try task verification freely on the web. To use this Telegram bot, please visit our website and click "Open Telegram" to get your permanent invite link.\n\n` +
+        `👉 Website: ${this.apiBaseUrl}\n\n` +
+        `If you have an invite code or OTP, reply with:\n` +
+        `/invite <CODE> or /start invite_<CODE>`;
+
+      await this.sendMessage(chatId, reply, {
+        inline_keyboard: [
+          [
+            { text: "🌐 Open VeraOS Website", url: this.apiBaseUrl },
+          ],
+        ],
+      });
       return { handled: true, reply };
     }
 
@@ -993,6 +1055,13 @@ export class VeraTelegramBot {
     // Immediately answer callback query to dismiss Telegram client spinner
     if (query.id) {
       await this.answerCallbackQuery(query.id);
+    }
+
+    const isAuthorized = await this.inviteService.isAuthorized(userId);
+    if (!isAuthorized) {
+      const reply = "⛔ Access restricted. Please visit the VeraOS website to get an invite link.";
+      await this.sendMessage(chatId, reply);
+      return { handled: true, reply };
     }
 
     if (data.startsWith("view_evidence:")) {

@@ -5,6 +5,7 @@ import { AiService } from "../ai/aiService.ts";
 import { handleApiRequest } from "../api/routes.ts";
 import { VeraTelegramBot, type TelegramUpdate } from "../telegram/bot.ts";
 import type { VerificationRecord } from "../types/domain.ts";
+import { defaultVeraDb } from "../db/database.ts";
 
 const RECIPIENT_ADDRESS = "GCEYAUYCI3WTE5GOD7CDLRJQPATQCLHMXY4Q3CEQ64RP5SVDWPFF5L2L";
 const DECEPTIVE_TX_HASH = "108822f67b10e3ad38db576d60712939c1bdbe372c9d4729928d613605682759";
@@ -26,6 +27,18 @@ test.before(async () => {
 
   await new Promise<void>((resolve) => server.listen(testPort, () => resolve()));
   bot = new VeraTelegramBot("", `http://localhost:${testPort}`);
+
+  // Authorize test users for AI suite
+  for (const uid of [9901, 9902, 9903]) {
+    await defaultVeraDb.upsertInvitedUser({
+      id: `usr_test_${uid}`,
+      telegram_id: String(uid),
+      first_name: `TestUser_${uid}`,
+      status: "ACTIVE",
+      invite_code: "VERA-OFFICIAL",
+      created_at: new Date().toISOString(),
+    });
+  }
 });
 
 test.after(async () => {
