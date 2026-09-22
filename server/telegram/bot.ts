@@ -1,4 +1,8 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
+import { TelegramUpdateSchema } from "../types/schemas.ts";
+import type { VerificationRecord } from "../types/domain.ts";
+import { aiService } from "../ai/aiService.ts";
+import { inviteService, InviteService } from "../auth/inviteService.ts";
 
 export interface InlineKeyboardButton {
   text: string;
@@ -43,9 +47,8 @@ export interface TelegramUpdate {
 }
 
 export interface UserSession {
-  state: "IDLE" | "AWAITING_VERIFY_TASK" | "AWAITING_VERIFY_OUTPUT" | "AWAITING_CORRECT_INPUT" | "AWAITING_RESUBMIT_INPUT";
+  state: "IDLE" | "AWAITING_VERIFY_INPUT" | "AWAITING_CORRECT_INPUT" | "AWAITING_RESUBMIT_INPUT";
   verificationId?: string;
-  pendingTask?: string;
   updatedAt: number;
 }
 
@@ -60,8 +63,10 @@ export class VeraTelegramBot {
   private botToken: string;
   private apiBaseUrl: string;
   private webhookSecret?: string;
+  private inviteService: InviteService;
 
   private isPolling = false;
+  private isStarting = false;
   private pollingAbortController: AbortController | null = null;
   private botUsername: string | null = null;
   private botInfo: { id: number; username?: string; first_name?: string } | null = null;
@@ -79,11 +84,17 @@ export class VeraTelegramBot {
   constructor(
     botToken = process.env.TELEGRAM_BOT_TOKEN || "",
     apiBaseUrl = process.env.VERAOS_API_URL || process.env.VERA_API_URL || "http://localhost:5173",
-    webhookSecret = process.env.TELEGRAM_WEBHOOK_SECRET
+    webhookSecret = process.env.TELEGRAM_WEBHOOK_SECRET,
+    inviteServiceInstance = inviteService
   ) {
     this.botToken = botToken;
     this.apiBaseUrl = apiBaseUrl;
     this.webhookSecret = webhookSecret;
+    this.inviteService = inviteServiceInstance;
+  }
+
+  setInviteService(service: InviteService) {
+    this.inviteService = service;
   }
 
   setApiBaseUrl(url: string) {
@@ -149,9 +160,33 @@ export class VeraTelegramBot {
     }
   }
 
+  async setWebhook(webhookUrl: string, secretToken?: string): Promise<{ ok: boolean; description?: string }> {
+    if (!this.botToken) {
+      return { ok: false, description: "TELEGRAM_BOT_TOKEN is not configured." };
+    }
+    try {
+      const payload: Record<string, unknown> = {
+        url: webhookUrl,
+        allowed_updates: ["message", "callback_query"],
+      };
+      const secret = secretToken || this.webhookSecret;
+      if (secret) {
+        payload.secret_token = secret;
+      }
+      const res = await fetch(`https://api.telegram.org/bot${this.botToken}/setWebhook`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = (await res.json()) as { ok: boolean; description?: string };
+      return data;
+    } catch (err) {
+      return { ok: false, description: (err as Error).message };
+    }
+  }
+
   async startPolling(options?: { timeoutSeconds?: number }): Promise<boolean> {
-    if (this.isPolling) {
-      console.log("[Telegram Bot] Polling already active.");
+    if (this.isPolling || this.isStarting) {
       return true;
     }
 
@@ -161,33 +196,38 @@ export class VeraTelegramBot {
       return false;
     }
 
-    const meRes = await this.getMe();
-    if (!meRes.ok || !meRes.result) {
-      console.error(`[Telegram Bot] Error: Failed to authenticate with Telegram Bot API: ${meRes.error}`);
-      return false;
+    this.isStarting = true;
+    try {
+      const meRes = await this.getMe();
+      if (!meRes.ok || !meRes.result) {
+        console.error(`[Telegram Bot] Error: Failed to authenticate with Telegram Bot API: ${meRes.error}`);
+        return false;
+      }
+
+      console.log(
+        `[Telegram Bot] Connected as @${meRes.result.username || "unknown"} (${meRes.result.first_name}, ID: ${meRes.result.id})`
+      );
+
+      // Delete webhook with drop_pending_updates=true to clear any stale webhooks or hanging locks
+      const webhookCleared = await this.deleteWebhook(true);
+      if (webhookCleared) {
+        console.log("[Telegram Bot] Webhook cleared; ready for getUpdates long-polling.");
+      }
+
+      this.isPolling = true;
+      this.pollingAbortController = new AbortController();
+      console.log("[Telegram Bot] Long polling started (listening for updates...)");
+
+      const timeout = options?.timeoutSeconds ?? 25;
+      this.runPollingLoop(timeout).catch((err) => {
+        console.error("[Telegram Bot] Fatal polling loop error:", err);
+        this.isPolling = false;
+      });
+
+      return true;
+    } finally {
+      this.isStarting = false;
     }
-
-    console.log(
-      `[Telegram Bot] Connected as @${meRes.result.username || "unknown"} (${meRes.result.first_name}, ID: ${meRes.result.id})`
-    );
-
-    // Delete webhook to ensure Telegram sends updates via getUpdates
-    const webhookCleared = await this.deleteWebhook(false);
-    if (webhookCleared) {
-      console.log("[Telegram Bot] Webhook cleared; ready for getUpdates long-polling.");
-    }
-
-    this.isPolling = true;
-    this.pollingAbortController = new AbortController();
-    console.log("[Telegram Bot] Long polling started (listening for updates...)");
-
-    const timeout = options?.timeoutSeconds ?? 25;
-    this.runPollingLoop(timeout).catch((err) => {
-      console.error("[Telegram Bot] Fatal polling loop error:", err);
-      this.isPolling = false;
-    });
-
-    return true;
   }
 
   stopPolling(): void {
@@ -201,19 +241,29 @@ export class VeraTelegramBot {
   }
 
   private async runPollingLoop(timeoutSeconds: number): Promise<void> {
+    let consecutive409Count = 0;
     while (this.isPolling) {
       try {
         const offset = this.lastUpdateId > 0 ? this.lastUpdateId + 1 : 0;
-        const url = `https://api.telegram.org/bot${this.botToken}/getUpdates?offset=${offset}&timeout=${timeoutSeconds}&allowed_updates=["message","callback_query"]`;
+        const allowedUpdates = encodeURIComponent(JSON.stringify(["message", "callback_query"]));
+        const url = `https://api.telegram.org/bot${this.botToken}/getUpdates?offset=${offset}&timeout=${timeoutSeconds}&allowed_updates=${allowedUpdates}`;
 
         const res = await fetch(url, { signal: this.pollingAbortController?.signal });
 
         if (!res.ok) {
           if (res.status === 409) {
-            console.warn("[Telegram Bot] 409 Conflict: another instance or webhook is active. Retrying in 5s...");
-            await new Promise((r) => setTimeout(r, 5000));
+            consecutive409Count++;
+            const backoffMs = Math.min(5000 * consecutive409Count, 30000);
+            if (consecutive409Count === 1 || consecutive409Count % 5 === 0) {
+              console.warn(`[Telegram Bot] 409 Conflict: another instance is active. Backing off for ${backoffMs / 1000}s...`);
+            }
+            if (consecutive409Count === 3) {
+              await this.deleteWebhook(true);
+            }
+            await new Promise((r) => setTimeout(r, backoffMs));
             continue;
           }
+          consecutive409Count = 0;
           if (res.status === 401) {
             console.error("[Telegram Bot] 401 Unauthorized: Telegram Bot token is invalid. Stopping polling.");
             this.isPolling = false;
@@ -223,6 +273,8 @@ export class VeraTelegramBot {
           await new Promise((r) => setTimeout(r, 3000));
           continue;
         }
+
+        consecutive409Count = 0;
 
         const data = (await res.json()) as { ok: boolean; result: TelegramUpdate[]; description?: string };
         if (data.ok && Array.isArray(data.result)) {
@@ -295,6 +347,10 @@ export class VeraTelegramBot {
 
   // --- Main Update Dispatcher ---
   async handleUpdate(update: TelegramUpdate): Promise<{ handled: boolean; reply?: string }> {
+    const parseResult = TelegramUpdateSchema.safeParse(update);
+    if (!parseResult.success) {
+      return { handled: false };
+    }
     // 1. Handle Inline Button Callback Queries
     if (update.callback_query) {
       return this.handleCallbackQuery(update.callback_query);
@@ -316,22 +372,66 @@ export class VeraTelegramBot {
       return { handled: true, reply };
     }
 
-    const session = this.getSession(chatId);
+    // Check for Invitation Code Redemption (/start invite_<CODE>, /invite <CODE>, or raw code)
+    const inviteCode = this.inviteService.extractInviteCode(rawText);
+    if (inviteCode) {
+      const firstName = message.from?.first_name || "Operator";
+      const username = message.from?.username || "";
+      const redeemRes = await this.inviteService.redeemCode(userId, inviteCode, {
+        username,
+        first_name: firstName,
+      });
 
-    // 2. Handle Interactive Conversational States
-    if (session.state === "AWAITING_VERIFY_TASK" && !rawText.startsWith("/")) {
-      // Step 1 received: store task, ask for agent output
-      this.setSession(chatId, { state: "AWAITING_VERIFY_OUTPUT", pendingTask: rawText });
-      const reply = "Now paste the agent's output.";
-      await this.sendMessage(chatId, reply);
+      if (redeemRes.success && redeemRes.user) {
+        const reply = this.inviteService.getAccessGrantedMessage(redeemRes.user);
+        await this.sendMessage(chatId, reply, {
+          inline_keyboard: [
+            [
+              { text: "🌐 Open Platform Dashboard", url: `${this.apiBaseUrl}/dashboard` },
+            ],
+          ],
+        });
+        return { handled: true, reply };
+      } else {
+        const reply = `⚠️ Access Restricted — Invalid Invite Code\n\n${redeemRes.message}\n\nPlease visit the VeraOS website to get your permanent invite link:\n👉 ${this.apiBaseUrl}`;
+        await this.sendMessage(chatId, reply, {
+          inline_keyboard: [
+            [
+              { text: "🌐 Open VeraOS Website", url: this.apiBaseUrl },
+            ],
+          ],
+        });
+        return { handled: true, reply };
+      }
+    }
+
+    // Access Control Gate: Verify User Clearance
+    const isAuthorized = await this.inviteService.isAuthorized(userId);
+    if (!isAuthorized) {
+      const reply =
+        `⛔ Access Restricted — Invitation Required\n\n` +
+        `VeraOS Telegram Bot is currently invite-only.\n\n` +
+        `Anyone can explore the main VeraOS platform and try task verification freely on the web. To use this Telegram bot, please visit our website and click "Open Telegram" to get your permanent invite link.\n\n` +
+        `👉 Website: ${this.apiBaseUrl}\n\n` +
+        `If you have an invite code or OTP, reply with:\n` +
+        `/invite <CODE> or /start invite_<CODE>`;
+
+      await this.sendMessage(chatId, reply, {
+        inline_keyboard: [
+          [
+            { text: "🌐 Open VeraOS Website", url: this.apiBaseUrl },
+          ],
+        ],
+      });
       return { handled: true, reply };
     }
 
-    if (session.state === "AWAITING_VERIFY_OUTPUT" && !rawText.startsWith("/")) {
-      // Step 2 received: run verification with stored task + this output
-      const task = session.pendingTask || rawText;
+    const session = this.getSession(chatId);
+
+    // 2. Handle Interactive Conversational States
+    if (session.state === "AWAITING_VERIFY_INPUT" && !rawText.startsWith("/")) {
       this.clearSession(chatId);
-      return this.executeVerificationWithTaskAndOutput(chatId, userId, task, rawText);
+      return this.executeVerification(chatId, userId, rawText);
     }
 
     if (session.state === "AWAITING_CORRECT_INPUT" && !rawText.startsWith("/")) {
@@ -356,10 +456,21 @@ export class VeraTelegramBot {
       return this.executeResubmission(chatId, userId, vId, rawText);
     }
 
-    // 3. Command Routing
+    // 3. Natural Language Verification Prompt Handling (AI & Heuristics)
+    if (!rawText.startsWith("/")) {
+      const parsed = await aiService.parseVerificationPrompt(rawText);
+      if (parsed.isVerification && parsed.task && parsed.workerOutput) {
+        return this.executeVerification(chatId, userId, `${parsed.task} | ${parsed.workerOutput}`);
+      }
+      return { handled: false };
+    }
+
+    // 4. Command Routing
     const parts = rawText.split(/\s+/);
-    const command = parts[0].toLowerCase();
-    const arg = rawText.slice(command.length).trim();
+    const rawCommand = parts[0].toLowerCase();
+    // Strip @username suffix if present in group chats (e.g. /start@VeraOSBot -> /start)
+    const command = rawCommand.includes("@") ? rawCommand.split("@")[0] : rawCommand;
+    const arg = rawText.slice(parts[0].length).trim();
 
     switch (command) {
       case "/start":
@@ -376,8 +487,11 @@ export class VeraTelegramBot {
         return this.handleCorrectCommand(chatId, userId, arg);
       case "/resubmit":
         return this.handleResubmitCommand(chatId, userId, arg);
+      case "/explain":
+      case "/ask":
+        return this.handleExplainCommand(chatId, userId, arg);
       default:
-        // Ignore unhandled commands or normal chat messages
+        // Ignore unhandled commands
         return { handled: false };
     }
   }
@@ -385,21 +499,19 @@ export class VeraTelegramBot {
   // --- Command: /start ---
   private async handleStart(chatId: number): Promise<{ handled: boolean; reply: string }> {
     const reply =
-      "🛡 Welcome to VeraOS.\n\n" +
-      "I verify AI agent work using independent evidence.\n\n" +
-      "Use /verify to start a verification.";
+      "🛡 VeraOS\n\n" +
+      "The verification layer for AI agents.\n\n" +
+      "I independently check agent work\n" +
+      "against real evidence before it can be trusted.\n\n" +
+      "Commands:\n\n" +
+      "/verify — Start a verification\n" +
+      "/status — Check a verification\n" +
+      "/evidence — View evidence\n" +
+      "/correct — Request correction\n" +
+      "/resubmit — Re-run verification\n" +
+      "/help — Show commands";
 
-    const keyboard: InlineKeyboardMarkup = {
-      inline_keyboard: [
-        [
-          { text: "Start Verification", callback_data: "start_verification" },
-          { text: "View Verifications", callback_data: "view_verifications" },
-        ],
-        [{ text: "Help", callback_data: "help" }],
-      ],
-    };
-
-    await this.sendMessage(chatId, reply, keyboard);
+    await this.sendMessage(chatId, reply);
     return { handled: true, reply };
   }
 
@@ -410,6 +522,7 @@ export class VeraTelegramBot {
       "/verify\nStart a new verification\n\n" +
       "/status <verification_id>\nCheck verification status\n\n" +
       "/evidence <verification_id>\nView evidence\n\n" +
+      "/explain <verification_id>\nAI explanation of verification\n\n" +
       "/correct <verification_id>\nRequest correction\n\n" +
       "/resubmit <verification_id>\nRun verification again\n\n" +
       "/help\nShow this help";
@@ -421,9 +534,9 @@ export class VeraTelegramBot {
   // --- Command: /verify ---
   private async handleVerifyCommand(chatId: number, userId: number, arg: string): Promise<{ handled: boolean; reply: string }> {
     if (!arg) {
-      // Step 1: Ask for the task
-      this.setSession(chatId, { state: "AWAITING_VERIFY_TASK" });
-      const reply = "What should the agent accomplish?";
+      // Conversational flow: Prompt user for input
+      this.setSession(chatId, { state: "AWAITING_VERIFY_INPUT" });
+      const reply = "What should be verified?";
       await this.sendMessage(chatId, reply);
       return { handled: true, reply };
     }
@@ -431,101 +544,7 @@ export class VeraTelegramBot {
     return this.executeVerification(chatId, userId, arg);
   }
 
-  // --- Execution: Run Verification with separate task + output ---
-  private async executeVerificationWithTaskAndOutput(chatId: number, userId: number, task: string, workerOutput: string): Promise<{ handled: boolean; reply: string }> {
-    try {
-      const progressReply = "Verification started.\n\n⏳ Checking evidence...";
-      await this.sendMessage(chatId, progressReply);
-
-      const res = await fetch(`${this.apiBaseUrl}/v1/verify`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          task,
-          worker: {
-            id: `tg_user_${userId}`,
-            name: "Telegram Operator",
-            output: workerOutput,
-          },
-          telegramUserId: userId,
-          telegramChatId: chatId,
-        }),
-      });
-
-      if (!res.ok) {
-        const errJson = (await res.json().catch(() => ({}))) as { message?: string };
-        const reply = `⚠️ Verification unavailable\n\n${errJson.message || "VeraOS could not process the verification request."}`;
-        await this.sendMessage(chatId, reply);
-        return { handled: true, reply };
-      }
-
-      const data = (await res.json()) as {
-        verificationId: string;
-        id: string;
-        verdict: { status: "VERIFIED" | "FAILED" | "PARTIAL" | "UNVERIFIABLE"; summary: string };
-        checks: Array<{ id: string; status: string; expected: string; observed: string; explanation: string }>;
-      };
-
-      const displayId = data.verificationId || data.id;
-      const isVerified = data.verdict.status === "VERIFIED";
-      const txCheck = data.checks?.[0];
-
-      let expectedStr = "—";
-      let observedStr = "—";
-      let diffStr = "—";
-
-      if (txCheck) {
-        if (txCheck.expected) expectedStr = String(txCheck.expected);
-        if (txCheck.observed) observedStr = String(txCheck.observed);
-        const expMatch = txCheck.explanation?.match(/Expected:\s*([^\n]+)/i);
-        const obsMatch = txCheck.explanation?.match(/Observed:\s*([^\n]+)/i);
-        const diffMatch = txCheck.explanation?.match(/Difference:\s*([^\n]+)/i);
-        if (expMatch) expectedStr = expMatch[1].trim();
-        if (obsMatch) observedStr = obsMatch[1].trim();
-        if (diffMatch) diffStr = diffMatch[1].trim();
-      }
-
-      let finalReply: string;
-      let keyboard: InlineKeyboardMarkup | undefined;
-
-      if (isVerified) {
-        finalReply =
-          `✅ VERIFICATION PASSED\n\n` +
-          `Worker claimed: ${expectedStr}\n` +
-          `Independent evidence: ${observedStr}\n\n` +
-          `Verification: ${displayId}`;
-        keyboard = {
-          inline_keyboard: [
-            [{ text: "View evidence", callback_data: `view_evidence:${displayId}` }],
-          ],
-        };
-      } else {
-        finalReply =
-          `❌ VERIFICATION FAILED\n\n` +
-          `Worker claimed: ${expectedStr}\n` +
-          `Independent evidence: ${observedStr}\n` +
-          `Difference: ${diffStr}\n\n` +
-          `Verification: ${displayId}`;
-        keyboard = {
-          inline_keyboard: [
-            [
-              { text: "View evidence", callback_data: `view_evidence:${displayId}` },
-              { text: "Send correction", callback_data: `request_correction:${displayId}` },
-            ],
-          ],
-        };
-      }
-
-      await this.sendMessage(chatId, finalReply, keyboard);
-      return { handled: true, reply: finalReply };
-    } catch {
-      const reply = "⚠️ Verification unavailable\n\nVeraOS could not retrieve the required evidence.\n\nPlease try again shortly.";
-      await this.sendMessage(chatId, reply);
-      return { handled: true, reply };
-    }
-  }
-
-  // --- Execution: Run Verification (legacy single-input path) ---
+  // --- Execution: Run Verification ---
   private async executeVerification(chatId: number, userId: number, input: string): Promise<{ handled: boolean; reply: string }> {
     let task = input;
     let workerOutput = input;
@@ -641,7 +660,10 @@ export class VeraTelegramBot {
 
         keyboard = {
           inline_keyboard: [
-            [{ text: "View Evidence", callback_data: `view_evidence:${displayId}` }],
+            [
+              { text: "View Evidence", callback_data: `view_evidence:${displayId}` },
+              { text: "Explain (AI)", callback_data: `explain_verdict:${displayId}` },
+            ],
           ],
         };
       } else {
@@ -663,6 +685,9 @@ export class VeraTelegramBot {
             [
               { text: "View Evidence", callback_data: `view_evidence:${displayId}` },
               { text: "Request Correction", callback_data: `request_correction:${displayId}` },
+            ],
+            [
+              { text: "Explain (AI)", callback_data: `explain_verdict:${displayId}` },
             ],
           ],
         };
@@ -969,29 +994,84 @@ export class VeraTelegramBot {
     }
   }
 
+  // --- Command: /explain or /ask ---
+  private async handleExplainCommand(
+    chatId: number,
+    userId: number,
+    arg: string
+  ): Promise<{ handled: boolean; reply: string }> {
+    const parts = arg.trim().split(/\s+/);
+    const id = parts[0]?.trim();
+    const question = parts.slice(1).join(" ").trim() || undefined;
+
+    if (!id) {
+      const reply = "⚠️ Usage: /explain <verification_id> [question]\nExample: /explain ver_123 Why did this fail?";
+      await this.sendMessage(chatId, reply);
+      return { handled: true, reply };
+    }
+
+    try {
+      const res = await fetch(`${this.apiBaseUrl}/v1/verify/${encodeURIComponent(id)}`);
+      if (!res.ok) {
+        const reply = `⚠️ Verification not found: ${id}`;
+        await this.sendMessage(chatId, reply);
+        return { handled: true, reply };
+      }
+
+      const record = (await res.json()) as VerificationRecord;
+
+      // Authorization check
+      if (record.telegramUserId && String(record.telegramUserId) !== String(userId)) {
+        const reply = `⚠️ Unauthorized: You are not authorized to view verification ${id}.`;
+        await this.sendMessage(chatId, reply);
+        return { handled: true, reply };
+      }
+
+      const explanation = await aiService.explainVerdict(record, question);
+      const displayId = record.displayId || record.id;
+      const reply = `🤖 VeraOS AI Analysis\n\n${explanation}`;
+
+      const keyboard: InlineKeyboardMarkup = {
+        inline_keyboard: [
+          [{ text: "View Evidence", callback_data: `view_evidence:${displayId}` }],
+        ],
+      };
+
+      await this.sendMessage(chatId, reply, keyboard);
+      return { handled: true, reply };
+    } catch {
+      const reply = "⚠️ Verification unavailable\n\nVeraOS could not generate an explanation.\n\nPlease try again shortly.";
+      await this.sendMessage(chatId, reply);
+      return { handled: true, reply };
+    }
+  }
+
   // --- Inline Keyboard Callbacks ---
   private async handleCallbackQuery(query: TelegramCallbackQuery): Promise<{ handled: boolean; reply?: string }> {
     const data = query.data || "";
     const chatId = query.message?.chat.id || query.from.id;
     const userId = query.from.id;
 
-    if (data === "start_verification") {
-      return this.handleVerifyCommand(chatId, userId, "");
+    // Immediately answer callback query to dismiss Telegram client spinner
+    if (query.id) {
+      await this.answerCallbackQuery(query.id);
     }
 
-    if (data === "view_verifications") {
-      const reply = "Use /status <verification_id> to check a specific verification.";
+    const isAuthorized = await this.inviteService.isAuthorized(userId);
+    if (!isAuthorized) {
+      const reply = "⛔ Access restricted. Please visit the VeraOS website to get an invite link.";
       await this.sendMessage(chatId, reply);
       return { handled: true, reply };
-    }
-
-    if (data === "help") {
-      return this.handleHelp(chatId);
     }
 
     if (data.startsWith("view_evidence:")) {
       const id = data.split(":")[1];
       return this.handleEvidenceCommand(chatId, userId, id);
+    }
+
+    if (data.startsWith("explain_verdict:")) {
+      const id = data.split(":")[1];
+      return this.handleExplainCommand(chatId, userId, id);
     }
 
     if (data.startsWith("request_correction:")) {
@@ -1057,6 +1137,38 @@ export class VeraTelegramBot {
     }
   }
 
+  // --- Telegram API Answer Callback Query ---
+  async answerCallbackQuery(
+    callbackQueryId: string,
+    text?: string,
+    showAlert = false
+  ): Promise<boolean> {
+    if (!this.botToken) {
+      return true;
+    }
+    try {
+      const payload: Record<string, unknown> = {
+        callback_query_id: callbackQueryId,
+        show_alert: showAlert,
+      };
+      if (text) {
+        payload.text = text;
+      }
+      const res = await fetch(`https://api.telegram.org/bot${this.botToken}/answerCallbackQuery`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      return res.ok;
+    } catch (err) {
+      console.error(
+        `[Telegram Bot] Error answering callback query ${callbackQueryId}:`,
+        (err as Error).message
+      );
+      return false;
+    }
+  }
+
   // --- Webhook Handler (Validates secret token) ---
   createWebhookHandler() {
     return async (req: IncomingMessage, res: ServerResponse): Promise<boolean> => {
@@ -1084,8 +1196,14 @@ export class VeraTelegramBot {
 
       req.on("end", async () => {
         try {
-          const update = JSON.parse(body) as TelegramUpdate;
-          const result = await this.handleUpdate(update);
+          const raw = JSON.parse(body);
+          const parseResult = TelegramUpdateSchema.safeParse(raw);
+          if (!parseResult.success) {
+            res.writeHead(400, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ error: "Invalid Telegram payload", issues: parseResult.error.issues }));
+            return;
+          }
+          const result = await this.handleUpdate(parseResult.data as TelegramUpdate);
           res.writeHead(200, { "Content-Type": "application/json" });
           res.end(JSON.stringify({ ok: true, handled: result.handled }));
         } catch {
