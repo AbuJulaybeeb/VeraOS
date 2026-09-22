@@ -58,6 +58,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
       active: location.pathname === "/agents/connect",
     },
     {
+      label: "Account & Credentials",
+      icon: "manage_accounts",
+      path: "/account",
+      active: location.pathname === "/account",
+    },
+    {
       label: "Invite Portal",
       icon: "vpn_key",
       path: "/invite",
@@ -285,10 +291,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         {/* User profile & Auth button */}
         {user ? (
-          <div
-            onClick={() => openAuthModal("signin")}
-            className="flex items-center justify-between p-space-sm rounded-xl bg-surface-container hover:bg-surface-container-high transition-colors cursor-pointer group"
-            title="Click to switch or manage account"
+          <Link
+            to="/account"
+            onClick={onCloseMobile}
+            className="flex items-center justify-between p-space-sm rounded-xl bg-surface-container hover:bg-surface-container-high transition-colors group"
+            title="Manage Account & Credentials"
           >
             <div className="flex items-center gap-space-sm min-w-0">
               {user.avatar ? (
@@ -332,6 +339,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <button
               type="button"
               onClick={(e) => {
+                e.preventDefault();
                 e.stopPropagation();
                 logout();
               }}
@@ -342,7 +350,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 logout
               </span>
             </button>
-          </div>
+          </Link>
         ) : (
           <div className="p-space-sm rounded-xl bg-surface-container flex flex-col gap-2">
             <div className="flex items-center justify-between">

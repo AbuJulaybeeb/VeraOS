@@ -80,6 +80,7 @@ CREATE TABLE IF NOT EXISTS users (
   role TEXT NOT NULL DEFAULT 'AI Verification Engineer',
   avatar TEXT,
   stellar_wallet TEXT,
+  api_key TEXT,
   auth_provider TEXT NOT NULL DEFAULT 'password', -- 'password', 'stellar', 'google'
   created_at TEXT NOT NULL,
   last_login_at TEXT NOT NULL
@@ -87,3 +88,36 @@ CREATE TABLE IF NOT EXISTS users (
 
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_users_stellar_wallet ON users(stellar_wallet);
+CREATE INDEX IF NOT EXISTS idx_users_api_key ON users(api_key);
+
+-- 6. Autonomous Agents Table (Real-time Agent Connections)
+CREATE TABLE IF NOT EXISTS agents (
+  id TEXT PRIMARY KEY,
+  user_id TEXT,
+  name TEXT NOT NULL,
+  version TEXT NOT NULL DEFAULT 'v1.0',
+  runtime TEXT NOT NULL DEFAULT 'ElizaOS Stellar Runtime v1.2',
+  model TEXT NOT NULL DEFAULT 'gemini-2.0-flash',
+  endpoint TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'CONNECTED', -- 'CONNECTED', 'NOT_CONNECTED', 'VERIFIED', 'ERROR'
+  api_key TEXT,
+  stellar_account TEXT,
+  capabilities TEXT NOT NULL DEFAULT '[]',
+  permissions TEXT NOT NULL DEFAULT '[]',
+  guardrail_mode TEXT NOT NULL DEFAULT 'standard',
+  handshake_latency_ms INTEGER DEFAULT 0,
+  handshake_tx_hash TEXT,
+  last_active TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_agents_user_id ON agents(user_id);
+CREATE INDEX IF NOT EXISTS idx_agents_status ON agents(status);
+
+-- Seed Initial Connected Agents
+INSERT OR IGNORE INTO agents (id, user_id, name, version, runtime, model, endpoint, status, api_key, stellar_account, capabilities, permissions, guardrail_mode, handshake_latency_ms, handshake_tx_hash, last_active, created_at)
+VALUES
+  ('eliza-stellar-01', 'system', 'ElizaOS Stellar Agent', 'v1.2', 'ElizaOS Stellar Runtime v1.2', 'gemini-2.0-flash', 'agent://stellar-eliza-runtime', 'VERIFIED', 'vera_live_eliza_98a1b', 'GCEYAUYCI3WTE5GOD7CDLRJQPATQCLHMXY4Q3CEQ64RP5SVDWPFF5L2L', '["task_execution","stellar_payment","remediation_loop"]', '["read_tasks","stellar_attestation","remediation_dispatch"]', 'strict', 18, '62256096f306726197208231b00e422628b0bb83e104dabed9a74da5186afbaf', 'Just now', datetime('now')),
+  ('langchain-prime', 'system', 'LangChain Agentic Worker', 'v0.3', 'LangChain Agentic Runtime v0.3', 'gpt-4o', 'https://agent.acme.ai/langchain/rpc', 'CONNECTED', 'vera_live_langchain_44c2d', 'GCEYAUYCI3WTE5GOD7CDLRJQPATQCLHMXY4Q3CEQ64RP5SVDWPFF5L2L', '["multi_actor_graph","stateful_tool_loop"]', '["read_tasks","stellar_attestation"]', 'standard', 24, '62256096f306726197208231b00e422628b0bb83e104dabed9a74da5186afbaf', 'Just now', datetime('now')),
+  ('crewai-swarm', 'system', 'CrewAI Multi-Worker Swarm', 'v2.0', 'CrewAI Multi-Worker Swarm v2.0', 'claude-3.5-sonnet', 'https://agent.acme.ai/crew/rpc', 'CONNECTED', 'vera_live_crewai_77f1a', 'GCEYAUYCI3WTE5GOD7CDLRJQPATQCLHMXY4Q3CEQ64RP5SVDWPFF5L2L', '["swarm_handoff","hierarchical_dispatch"]', '["read_tasks","remediation_dispatch"]', 'standard', 31, '62256096f306726197208231b00e422628b0bb83e104dabed9a74da5186afbaf', 'Just now', datetime('now'));
+

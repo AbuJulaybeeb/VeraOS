@@ -424,6 +424,72 @@ export class AuthService {
       return null;
     }
   }
+
+  /**
+   * Update user profile (name, role)
+   */
+  async updateProfile(
+    userIdOrEmail: string,
+    data: { name?: string; role?: string }
+  ): Promise<Omit<StoredUser, "password_hash">> {
+    const updated = await this.db.updateUserProfile(userIdOrEmail, data);
+    if (!updated) {
+      throw new Error("User account not found.");
+    }
+    const { password_hash: _, ...safeUser } = updated;
+    await this.db.logAudit(updated.id, "PROFILE_UPDATED", `Updated name: ${data.name || "unchanged"}, role: ${data.role || "unchanged"}`);
+    return safeUser;
+  }
+
+  /**
+   * Change user password with verification of old password
+   */
+  async changePassword(
+    userIdOrEmail: string,
+    oldPass: string,
+    newPass: string
+  ): Promise<{ success: boolean; message: string }> {
+    if (newPass.length < 6) {
+      throw new Error("New password must be at least 6 characters.");
+    }
+
+    const clean = userIdOrEmail.trim().toLowerCase();
+    const user = (await this.db.getUserByEmail(clean)) || (await this.db.getUserById(clean));
+    if (!user) {
+      throw new Error("User account not found.");
+    }
+
+    if (user.password_hash) {
+      const oldHash = await this.hashPassword(oldPass);
+      if (user.password_hash !== oldHash && user.password_hash !== oldPass) {
+        throw new Error("Current password does not match.");
+      }
+    }
+
+    const newHash = await this.hashPassword(newPass);
+    await this.db.updateUserPassword(user.id, newHash);
+    await this.db.logAudit(user.id, "PASSWORD_CHANGED", "User successfully changed account password");
+
+    return { success: true, message: "Password updated successfully." };
+  }
+
+  /**
+   * Regenerate VeraOS API Key
+   */
+  async regenerateApiKey(userIdOrEmail: string): Promise<string> {
+    const key = await this.db.regenerateUserApiKey(userIdOrEmail);
+    await this.db.logAudit(userIdOrEmail, "API_KEY_REGENERATED", "Regenerated live VeraOS API key");
+    return key;
+  }
+
+  /**
+   * Unlink Stellar wallet
+   */
+  async unlinkWallet(userIdOrEmail: string): Promise<boolean> {
+    await this.db.unlinkUserWallet(userIdOrEmail);
+    await this.db.logAudit(userIdOrEmail, "WALLET_UNLINKED", "Unlinked Stellar wallet from account");
+    return true;
+  }
 }
 
 export const authService = new AuthService();

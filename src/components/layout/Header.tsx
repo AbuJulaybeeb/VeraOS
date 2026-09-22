@@ -363,6 +363,19 @@ export const Header: React.FC<HeaderProps> = ({
                   <button
                     onClick={() => {
                       setProfileDropdownOpen(false);
+                      navigate("/account");
+                    }}
+                    className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs text-on-surface hover:text-white hover:bg-surface-container-high transition-colors flex items-center gap-2 font-medium"
+                  >
+                    <span className="material-symbols-outlined text-[16px] text-primary-container">
+                      manage_accounts
+                    </span>
+                    <span>Account & Credentials</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setProfileDropdownOpen(false);
                       setInviteModalOpen(true);
                     }}
                     className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors flex items-center gap-2"

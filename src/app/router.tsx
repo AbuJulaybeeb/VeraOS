@@ -46,6 +46,9 @@ const TermsConditions = lazy(() =>
 const NotFound = lazy(() =>
   import("../pages/NotFound").then((m) => ({ default: m.NotFound }))
 );
+const Account = lazy(() =>
+  import("../pages/Account").then((m) => ({ default: m.Account }))
+);
 
 import { RouteErrorFallback } from "../components/common/RouteErrorFallback";
 
@@ -196,6 +199,14 @@ export const router = createBrowserRouter([
         element: (
           <Suspense fallback={<PageLoader />}>
             <ConnectAgent />
+          </Suspense>
+        ),
+      },
+      {
+        path: "/account",
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <Account />
           </Suspense>
         ),
       },

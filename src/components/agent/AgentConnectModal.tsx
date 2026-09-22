@@ -158,45 +158,47 @@ export const AgentConnectModal: React.FC = () => {
     setStep("handshake");
     setHandshakePhase(1);
 
-    // Multi-phase handshake animation for high fidelity "WalletConnect for Agents"
-    setTimeout(() => setHandshakePhase(2), 350);
-    setTimeout(() => setHandshakePhase(3), 700);
+    try {
+      setHandshakePhase(2);
+      const agent = await connectAgentWithConsent({
+        id: preselectedAgent?.id,
+        name: agentName,
+        endpoint,
+        runtime: selectedFramework.runtime,
+        model: selectedFramework.defaultModel,
+        capabilities: ["task_execution", "stellar_payment", "remediation_loop"],
+        permissions: [
+          "read_tasks",
+          "stellar_attestation",
+          "remediation_dispatch",
+        ],
+        guardrailMode,
+        stellarAccount: "GCEYAUYCI3WTE5GOD7CDLRJQPATQCLHMXY4Q3CEQ64RP5SVDWPFF5L2L",
+      });
 
-    setTimeout(async () => {
-      try {
-        const agent = await connectAgentWithConsent({
-          id: preselectedAgent?.id,
-          name: agentName,
-          endpoint,
-          runtime: selectedFramework.runtime,
-          model: selectedFramework.defaultModel,
-          capabilities: ["task_execution", "stellar_payment", "remediation_loop"],
-          permissions: [
-            "read_tasks",
-            "stellar_attestation",
-            "remediation_dispatch",
-          ],
-          guardrailMode,
-          stellarAccount: "GCEYAUYCI3WTE5GOD7CDLRJQPATQCLHMXY4Q3CEQ64RP5SVDWPFF5L2L",
-        });
+      setHandshakePhase(3);
+      // Run live real-time Stellar RPC verification probe immediately
+      const probeRes = await testHandshake(agent.id);
+      setPingResult({
+        latencyMs: probeRes.latencyMs,
+        network: probeRes.network,
+        message: probeRes.message,
+      });
 
-        setConnectedAgentData({
-          id: agent.id,
-          name: agent.name,
-          runtime: agent.runtime,
-          apiKey: agent.apiKeySnippet,
-        });
+      setConnectedAgentData({
+        id: agent.id,
+        name: agent.name,
+        runtime: agent.runtime,
+        apiKey: agent.apiKeySnippet,
+      });
 
-        setHandshakePhase(4);
-        setTimeout(() => {
-          setStep("connected");
-          setIsSubmitting(false);
-        }, 400);
-      } catch {
-        setIsSubmitting(false);
-        setStep("consent");
-      }
-    }, 1100);
+      setHandshakePhase(4);
+      setStep("connected");
+      setIsSubmitting(false);
+    } catch {
+      setIsSubmitting(false);
+      setStep("consent");
+    }
   };
 
   const handlePingTest = async () => {
@@ -576,9 +578,19 @@ export const AgentConnectModal: React.FC = () => {
               </div>
 
               {pingResult && (
-                <div className="p-2 rounded bg-[#1D110B] border border-[#22c55e]/30 text-[11px] font-code-sm text-[#4ade80] flex items-center justify-between">
-                  <span>✓ Handshake roundtrip: {pingResult.latencyMs}ms</span>
-                  <span className="text-[10px] text-[#B9A99B]">Stellar RPC ready</span>
+                <div className="p-2.5 rounded-lg bg-[#1D110B] border border-[#22c55e]/30 text-[11px] font-code-sm text-[#4ade80] flex flex-col gap-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold flex items-center gap-1.5">
+                      <span className="material-symbols-outlined text-[14px]">check_circle</span>
+                      Live Stellar Invariant Verified
+                    </span>
+                    <span className="font-bold text-white bg-emerald-500/20 px-1.5 py-0.5 rounded border border-emerald-500/30">
+                      {pingResult.latencyMs}ms
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-[#B9A99B] leading-tight">
+                    {pingResult.message || "Live Stellar Testnet Horizon probe verified"}
+                  </span>
                 </div>
               )}
             </div>

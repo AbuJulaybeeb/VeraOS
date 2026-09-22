@@ -60,10 +60,31 @@ export interface StoredUser {
   role: string;
   avatar?: string;
   stellar_wallet?: string;
+  api_key?: string;
   auth_provider: "password" | "stellar" | "google";
   invitation_status: "admin" | "invited" | "pending" | "revoked";
   created_at: string;
   last_login_at: string;
+}
+
+export interface AgentRecord {
+  id: string;
+  user_id?: string;
+  name: string;
+  version: string;
+  runtime: string;
+  model: string;
+  endpoint: string;
+  status: "CONNECTED" | "NOT_CONNECTED" | "VERIFIED" | "ERROR";
+  api_key?: string;
+  stellar_account?: string;
+  capabilities: string[];
+  permissions?: string[];
+  guardrail_mode?: "standard" | "strict";
+  handshake_latency_ms?: number;
+  handshake_tx_hash?: string;
+  last_active: string;
+  created_at: string;
 }
 
 export interface InvitedEmail {
@@ -158,6 +179,74 @@ export class VeraDatabase {
   ]);
   private static fallbackVerifications: Map<string, StoredVerification> = new Map();
   private static fallbackAuditLogs: AuditLog[] = [];
+  private static fallbackAgents: Map<string, AgentRecord> = new Map([
+    [
+      "eliza-stellar-01",
+      {
+        id: "eliza-stellar-01",
+        user_id: "system",
+        name: "ElizaOS (Stellar Agent)",
+        version: "v1.2",
+        runtime: "ElizaOS Stellar Runtime v1.2",
+        model: "gemini-2.0-flash",
+        endpoint: "agent://stellar-eliza-runtime",
+        status: "VERIFIED",
+        api_key: "vera_live_eliza_98a1b",
+        stellar_account: "GCEYAUYCI3WTE5GOD7CDLRJQPATQCLHMXY4Q3CEQ64RP5SVDWPFF5L2L",
+        capabilities: ["task_execution", "stellar_payment", "remediation_loop"],
+        permissions: ["read_tasks", "stellar_attestation", "remediation_dispatch"],
+        guardrail_mode: "strict",
+        handshake_latency_ms: 18,
+        handshake_tx_hash: "62256096f306726197208231b00e422628b0bb83e104dabed9a74da5186afbaf",
+        last_active: "Just now",
+        created_at: new Date().toISOString(),
+      },
+    ],
+    [
+      "langchain-prime",
+      {
+        id: "langchain-prime",
+        user_id: "system",
+        name: "LangChain / LangGraph",
+        version: "v0.3",
+        runtime: "LangChain Agentic Runtime v0.3",
+        model: "gpt-4o",
+        endpoint: "https://agent.acme.ai/langchain/rpc",
+        status: "CONNECTED",
+        api_key: "vera_live_langchain_44c2d",
+        stellar_account: "GCEYAUYCI3WTE5GOD7CDLRJQPATQCLHMXY4Q3CEQ64RP5SVDWPFF5L2L",
+        capabilities: ["multi_actor_graph", "stateful_tool_loop"],
+        permissions: ["read_tasks", "stellar_attestation"],
+        guardrail_mode: "standard",
+        handshake_latency_ms: 24,
+        handshake_tx_hash: "62256096f306726197208231b00e422628b0bb83e104dabed9a74da5186afbaf",
+        last_active: "Just now",
+        created_at: new Date().toISOString(),
+      },
+    ],
+    [
+      "crewai-swarm",
+      {
+        id: "crewai-swarm",
+        user_id: "system",
+        name: "CrewAI Swarm",
+        version: "v2.0",
+        runtime: "CrewAI Multi-Worker Swarm v2.0",
+        model: "claude-3.5-sonnet",
+        endpoint: "https://agent.acme.ai/crew/rpc",
+        status: "CONNECTED",
+        api_key: "vera_live_crewai_77f1a",
+        stellar_account: "GCEYAUYCI3WTE5GOD7CDLRJQPATQCLHMXY4Q3CEQ64RP5SVDWPFF5L2L",
+        capabilities: ["swarm_handoff", "hierarchical_dispatch"],
+        permissions: ["read_tasks", "remediation_dispatch"],
+        guardrail_mode: "standard",
+        handshake_latency_ms: 31,
+        handshake_tx_hash: "62256096f306726197208231b00e422628b0bb83e104dabed9a74da5186afbaf",
+        last_active: "Just now",
+        created_at: new Date().toISOString(),
+      },
+    ],
+  ]);
   private static fallbackAccounts: Map<string, StoredUser> = new Map([
     [
       "admin@veraos.network",
@@ -168,6 +257,7 @@ export class VeraDatabase {
         password_hash: "admin123",
         role: "owner",
         stellar_wallet: "GCEYAUYCI3WTE5GOD7CDLRJQPATQCLHMXY4Q3CEQ64RP5SVDWPFF5L2L",
+        api_key: "vera_live_sec_admin_001",
         auth_provider: "password",
         invitation_status: "admin",
         created_at: new Date().toISOString(),
@@ -958,6 +1048,259 @@ export class VeraDatabase {
     }
     return Array.from(unique.values()).slice(0, limit);
   }
+
+  // --- 6. Agents Management ---
+
+  async listAgents(userId?: string): Promise<AgentRecord[]> {
+    if (this.d1) {
+      try {
+        let stmt;
+        if (userId) {
+          stmt = this.d1.prepare("SELECT * FROM agents WHERE user_id = ? OR user_id = 'system' ORDER BY created_at DESC");
+          const res = await stmt.bind(userId).all<any>();
+          if (res && res.results) {
+            return res.results.map(parseAgentRow);
+          }
+        } else {
+          stmt = this.d1.prepare("SELECT * FROM agents ORDER BY created_at DESC");
+          const res = await stmt.all<any>();
+          if (res && res.results) {
+            return res.results.map(parseAgentRow);
+          }
+        }
+      } catch (err) {
+        console.warn("[DB] D1 listAgents error, falling back to local store:", err);
+      }
+    }
+    const list = Array.from(VeraDatabase.fallbackAgents.values());
+    if (userId) {
+      return list.filter((a) => a.user_id === userId || a.user_id === "system");
+    }
+    return list;
+  }
+
+  async getAgent(id: string): Promise<AgentRecord | null> {
+    if (this.d1) {
+      try {
+        const stmt = this.d1.prepare("SELECT * FROM agents WHERE id = ?");
+        const res = await stmt.bind(id).first<any>();
+        if (res) return parseAgentRow(res);
+      } catch (err) {
+        console.warn("[DB] D1 getAgent error:", err);
+      }
+    }
+    return VeraDatabase.fallbackAgents.get(id) || null;
+  }
+
+  async saveAgent(agent: AgentRecord): Promise<void> {
+    if (this.d1) {
+      try {
+        const query = `
+          INSERT INTO agents (id, user_id, name, version, runtime, model, endpoint, status, api_key, stellar_account, capabilities, permissions, guardrail_mode, handshake_latency_ms, handshake_tx_hash, last_active, created_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ON CONFLICT(id) DO UPDATE SET
+            name = excluded.name,
+            version = excluded.version,
+            runtime = excluded.runtime,
+            model = excluded.model,
+            endpoint = excluded.endpoint,
+            status = excluded.status,
+            api_key = coalesce(excluded.api_key, agents.api_key),
+            stellar_account = coalesce(excluded.stellar_account, agents.stellar_account),
+            capabilities = excluded.capabilities,
+            permissions = excluded.permissions,
+            guardrail_mode = excluded.guardrail_mode,
+            handshake_latency_ms = excluded.handshake_latency_ms,
+            handshake_tx_hash = excluded.handshake_tx_hash,
+            last_active = excluded.last_active
+        `;
+        await this.d1
+          .prepare(query)
+          .bind(
+            agent.id,
+            agent.user_id || "system",
+            agent.name,
+            agent.version,
+            agent.runtime,
+            agent.model,
+            agent.endpoint,
+            agent.status,
+            agent.api_key || null,
+            agent.stellar_account || null,
+            JSON.stringify(agent.capabilities || []),
+            JSON.stringify(agent.permissions || []),
+            agent.guardrail_mode || "standard",
+            agent.handshake_latency_ms || 0,
+            agent.handshake_tx_hash || null,
+            agent.last_active,
+            agent.created_at
+          )
+          .run();
+      } catch (err) {
+        console.warn("[DB] D1 saveAgent error:", err);
+      }
+    }
+    VeraDatabase.fallbackAgents.set(agent.id, agent);
+  }
+
+  async deleteAgent(id: string): Promise<boolean> {
+    if (this.d1) {
+      try {
+        await this.d1.prepare("DELETE FROM agents WHERE id = ?").bind(id).run();
+      } catch (err) {
+        console.warn("[DB] D1 deleteAgent error:", err);
+      }
+    }
+    return VeraDatabase.fallbackAgents.delete(id);
+  }
+
+  async updateAgentStatus(
+    id: string,
+    status: "CONNECTED" | "NOT_CONNECTED" | "VERIFIED" | "ERROR",
+    latencyMs?: number,
+    txHash?: string
+  ): Promise<void> {
+    const now = new Date().toISOString();
+    if (this.d1) {
+      try {
+        await this.d1
+          .prepare(`
+            UPDATE agents 
+            SET status = ?, 
+                handshake_latency_ms = coalesce(?, handshake_latency_ms),
+                handshake_tx_hash = coalesce(?, handshake_tx_hash),
+                last_active = ?
+            WHERE id = ?
+          `)
+          .bind(status, latencyMs ?? null, txHash ?? null, now, id)
+          .run();
+      } catch (err) {
+        console.warn("[DB] D1 updateAgentStatus error:", err);
+      }
+    }
+    const existing = VeraDatabase.fallbackAgents.get(id);
+    if (existing) {
+      existing.status = status;
+      if (latencyMs !== undefined) existing.handshake_latency_ms = latencyMs;
+      if (txHash !== undefined) existing.handshake_tx_hash = txHash;
+      existing.last_active = "Just now";
+      VeraDatabase.fallbackAgents.set(id, existing);
+    }
+  }
+
+  // --- 7. Credentials & Account Profile Management ---
+
+  async updateUserProfile(
+    idOrEmail: string,
+    data: { name?: string; role?: string }
+  ): Promise<StoredUser | null> {
+    const clean = idOrEmail.toLowerCase().trim();
+    const user = (await this.getUserByEmail(clean)) || (await this.getUserById(clean));
+    if (!user) return null;
+
+    if (data.name) user.name = data.name;
+    if (data.role) user.role = data.role;
+
+    if (this.d1) {
+      try {
+        await this.d1.prepare("UPDATE users SET name = ?, role = ? WHERE id = ?").bind(user.name, user.role, user.id).run();
+      } catch (err) {
+        console.warn("[DB] D1 updateUserProfile error:", err);
+      }
+    }
+    VeraDatabase.fallbackAccounts.set(user.email.toLowerCase().trim(), user);
+    VeraDatabase.fallbackAccounts.set(user.id, user);
+    return user;
+  }
+
+  async updateUserPassword(idOrEmail: string, passwordHash: string): Promise<boolean> {
+    const clean = idOrEmail.toLowerCase().trim();
+    const user = (await this.getUserByEmail(clean)) || (await this.getUserById(clean));
+    if (!user) return false;
+
+    user.password_hash = passwordHash;
+    if (this.d1) {
+      try {
+        await this.d1.prepare("UPDATE users SET password_hash = ? WHERE id = ?").bind(passwordHash, user.id).run();
+      } catch (err) {
+        console.warn("[DB] D1 updateUserPassword error:", err);
+      }
+    }
+    VeraDatabase.fallbackAccounts.set(user.email.toLowerCase().trim(), user);
+    VeraDatabase.fallbackAccounts.set(user.id, user);
+    return true;
+  }
+
+  async regenerateUserApiKey(idOrEmail: string): Promise<string> {
+    const clean = idOrEmail.toLowerCase().trim();
+    const user = (await this.getUserByEmail(clean)) || (await this.getUserById(clean));
+    const newApiKey = `vera_live_${Math.random().toString(36).slice(2, 10)}_${Math.random().toString(36).slice(2, 10)}`;
+    if (user) {
+      user.api_key = newApiKey;
+      if (this.d1) {
+        try {
+          await this.d1.prepare("UPDATE users SET api_key = ? WHERE id = ?").bind(newApiKey, user.id).run();
+        } catch (err) {
+          console.warn("[DB] D1 regenerateUserApiKey error:", err);
+        }
+      }
+      VeraDatabase.fallbackAccounts.set(user.email.toLowerCase().trim(), user);
+      VeraDatabase.fallbackAccounts.set(user.id, user);
+    }
+    return newApiKey;
+  }
+
+  async unlinkUserWallet(idOrEmail: string): Promise<boolean> {
+    const clean = idOrEmail.toLowerCase().trim();
+    const user = (await this.getUserByEmail(clean)) || (await this.getUserById(clean));
+    if (user) {
+      user.stellar_wallet = undefined;
+      if (this.d1) {
+        try {
+          await this.d1.prepare("UPDATE users SET stellar_wallet = NULL WHERE id = ?").bind(user.id).run();
+        } catch (err) {
+          console.warn("[DB] D1 unlinkUserWallet error:", err);
+        }
+      }
+      VeraDatabase.fallbackAccounts.set(user.email.toLowerCase().trim(), user);
+      VeraDatabase.fallbackAccounts.set(user.id, user);
+    }
+    return true;
+  }
+}
+
+function parseAgentRow(row: any): AgentRecord {
+  let capabilities: string[] = [];
+  let permissions: string[] = [];
+  try {
+    capabilities = typeof row.capabilities === "string" ? JSON.parse(row.capabilities) : row.capabilities || [];
+  } catch {
+    capabilities = [];
+  }
+  try {
+    permissions = typeof row.permissions === "string" ? JSON.parse(row.permissions) : row.permissions || [];
+  } catch {
+    permissions = [];
+  }
+  return {
+    id: row.id,
+    user_id: row.user_id,
+    name: row.name,
+    version: row.version || "v1.0",
+    runtime: row.runtime,
+    model: row.model,
+    endpoint: row.endpoint,
+    status: row.status,
+    api_key: row.api_key,
+    stellar_account: row.stellar_account,
+    capabilities,
+    permissions,
+    guardrail_mode: row.guardrail_mode || "standard",
+    handshake_latency_ms: row.handshake_latency_ms,
+    handshake_tx_hash: row.handshake_tx_hash,
+    last_active: row.last_active || "Just now",
+    created_at: row.created_at || new Date().toISOString(),
+  };
 }
 
 export const defaultVeraDb = new VeraDatabase();

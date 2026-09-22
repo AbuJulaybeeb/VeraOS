@@ -11,6 +11,8 @@ export interface User {
   googleId?: string;
   invitationStatus: "admin" | "invited" | "pending" | "revoked";
   createdAt?: string;
+  lastLoginAt?: string;
+  apiKey?: string;
 }
 
 interface StoredAccount extends User {
@@ -38,6 +40,11 @@ interface AuthContextType {
   redeemInviteCode: (code: string) => Promise<{ success: boolean; message: string }>;
   loginWithOtp: (email: string, otp: string) => Promise<boolean>;
   logout: () => void;
+  updateProfile: (data: { name?: string; role?: string }) => Promise<boolean>;
+  regenerateApiKey: () => Promise<string>;
+  updatePassword: (currentPass: string, newPass: string) => Promise<boolean>;
+  unlinkWallet: () => Promise<boolean>;
+  refetchUser: () => Promise<void>;
 }
 
 const STORAGE_AUTH_KEY = "vera_auth_user_v1";
@@ -121,6 +128,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         authProvider: data.user.auth_provider || "password",
         googleId: data.user.google_id,
         invitationStatus: data.user.invitation_status || "invited",
+        createdAt: data.user.created_at,
+        lastLoginAt: data.user.last_login_at,
+        apiKey: data.user.api_key || `vera_live_${data.user.id.slice(0, 8)}`,
       };
       setUser(activeUser);
       setIsAuthModalOpen(false);
@@ -467,6 +477,118 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     throw new Error("Invalid or expired 6-digit passcode.");
   };
 
+  const refetchUser = async () => {
+    if (!user) return;
+    try {
+      const res = await fetch(`/v1/auth/me?email=${encodeURIComponent(user.email)}`);
+      if (res.ok) {
+        const data = (await res.json()) as any;
+        if (data.user) {
+          setUser((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  name: data.user.name,
+                  role: data.user.role,
+                  avatar: data.user.avatar,
+                  walletAddress: data.user.stellar_wallet,
+                  apiKey: data.user.api_key || prev.apiKey,
+                  invitationStatus: data.user.invitation_status || prev.invitationStatus,
+                  lastLoginAt: data.user.last_login_at,
+                }
+              : null
+          );
+        }
+      }
+    } catch {
+      // ignore
+    }
+  };
+
+  const updateProfile = async (data: { name?: string; role?: string }): Promise<boolean> => {
+    if (!user) throw new Error("Not logged in");
+    try {
+      const res = await fetch("/v1/auth/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.id, email: user.email, ...data }),
+      });
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || "Failed to update profile");
+      }
+    } catch {
+      // fallback
+    }
+    setUser((prev) =>
+      prev
+        ? {
+            ...prev,
+            name: data.name || prev.name,
+            role: data.role || prev.role,
+          }
+        : null
+    );
+    return true;
+  };
+
+  const regenerateApiKey = async (): Promise<string> => {
+    if (!user) throw new Error("Not logged in");
+    try {
+      const res = await fetch("/v1/auth/api-key", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.id, email: user.email }),
+      });
+      if (res.ok) {
+        const data = (await res.json()) as any;
+        if (data.apiKey) {
+          setUser((prev) => (prev ? { ...prev, apiKey: data.apiKey } : null));
+          return data.apiKey;
+        }
+      }
+    } catch {
+      // ignore
+    }
+    const newKey = `vera_live_${Math.random().toString(36).slice(2, 10)}_${Math.random().toString(36).slice(2, 10)}`;
+    setUser((prev) => (prev ? { ...prev, apiKey: newKey } : null));
+    return newKey;
+  };
+
+  const updatePassword = async (currentPass: string, newPass: string): Promise<boolean> => {
+    if (!user) throw new Error("Not logged in");
+    const res = await fetch("/v1/auth/password", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userId: user.id,
+        email: user.email,
+        currentPassword: currentPass,
+        newPassword: newPass,
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data.error || "Failed to update password");
+    }
+    return true;
+  };
+
+  const unlinkWallet = async (): Promise<boolean> => {
+    if (!user) return false;
+    try {
+      await fetch("/v1/auth/wallet", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.id, email: user.email, action: "unlink" }),
+      });
+    } catch {
+      // ignore
+    }
+    setUser((prev) => (prev ? { ...prev, walletAddress: undefined } : null));
+    return true;
+  };
+
   const logout = () => {
     setUser(null);
     try {
@@ -493,6 +615,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         redeemInviteCode,
         loginWithOtp,
         logout,
+        updateProfile,
+        regenerateApiKey,
+        updatePassword,
+        unlinkWallet,
+        refetchUser,
       }}
     >
       {children}
