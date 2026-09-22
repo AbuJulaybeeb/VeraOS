@@ -6,15 +6,15 @@
   "rewrites": [
     {
       "source": "/v1/:match*",
-      "destination": "/api/entry"
+      "destination": "/api/entry?url=/v1/:match*"
     },
     {
       "source": "/health",
-      "destination": "/api/entry"
+      "destination": "/api/entry?url=/health"
     },
     {
       "source": "/telegram/:match*",
-      "destination": "/api/entry"
+      "destination": "/api/entry?url=/telegram/:match*"
     },
     {
       "source": "/((?!api|v1|health|telegram).*)",
