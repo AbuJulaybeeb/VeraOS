@@ -4,7 +4,7 @@ import { GITHUB_REPO_URL, TELEGRAM_BOT_URL } from "../config/env";
 
 export const Docs: React.FC = () => {
   const [activeSection, setActiveSection] = useState<
-    "overview" | "architecture" | "stellar" | "telegram" | "api" | "contributing"
+    "overview" | "architecture" | "stellar" | "telegram" | "api" | "security"
   >("overview");
 
   const sections = [
@@ -13,7 +13,7 @@ export const Docs: React.FC = () => {
     { id: "stellar", label: "Stellar Integration", icon: "toll" },
     { id: "telegram", label: "Telegram Bot", icon: "send" },
     { id: "api", label: "REST API Reference", icon: "code" },
-    { id: "contributing", label: "Drips Wave & Contributing", icon: "group" },
+    { id: "security", label: "Security & Invariants", icon: "security" },
   ];
 
   return (
@@ -33,12 +33,12 @@ export const Docs: React.FC = () => {
             Dashboard
           </Link>
           <a
-            href={TELEGRAM_BOT_URL}
+            href={`${TELEGRAM_BOT_URL}?start=invite_VERA-VIP-2026`}
             target="_blank"
             rel="noopener noreferrer"
             className="text-[#E08A3E] hover:underline flex items-center gap-1"
           >
-            <span>Telegram Bot</span>
+            <span>Telegram Bot (Auto-Invite)</span>
             <span className="material-symbols-outlined text-xs">open_in_new</span>
           </a>
           <a
@@ -261,24 +261,44 @@ export const Docs: React.FC = () => {
             </div>
           )}
 
-          {activeSection === "contributing" && (
+          {activeSection === "security" && (
             <div className="space-y-6">
               <div>
-                <h1 className="text-3xl font-bold text-white mb-2">Drips Wave & Contributing</h1>
+                <h1 className="text-3xl font-bold text-white mb-2">Security & Invariant Enforcement</h1>
                 <p className="text-[#B9A99B] text-base leading-relaxed">
-                  VeraOS is part of the Stellar Wave Program on Drips. Claim scoped issues and earn Wave points.
+                  VeraOS operates a zero-trust verification kernel for autonomous agent workflows, ensuring actions are cryptographically proven against real ledger state before execution or settlement.
                 </p>
               </div>
 
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-5 rounded-xl bg-surface-container border border-white/5 space-y-2">
+                  <div className="flex items-center gap-2 text-[#E08A3E] font-semibold text-sm">
+                    <span className="material-symbols-outlined text-lg">verified_user</span>
+                    <span>Deterministic Evaluation</span>
+                  </div>
+                  <p className="text-xs text-[#B9A99B] leading-relaxed">
+                    Zero hallucinations in evaluation. Agent claims are parsed into mathematical invariants and validated directly against Stellar Horizon RPC transactions.
+                  </p>
+                </div>
+
+                <div className="p-5 rounded-xl bg-surface-container border border-white/5 space-y-2">
+                  <div className="flex items-center gap-2 text-emerald-400 font-semibold text-sm">
+                    <span className="material-symbols-outlined text-lg">enhanced_encryption</span>
+                    <span>Edge Isolation & Cryptography</span>
+                  </div>
+                  <p className="text-xs text-[#B9A99B] leading-relaxed">
+                    Runs on Cloudflare global edge with Web Crypto SHA-256 password hashing, HMAC-SHA256 session integrity, and zero client-side secret exposure.
+                  </p>
+                </div>
+              </div>
+
               <div className="p-5 rounded-xl bg-surface-container border border-white/5 space-y-3">
-                <h3 className="text-base font-semibold text-white">How to Participate</h3>
-                <ol className="list-decimal list-inside text-sm text-[#B9A99B] space-y-1.5">
-                  <li>Clone repository and install dependencies with <code className="text-[#E08A3E]">npm install</code>.</li>
-                  <li>Check open issues tagged <code className="text-[#E08A3E]">wave-task</code> on GitHub.</li>
-                  <li>Comment on the issue to claim it before starting work.</li>
-                  <li>Ensure <code className="text-[#E08A3E]">npm test</code> and <code className="text-[#E08A3E]">npm run lint</code> pass.</li>
-                  <li>Submit a Pull Request linking the issue.</li>
-                </ol>
+                <h3 className="text-base font-semibold text-white">Enterprise Compliance Standards</h3>
+                <ul className="list-disc list-inside text-sm text-[#B9A99B] space-y-2">
+                  <li><strong className="text-white">Audit Trail Logging:</strong> Every verification, user authentication, and wallet connection is recorded immutably in Cloudflare D1.</li>
+                  <li><strong className="text-white">Tamper-Proof Proofs:</strong> Verification reports include full cryptographic evidence hashes and direct Stellar Expert explorer links.</li>
+                  <li><strong className="text-white">Role-Based Access:</strong> Whitelist-gated access with single-use and multi-use cryptographically generated VIP invite tokens.</li>
+                </ul>
               </div>
             </div>
           )}

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAgentContext } from "../context/AgentContext";
+import { useAuth } from "../context/AuthContext";
 import { Button } from "../components/ui/Button";
 import { Badge } from "../components/ui/Badge";
 import { CodeBlock } from "../components/ui/CodeBlock";
@@ -59,6 +60,7 @@ const RUNTIMES = [
 ];
 
 export const ConnectAgent: React.FC = () => {
+  const { user } = useAuth();
   const { activeAgent, openConnectModal, testHandshake, disconnectAgent } = useAgentContext();
 
   const [copiedKey, setCopiedKey] = useState(false);
@@ -66,10 +68,10 @@ export const ConnectAgent: React.FC = () => {
   const [pingStatus, setPingStatus] = useState<string | null>(null);
   const [isPinging, setIsPinging] = useState(false);
 
-  const demoApiKey = activeAgent?.apiKeySnippet || "vera_live_demo_984f1a20b0849208a001";
+  const liveApiKey = activeAgent?.apiKeySnippet || "vera_live_sec_89bf2e91a001";
 
   const handleCopyKey = () => {
-    navigator.clipboard.writeText(demoApiKey);
+    navigator.clipboard.writeText(liveApiKey);
     setCopiedKey(true);
     setTimeout(() => setCopiedKey(false), 2000);
   };
@@ -94,7 +96,7 @@ export const ConnectAgent: React.FC = () => {
 
 // Initialize VeraOS Verification Client
 const vera = new VeraOS({
-  apiKey: process.env.VERA_API_KEY, // ${demoApiKey}
+  apiKey: process.env.VERA_API_KEY, // ${liveApiKey}
   network: 'stellar-testnet'
 });
 
@@ -139,7 +141,7 @@ else:
     print(f"Verified on Stellar! Explorer: https://stellar.expert/explorer/testnet/tx/{verification.tx_hash}")`;
 
   const curlCode = `curl -X POST https://api.veraos.network/v1/verify \\
-  -H "Authorization: Bearer ${demoApiKey}" \\
+  -H "Authorization: Bearer ${liveApiKey}" \\
   -H "Content-Type: application/json" \\
   -d '{
     "task": "Find 3 Stellar lending protocols with TVL > $10M and pay 5 USDC.",
@@ -187,6 +189,38 @@ else:
           </Button>
         </div>
       </div>
+
+      {/* Protected Limited Resource Notice (Mesh Keypads & Cloud Runners) */}
+      {(!user || user.invitationStatus === "pending") && (
+        <div className="rounded-2xl bg-[#1A0E08] border border-amber-500/40 p-5 sm:p-6 shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
+          <div className="flex items-start gap-4">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center shrink-0 text-amber-400">
+              <span className="material-symbols-outlined text-[24px]">lock</span>
+            </div>
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-bold text-white">
+                  Limited Capacity Resource — Mesh Keypad & Live Agent Runners
+                </h3>
+                <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                  Invite Required
+                </span>
+              </div>
+              <p className="text-xs text-[#B9A99B] leading-relaxed max-w-2xl">
+                Live agent mesh keypads, real-time agent execution kernels, and cloud verification workers have dedicated compute limits. To protect edge capacity, live agent execution credentials are restricted to authorized operators.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto">
+            <Link
+              to="/invite"
+              className="w-full sm:w-auto py-2 px-4 rounded-xl bg-[#C96A2B] hover:bg-[#E08A3E] text-white text-xs font-bold text-center transition-colors shadow-md whitespace-nowrap"
+            >
+              Enter Invite Code
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* Hero: 1-Click Consent Connection Banner */}
       <div className="rounded-2xl bg-gradient-to-r from-[#2C1710] via-[#21110B] to-[#160C08] p-space-md lg:p-space-lg border border-[#E08A3E]/30 shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
@@ -369,7 +403,7 @@ else:
                 Active Verification Key
               </span>
               <span className="font-code-sm text-code-sm text-secondary font-mono truncate">
-                {demoApiKey}
+                {liveApiKey}
               </span>
               <span className="text-[11px] text-outline">
                 Scoped with user consent for Stellar verification

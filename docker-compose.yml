@@ -12,14 +12,16 @@ services:
       - STELLAR_RPC_URL=https://soroban-testnet.stellar.org
       - STELLAR_HORIZON_URL=https://horizon-testnet.stellar.org
       - VERAOS_API_URL=http://app:3001
+      - TELEGRAM_MODE=disabled
     restart: unless-stopped
 
   bot:
     build: .
-    command: ["node", "server/telegram/runner.ts"]
+    command: ["npm", "run", "bot"]
     environment:
       - VERAOS_API_URL=http://app:3001
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_MODE=polling
     depends_on:
       - app
     restart: unless-stopped

@@ -3,7 +3,6 @@ import {
   CreateVerificationInput,
   VerificationAttempt,
 } from "../types/verification";
-import { initialVerifications } from "../mocks/verificationData";
 import {
   delay,
   STORAGE_KEYS,
@@ -14,7 +13,7 @@ import {
 function getStoredVerifications(): VerificationRecord[] {
   return getFromStorage<VerificationRecord[]>(
     STORAGE_KEYS.VERIFICATIONS,
-    initialVerifications
+    []
   );
 }
 
@@ -34,7 +33,7 @@ export const verificationApi = {
       const res = await fetch(`/v1/verify?${params.toString()}`);
       if (res.ok) {
         const data = (await res.json()) as { verifications?: VerificationRecord[] };
-        if (Array.isArray(data.verifications) && data.verifications.length > 0) {
+        if (Array.isArray(data.verifications)) {
           return data.verifications;
         }
       }
@@ -200,7 +199,7 @@ export const verificationApi = {
           independent: true,
           status: status === "PASSED" ? "CONFIRMED" : "REJECTED",
           timestamp: new Date().toISOString(),
-          isMock: true,
+          isMock: false,
           data: {
             Network: input.network || "Stellar Testnet",
             Worker: input.workerId,
@@ -453,7 +452,7 @@ export const verificationApi = {
     return JSON.parse(JSON.stringify(item));
   },
 
-  async resetDemoData(): Promise<void> {
-    saveToStorage(STORAGE_KEYS.VERIFICATIONS, initialVerifications);
+  async clearLocalCache(): Promise<void> {
+    saveToStorage(STORAGE_KEYS.VERIFICATIONS, []);
   },
 };

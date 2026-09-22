@@ -10,6 +10,7 @@ export function useVerification(id?: string) {
 
   const fetchRecord = useCallback(async () => {
     if (!id) {
+      setData(null);
       setLoading(false);
       return;
     }

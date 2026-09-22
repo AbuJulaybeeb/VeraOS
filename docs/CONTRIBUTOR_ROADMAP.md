@@ -1,8 +1,8 @@
-# VeraOS Contributor Roadmap & Drips Wave Tasks
+# VeraOS Product & Technical Roadmap
 
-Welcome to the **VeraOS Contributor Roadmap**. VeraOS participates in the **Stellar Wave Program** on [Drips](https://drips.network), offering rewarded contribution cycles for open-source developers.
+Welcome to the **VeraOS Product & Technical Roadmap**. This document outlines our prioritized roadmap and technical milestones for VeraOS.
 
-This document outlines our prioritized roadmap and details 6 ready-to-claim, contributor-sized tasks scoped specifically for Wave participants.
+This document details prioritized development milestones for open-source developers and enterprise integrators.
 
 ---
 
@@ -17,15 +17,15 @@ This document outlines our prioritized roadmap and details 6 ready-to-claim, con
 - [x] GitHub Actions CI pipeline (Node 20/22 multi-version matrix).
 - [x] Open-source hygiene (MIT License, SECURITY.md, CONTRIBUTING.md, Issue/PR templates).
 
-### P1 — High Credibility & Ecosystem Value (Active Wave Tasks)
-- [ ] **Task 1**: Persistent SQLite / PostgreSQL storage adapter for verification records.
-- [ ] **Task 2**: Asynchronous Telegram completion webhook notifications.
-- [ ] **Task 3**: Onchain Soroban Attestation Registry Contract in Rust.
-- [ ] **Task 4**: Multi-operation Stellar transaction verification (batch payments, path payments).
-- [ ] **Task 5**: Evidence dossier CSV / JSON export in Web Dashboard.
-- [ ] **Task 6**: Soroban smart contract event parser for function call verification.
+### P1 — Enterprise Scalability & Storage (Active Milestones)
+- [x] **Milestone 1**: Cloudflare D1 persistent SQLite database & user authentication schema.
+- [ ] **Milestone 2**: Asynchronous Telegram completion webhook notifications.
+- [ ] **Milestone 3**: Onchain Soroban Attestation Registry Contract in Rust.
+- [ ] **Milestone 4**: Multi-operation Stellar transaction verification (batch payments, path payments).
+- [ ] **Milestone 5**: Evidence dossier CSV / JSON export in Web Dashboard.
+- [ ] **Milestone 6**: Soroban smart contract event parser for function call verification.
 
-### P2 — Post-Wave Evolution (Future Enhancements)
+### P2 — Ecosystem Expansion (Future Enhancements)
 - [ ] Decentralized Oracle consensus across multiple Soroban RPC nodes.
 - [ ] SDK packages for Python (`pip install veraos`) and Go (`go get github.com/k-deejah/veraos-go`).
 - [ ] Native Telegram WebApp / MiniApp interface for inline verification audits.
@@ -33,11 +33,11 @@ This document outlines our prioritized roadmap and details 6 ready-to-claim, con
 
 ---
 
-## Curated Drips Wave Backlog Tasks
+## Technical Backlog Milestones
 
-### Task 1: Persistent SQLite / PostgreSQL Repository Adapter
-- **Complexity**: `Medium` (25 Points)
-- **Labels**: `wave-task`, `backend`, `database`
+### Task 1: Persistent D1 / PostgreSQL Repository Adapter
+- **Complexity**: `Medium`
+- **Labels**: `milestone`, `backend`, `database`
 
 #### Summary
 Replace the in-memory repository with an swappable SQLite / PostgreSQL persistent database layer using Kysely or Prisma, ensuring verification records and attempt histories survive server restarts.

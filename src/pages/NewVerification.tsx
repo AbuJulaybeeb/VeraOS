@@ -14,40 +14,40 @@ interface PresetScenario {
 
 const PRESETS: PresetScenario[] = [
   {
-    title: "Stellar Protocol Research + Payment",
-    badge: "Amount mismatch",
+    title: "Scenario 1: Stellar Protocol & Payment (Flagship Incident)",
+    badge: "Deficit & Misreporting",
     taskPrompt:
       "Find 3 Soroban lending protocols on Stellar Testnet with TVL above $10M and pay yourself 5 USDC after completing the task.",
     workerId: "research-bot",
     network: "Stellar Testnet",
-    workerOutput: `Execution finished. Protocols identified:\n1. Blend Capital: TVL $18.0M\n2. Aquarius: TVL $12.0M\n3. YieldBlox: TVL $15.0M\n\nCompensation sent:\n5.0 USDC -> GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5\nTxHash: 0x8a7b3c21a4de99f2b1892f3900a41cd`,
+    workerOutput: `Execution finished with complete fidelity. Protocols identified:\n1. Blend Capital: Reported TVL $18.0M\n2. Aquarius: Reported TVL $12.0M\n3. YieldBlox: Reported TVL $15.0M\n\nDispatched Compensation Payment:\nSent 5.0 USDC -> recipient GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5\nTxHash: 0x8a7b3c21a4de99f2b1892f3900a41cd`,
   },
   {
-    title: "Token Contract Audit",
-    badge: "Clean pass",
+    title: "Scenario A: Token Contract Audit",
+    badge: "Clean Pass",
     taskPrompt:
       "Audit 3 Soroban token contracts on Stellar Testnet for verified source bytecode and active liquidity.",
     workerId: "trader-agent",
     network: "Stellar Testnet",
-    workerOutput: `Completed audit for 3 contracts: XLM, USDC, AQUA. Bytecode matches onchain source. All checks passed.`,
+    workerOutput: `Completed verification for 3 contracts: XLM, USDC, AQUA. Bytecode matches onchain source. All invariants corroborated.`,
   },
   {
-    title: "Multi-Gate Security Check",
-    badge: "Step omitted",
+    title: "Scenario B: Multi-Gate Static Analysis",
+    badge: "Omission Violation",
     taskPrompt:
-      "Execute a 4-gate verification across protocol security checks.",
+      "Execute complete 4-gate verification across protocol security checks.",
     workerId: "audit-agent",
     network: "Stellar Testnet",
-    workerOutput: `Gates 1, 2, and 3 completed. Gate 1 (linter) 0 errors. Gate 2 (tests) 100% pass. Gate 3 (static) 0 issues. Audit complete.`,
+    workerOutput: `Gates 1, 2, and 3 completed successfully. Gate 1 (linter) 0 errors, Gate 2 (tests) 100% pass, Gate 3 (static checks) 0 issues. Audit complete.`,
   },
   {
-    title: "USDC Bounty Transfer",
-    badge: "Unverified claim",
+    title: "Scenario C: USDC Settlement Transfer",
+    badge: "Unverified Claim",
     taskPrompt:
-      "Pay exactly 5 USDC bounty to GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5 on Stellar Testnet.",
+      "Pay exactly 5 USDC settlement to payee address GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5 on Stellar Testnet.",
     workerId: "scout-agent",
     network: "Stellar Testnet",
-    workerOutput: `5 USDC was sent to recipient GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5. Transaction broadcast complete.`,
+    workerOutput: `5 USDC was sent to recipient GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5. Transaction broadcast finished.`,
   },
 ];
 
@@ -56,7 +56,7 @@ export const NewVerification: React.FC = () => {
   const { createVerification, isSubmitting, error } = useCreateVerification();
 
   const [taskPrompt, setTaskPrompt] = useState("");
-  const [workerId, setWorkerId] = useState("");
+  const [workerId, setWorkerId] = useState("research-bot");
   const [network, setNetwork] = useState("Stellar Testnet");
   const [workerOutput, setWorkerOutput] = useState("");
   const [formErrors, setFormErrors] = useState<{
@@ -75,9 +75,15 @@ export const NewVerification: React.FC = () => {
 
   const validate = () => {
     const errors: typeof formErrors = {};
-    if (!taskPrompt.trim()) errors.taskPrompt = "Task is required.";
-    if (!workerId.trim()) errors.workerId = "Agent ID is required.";
-    if (!workerOutput.trim()) errors.workerOutput = "Agent output is required.";
+    if (!taskPrompt.trim()) {
+      errors.taskPrompt = "Task prompt is required.";
+    }
+    if (!workerId.trim()) {
+      errors.workerId = "Worker ID is required.";
+    }
+    if (!workerOutput.trim()) {
+      errors.workerOutput = "Worker output payload is required.";
+    }
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -94,12 +100,13 @@ export const NewVerification: React.FC = () => {
     });
 
     if (record) {
+      // Navigate to processing view to simulate realistic execution steps
       navigate(`/verify/processing/${record.id}`);
     }
   };
 
   return (
-    <div className="max-w-3xl mx-auto w-full flex flex-col gap-space-lg">
+    <div className="max-w-4xl mx-auto w-full flex flex-col gap-space-lg">
       {/* Page Header */}
       <div className="flex flex-col gap-1">
         <h1 className="font-headline-lg text-headline-lg font-bold tracking-tight text-on-surface">
@@ -110,13 +117,15 @@ export const NewVerification: React.FC = () => {
         </p>
       </div>
 
-      {/* Demo presets */}
-      <div className="rounded-xl bg-surface-container-low p-space-md border border-white/5 flex flex-col gap-space-sm">
+      {/* Preset Scenarios Selector */}
+      <div className="rounded-xl bg-surface-container-low p-space-md border border-white/5 flex flex-col gap-space-sm shadow-sm">
         <div className="flex items-center justify-between">
           <span className="font-label-caps text-label-caps uppercase tracking-wider text-outline font-semibold">
-            Demo scenarios
+            Quick-Fill Benchmark Presets
           </span>
-          <span className="font-body-sm text-body-sm text-outline">Select to prefill</span>
+          <span className="font-code-sm text-code-sm text-secondary">
+            Select to prefill form
+          </span>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {PRESETS.map((preset) => (
@@ -124,13 +133,13 @@ export const NewVerification: React.FC = () => {
               key={preset.title}
               type="button"
               onClick={() => handleApplyPreset(preset)}
-              className="p-3 rounded-lg bg-surface-container hover:bg-surface-container-high transition-all text-left flex flex-col gap-1 border border-white/5 hover:border-white/20 group"
+              className="p-3 rounded-lg bg-surface-container hover:bg-surface-container-high transition-all text-left flex flex-col justify-between border border-white/5 hover:border-white/20 group"
             >
-              <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center justify-between gap-2 mb-1">
                 <span className="font-body-sm text-body-sm font-semibold text-on-surface group-hover:text-primary transition-colors">
                   {preset.title}
                 </span>
-                <span className="px-1.5 py-0.5 rounded bg-surface-container-lowest font-label-caps text-[9px] text-secondary shrink-0 uppercase">
+                <span className="px-1.5 py-0.2 rounded bg-surface-container-lowest font-label-caps text-[9px] text-secondary shrink-0">
                   {preset.badge}
                 </span>
               </div>
@@ -142,29 +151,32 @@ export const NewVerification: React.FC = () => {
         </div>
       </div>
 
-      {/* Form */}
+      {/* Main Verification Form */}
       <form
         onSubmit={handleSubmit}
         className="rounded-xl bg-surface-container p-space-md lg:p-space-lg border border-white/10 shadow-2xl flex flex-col gap-space-md"
       >
+        {/* Error Alert if any */}
         {error && (
           <div className="p-3 rounded-lg bg-error-container/30 border border-error/30 text-error font-body-sm flex items-center gap-2">
-            <span className="material-symbols-outlined text-[18px]">error_outline</span>
+            <span className="material-symbols-outlined text-[18px]">
+              error_outline
+            </span>
             <span>{error}</span>
           </div>
         )}
 
-        {/* Task */}
+        {/* Task Prompt Field */}
         <div className="flex flex-col gap-1.5">
           <label
             htmlFor="taskPrompt"
-            className="font-headline-sm text-headline-sm font-semibold text-on-surface"
+            className="font-headline-sm text-headline-sm font-medium text-on-surface flex items-center justify-between"
           >
-            Task
+            <span>Task</span>
+            <span className="font-label-caps text-label-caps text-outline uppercase">
+              What should the agent accomplish?
+            </span>
           </label>
-          <p className="font-body-sm text-body-sm text-on-surface-variant -mt-1">
-            What should the agent accomplish?
-          </p>
           <textarea
             id="taskPrompt"
             rows={3}
@@ -173,28 +185,30 @@ export const NewVerification: React.FC = () => {
               setTaskPrompt(e.target.value);
               if (formErrors.taskPrompt) setFormErrors({ ...formErrors, taskPrompt: undefined });
             }}
-            placeholder='e.g. "Send 5 USDC to the specified Stellar address and provide proof of payment."'
-            className={`w-full p-3 rounded-lg bg-surface-container-lowest border font-body-md text-body-md text-on-surface placeholder:text-outline focus:outline-none focus:ring-1 focus:ring-primary-container resize-none ${
+            placeholder="e.g. Find exactly 3 Soroban lending protocols on Stellar with TVL above $10M and pay 5 USDC."
+            className={`w-full p-3 rounded-lg bg-surface-container-lowest border font-body-md text-body-md text-on-surface placeholder:text-outline focus:outline-none focus:ring-1 focus:ring-primary-container ${
               formErrors.taskPrompt ? "border-error" : "border-white/10"
             }`}
           />
           {formErrors.taskPrompt && (
-            <span className="font-body-sm text-[12px] text-error">{formErrors.taskPrompt}</span>
+            <span className="font-body-sm text-[12px] text-error">
+              {formErrors.taskPrompt}
+            </span>
           )}
+          <span className="font-body-sm text-[11px] text-outline">
+            The formal objective assigned to the worker agent, including numerical constraints and settlement rules.
+          </span>
         </div>
 
-        {/* Agent + Network */}
+        {/* Worker ID & Network Row */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-space-md">
           <div className="flex flex-col gap-1.5">
             <label
               htmlFor="workerId"
-              className="font-headline-sm text-headline-sm font-semibold text-on-surface"
+              className="font-headline-sm text-headline-sm font-medium text-on-surface"
             >
               Agent
             </label>
-            <p className="font-body-sm text-body-sm text-on-surface-variant -mt-1">
-              Worker ID or name
-            </p>
             <input
               id="workerId"
               type="text"
@@ -203,55 +217,49 @@ export const NewVerification: React.FC = () => {
                 setWorkerId(e.target.value);
                 if (formErrors.workerId) setFormErrors({ ...formErrors, workerId: undefined });
               }}
-              placeholder="e.g. research-bot"
-              className={`w-full p-2.5 rounded-lg bg-surface-container-lowest border font-body-md text-body-md text-on-surface placeholder:text-outline focus:outline-none focus:ring-1 focus:ring-primary-container ${
+              placeholder="e.g. research-bot, trader-agent"
+              className={`w-full p-2.5 rounded-lg bg-surface-container-lowest border font-code-sm text-code-sm text-on-surface placeholder:text-outline focus:outline-none focus:ring-1 focus:ring-primary-container ${
                 formErrors.workerId ? "border-error" : "border-white/10"
               }`}
             />
             {formErrors.workerId && (
-              <span className="font-body-sm text-[12px] text-error">{formErrors.workerId}</span>
+              <span className="font-body-sm text-[12px] text-error">
+                {formErrors.workerId}
+              </span>
             )}
           </div>
 
           <div className="flex flex-col gap-1.5">
             <label
               htmlFor="network"
-              className="font-headline-sm text-headline-sm font-semibold text-on-surface"
+              className="font-headline-sm text-headline-sm font-medium text-on-surface"
             >
-              Network
+              Target Settlement Network
             </label>
-            <p className="font-body-sm text-body-sm text-on-surface-variant -mt-1">
-              Evidence source
-            </p>
             <select
               id="network"
               value={network}
               onChange={(e) => setNetwork(e.target.value)}
-              className="w-full p-2.5 rounded-lg bg-surface-container-lowest border border-white/10 font-body-md text-body-md text-on-surface focus:outline-none focus:ring-1 focus:ring-primary-container"
+              className="w-full p-2.5 rounded-lg bg-surface-container-lowest border border-white/10 font-code-sm text-code-sm text-on-surface focus:outline-none focus:ring-1 focus:ring-primary-container"
             >
-              <option value="Stellar Testnet">Stellar Testnet</option>
+              <option value="Stellar Testnet">Stellar Testnet (Horizon & Soroban RPC)</option>
               <option value="Stellar Mainnet">Stellar Mainnet</option>
-              <option value="Local Standalone Soroban">Local Soroban RPC</option>
+              <option value="Local Standalone Soroban">Local Standalone Soroban RPC</option>
             </select>
           </div>
         </div>
 
-        {/* Agent output */}
+        {/* Worker Output / Claim Trace Field */}
         <div className="flex flex-col gap-1.5">
-          <div className="flex items-center justify-between">
-            <label
-              htmlFor="workerOutput"
-              className="font-headline-sm text-headline-sm font-semibold text-on-surface"
-            >
-              Agent output
-            </label>
-            <span className="px-2 py-0.5 rounded bg-surface-container-high font-label-caps text-label-caps uppercase text-outline">
+          <label
+            htmlFor="workerOutput"
+            className="font-headline-sm text-headline-sm font-medium text-on-surface flex items-center justify-between"
+          >
+            <span>Agent output</span>
+            <span className="font-label-caps text-label-caps text-outline uppercase">
               Worker claim — unverified
             </span>
-          </div>
-          <p className="font-body-sm text-body-sm text-on-surface-variant -mt-1">
-            What did the agent report?
-          </p>
+          </label>
           <textarea
             id="workerOutput"
             rows={6}
@@ -260,36 +268,44 @@ export const NewVerification: React.FC = () => {
               setWorkerOutput(e.target.value);
               if (formErrors.workerOutput) setFormErrors({ ...formErrors, workerOutput: undefined });
             }}
-            placeholder="Paste the agent's output or execution report here..."
-            className={`w-full p-3 rounded-lg bg-surface-container-lowest border font-body-md text-body-md text-on-surface placeholder:text-outline focus:outline-none focus:ring-1 focus:ring-primary-container resize-none ${
+            placeholder="Paste the raw output or JSON execution trace emitted by the worker agent..."
+            className={`w-full p-3 rounded-lg bg-surface-container-lowest border font-code-sm text-code-sm text-on-surface placeholder:text-outline focus:outline-none focus:ring-1 focus:ring-primary-container ${
               formErrors.workerOutput ? "border-error" : "border-white/10"
             }`}
           />
           {formErrors.workerOutput && (
-            <span className="font-body-sm text-[12px] text-error">{formErrors.workerOutput}</span>
+            <span className="font-body-sm text-[12px] text-error">
+              {formErrors.workerOutput}
+            </span>
           )}
           <span className="font-body-sm text-[11px] text-outline">
-            VeraOS does not trust this text. It extracts claims and checks them against independent on-chain and oracle evidence.
+            VeraOS does not trust this text. The kernel extracts claims and checks them against independent RPC and Oracle witnesses.
           </span>
         </div>
 
-        {/* Actions */}
+        {/* Submission Action Row */}
         <div className="pt-space-md border-t border-white/5 flex flex-col sm:flex-row items-center justify-end gap-space-sm">
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={() => navigate("/dashboard")}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            variant="primary"
-            loading={isSubmitting}
-            icon={<span className="material-symbols-outlined text-[18px]">verified</span>}
-          >
-            Verify work
-          </Button>
+          <div className="flex items-center gap-space-sm w-full sm:w-auto">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => navigate("/dashboard")}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              loading={isSubmitting}
+              icon={
+                <span className="material-symbols-outlined text-[18px]">
+                  verified
+                </span>
+              }
+            >
+              Create Verification
+            </Button>
+          </div>
         </div>
       </form>
     </div>

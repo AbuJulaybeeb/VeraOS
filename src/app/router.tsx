@@ -1,6 +1,8 @@
 import React, { Suspense, lazy } from "react";
-import { createBrowserRouter } from "react-router-dom";
+import { createBrowserRouter, Navigate, Outlet } from "react-router-dom";
 import { AppShell } from "../components/layout/AppShell";
+import { AuthModal } from "../components/auth/AuthModal";
+import { AgentConnectModal } from "../components/agent/AgentConnectModal";
 
 const LandingPage = lazy(() =>
   import("../pages/LandingPage").then((m) => ({ default: m.LandingPage }))
@@ -32,9 +34,23 @@ const ConnectAgent = lazy(() =>
 const Docs = lazy(() =>
   import("../pages/Docs").then((m) => ({ default: m.Docs }))
 );
+const InvitePortal = lazy(() =>
+  import("../pages/InvitePortal").then((m) => ({ default: m.InvitePortal }))
+);
+const PrivacyPolicy = lazy(() =>
+  import("../pages/PrivacyPolicy").then((m) => ({ default: m.PrivacyPolicy }))
+);
+const TermsConditions = lazy(() =>
+  import("../pages/TermsConditions").then((m) => ({ default: m.TermsConditions }))
+);
 const NotFound = lazy(() =>
   import("../pages/NotFound").then((m) => ({ default: m.NotFound }))
 );
+const Account = lazy(() =>
+  import("../pages/Account").then((m) => ({ default: m.Account }))
+);
+
+import { RouteErrorFallback } from "../components/common/RouteErrorFallback";
 
 const PageLoader = () => (
   <div className="min-h-[50vh] flex flex-col items-center justify-center gap-3 text-on-surface-variant">
@@ -42,10 +58,25 @@ const PageLoader = () => (
   </div>
 );
 
+const RootLayout: React.FC = () => {
+  return (
+    <>
+      <Outlet />
+      <AuthModal />
+      <AgentConnectModal />
+    </>
+  );
+};
+
 export const router = createBrowserRouter([
+  {
+    element: <RootLayout />,
+    errorElement: <RouteErrorFallback />,
+    children: [
   // Landing Page
   {
     path: "/",
+    errorElement: <RouteErrorFallback />,
     element: (
       <Suspense fallback={<PageLoader />}>
         <LandingPage />
@@ -56,6 +87,7 @@ export const router = createBrowserRouter([
   // Documentation Site
   {
     path: "/docs",
+    errorElement: <RouteErrorFallback />,
     element: (
       <Suspense fallback={<PageLoader />}>
         <Docs />
@@ -63,9 +95,43 @@ export const router = createBrowserRouter([
     ),
   },
 
+  // Enterprise Invitation Portal
+  {
+    path: "/invite",
+    errorElement: <RouteErrorFallback />,
+    element: (
+      <Suspense fallback={<PageLoader />}>
+        <InvitePortal />
+      </Suspense>
+    ),
+  },
+
+  // Legal: Privacy Policy
+  {
+    path: "/privacy",
+    errorElement: <RouteErrorFallback />,
+    element: (
+      <Suspense fallback={<PageLoader />}>
+        <PrivacyPolicy />
+      </Suspense>
+    ),
+  },
+
+  // Legal: Terms & Conditions
+  {
+    path: "/terms",
+    errorElement: <RouteErrorFallback />,
+    element: (
+      <Suspense fallback={<PageLoader />}>
+        <TermsConditions />
+      </Suspense>
+    ),
+  },
+
   // Authenticated App Shell Routes
   {
     element: <AppShell />,
+    errorElement: <RouteErrorFallback />,
     children: [
       {
         path: "/dashboard",
@@ -140,6 +206,14 @@ export const router = createBrowserRouter([
         ),
       },
       {
+        path: "/account",
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <Account />
+          </Suspense>
+        ),
+      },
+      {
         path: "*",
         element: (
           <Suspense fallback={<PageLoader />}>
@@ -147,6 +221,8 @@ export const router = createBrowserRouter([
           </Suspense>
         ),
       },
+    ],
+  },
     ],
   },
 ]);

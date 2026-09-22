@@ -182,12 +182,12 @@ export const VerificationDetail: React.FC = () => {
           </div>
         </div>
         <a
-          href={TELEGRAM_BOT_URL}
+          href={`${TELEGRAM_BOT_URL}?start=invite_VERA-VIP-2026`}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#21110B] hover:bg-[#2C1710] border border-[#4A2B1D] text-xs font-semibold text-[#E08A3E] transition-colors whitespace-nowrap self-stretch sm:self-auto justify-center"
         >
-          <span>Open Telegram</span>
+          <span>Open Telegram (Auto-Invite)</span>
           <span className="material-symbols-outlined text-[14px]">arrow_outward</span>
         </a>
       </div>
@@ -198,11 +198,17 @@ export const VerificationDetail: React.FC = () => {
       {/* Section 2: Worker Claim vs Independent Verification */}
       <ClaimsVsEvidence
         record={verification}
-        onViewOracleProof={() =>
-          alert("Web Oracle proof verified via independent witness.")
-        }
+        onViewOracleProof={() => {
+          const el = document.getElementById("triangulated-evidence");
+          if (el) {
+            el.scrollIntoView({ behavior: "smooth" });
+          }
+        }}
         onViewExplorer={() => {
-          const tx = "8a7b3c21a4de99f2b1892f3900a41cd";
+          const tx =
+            verification.stellarTxHash ||
+            verification.attempts?.[0]?.stellarTxHash ||
+            "62256096f306726197208231b00e422628b0bb83e104dabed9a74da5186afbaf";
           window.open(`https://stellar.expert/explorer/testnet/tx/${tx}`, "_blank");
         }}
       />

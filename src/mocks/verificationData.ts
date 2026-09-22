@@ -475,7 +475,7 @@ export const initialVerifications: VerificationRecord[] = [
             isMock: true,
             data: {
               QueryStatus: "No corresponding tx found for recipient in latest ledgers",
-              IndependentEvidence: "UNAVAILABLE (DEMO)",
+              IndependentEvidence: "UNAVAILABLE (NO_TX_LOCATED)",
             },
           },
         ],

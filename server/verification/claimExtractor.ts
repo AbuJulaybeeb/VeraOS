@@ -116,6 +116,34 @@ export class ClaimExtractor {
         },
         source: "worker",
       });
+    } else {
+      // Check if output is a direct transaction hash (e.g. pasted during /resubmit)
+      const txMatch =
+        trimmed.match(/\b(?:txhash|tx|hash):\s*([0-9a-fA-F]{64}|0x[0-9a-fA-F]{16,66})\b/i) ||
+        trimmed.match(/\b(0x[a-fA-F0-9]{16,66})\b/) ||
+        trimmed.match(/\b([a-fA-F0-9]{64})\b/);
+      const txHash = txMatch ? txMatch[1] : undefined;
+
+      const txReq = requirements.find((r) => r.type === "transaction");
+      if (txHash && txReq) {
+        const expectedReq = txReq.expected as { amount?: number; token?: string; recipient?: string } | undefined;
+        const amount = expectedReq?.amount ?? 5;
+        const token = expectedReq?.token ?? "USDC";
+        const recipient = expectedReq?.recipient;
+
+        claims.push({
+          id: `c${claimIndex++}`,
+          requirementId: txReq.id,
+          statement: `Payment transaction submitted: ${txHash}`,
+          value: {
+            amount,
+            token,
+            txHash,
+            recipient,
+          },
+          source: "worker",
+        });
+      }
     }
 
     // 3. Extract Token Audit item claims (e.g. "CBETH, BRETT, DEGEN")

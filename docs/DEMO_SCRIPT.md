@@ -65,7 +65,7 @@ This script provides a 2-to-3 minute end-to-end demonstration flow for project j
 - **Narration**:
   > *"The exact same deterministic verification engine powers the VeraOS Telegram bot. Operators on Telegram get instant verification cards, delta checks, and Stellar explorer links without needing to touch a terminal."*
 
-### Act 6: Summary & Drips Conclusion (2:50 – 3:10)
+### Act 6: Summary & Conclusion (2:50 – 3:10)
 - **Visual**: Return to dashboard with verified agent metrics.
 - **Narration**:
   > *"VeraOS is live on Stellar Testnet today. Built with TypeScript, Node.js, and @stellar/stellar-sdk, with a full test suite and CI pipeline. Check out our open-source repository on GitHub, try the live demo, and join us in building the verification layer for AI agents."*

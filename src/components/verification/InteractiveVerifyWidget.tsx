@@ -54,6 +54,7 @@ export const InteractiveVerifyWidget: React.FC = () => {
 
   const handleRunVerification = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!taskPrompt.trim() || !workerOutput.trim()) {
       setError("Please provide both a task specification and worker output.");
       return;
@@ -213,13 +214,13 @@ export const InteractiveVerifyWidget: React.FC = () => {
                 <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
               </Link>
               <a
-                href={TELEGRAM_BOT_URL}
+                href={`${TELEGRAM_BOT_URL}?start=invite_VERA-VIP-2026`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-3 py-1.5 rounded-lg bg-[#21110B] hover:bg-[#2C1710] text-[#E08A3E] border border-[#4A2B1D] font-medium transition-colors flex items-center gap-1"
-                title="Inspect in Telegram with /status"
+                title="Inspect in Telegram with auto-invite"
               >
-                <span>Check in Telegram</span>
+                <span>Check in Telegram (Auto-Invite)</span>
                 <span className="material-symbols-outlined text-[13px]">arrow_outward</span>
               </a>
             </div>
