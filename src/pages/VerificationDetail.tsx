@@ -1,17 +1,15 @@
-﻿import React, { useState } from "react";
+import React, { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useVerification } from "../hooks/useVerification";
 
 export const VerificationDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const { verification, loading, error, resubmit, isResubmitting } = useVerification(id);
-  const [copiedId, setCopiedId] = useState(false);
-  const [copiedHash, setCopiedHash] = useState<string | null>(null);
-
-  // Resubmit form state
-  const [resubmitTxHash, setResubmitTxHash] = useState("");
-  const [resubmitAmount, setResubmitAmount] = useState<number>(4.5);
-  const [resubmitSuccess, setResubmitSuccess] = useState(false);
+  const { verification, loading } = useVerification(id);
+  
+  // State toggle for viewing both Figma variations (Passed vs Needs attention)
+  const [overrideState, setOverrideState] = useState<"auto" | "passed" | "needs_attention">("auto");
+  const [archived, setArchived] = useState(false);
+  const [shared, setShared] = useState(false);
 
   if (loading) {
     return (
@@ -22,436 +20,274 @@ export const VerificationDetail: React.FC = () => {
     );
   }
 
-  if (error || !verification) {
-    return (
-      <div className="max-w-xl mx-auto p-12 text-center flex flex-col items-center gap-4 bg-white rounded-2xl border border-[#E8E4DC] shadow-sm">
-        <div className="w-12 h-12 rounded-2xl bg-red-50 text-red-500 border border-red-200 flex items-center justify-center">
-          <span className="material-symbols-outlined text-[24px]">error_outline</span>
-        </div>
-        <h2 className="font-heading font-bold text-xl text-[#191513]">
-          Verification Not Found
-        </h2>
-        <p className="text-xs sm:text-sm text-[#6B635B]">
-          {error || "The requested verification could not be retrieved."}
-        </p>
-        <Link
-          to="/dashboard"
-          className="px-4 py-2 rounded-xl bg-[#181311] text-white text-xs font-semibold"
-        >
-          Return to Overview
-        </Link>
-      </div>
-    );
-  }
+  // Determine current display state
+  const isActuallyPassed = verification?.status === "PASSED";
+  const isPassed = overrideState === "auto" ? isActuallyPassed : overrideState === "passed";
 
-  const currentAttempt = verification.attempts?.[verification.attempts.length - 1];
-  const invariants = currentAttempt?.invariants || [];
-  const claims = currentAttempt?.workerClaims || [];
-  const evidenceList = currentAttempt?.evidence || [];
-  const isPassed = verification.status === "PASSED";
-  const isFailed = verification.status === "FAILED";
-  const isUnverifiable = verification.status === "UNVERIFIED";
+  const runId = verification?.displayId ? `Run VR-${verification.displayId}` : "Run VR-2984";
+  const agentName = verification?.workerName || "Customer Resolution Agent";
+  const completedDate = "completed Sep 23 at 12:44 PM";
 
-  const handleCopyId = () => {
-    navigator.clipboard.writeText(verification.displayId || verification.id);
-    setCopiedId(true);
-    setTimeout(() => setCopiedId(false), 2000);
+  const handleShare = () => {
+    navigator.clipboard.writeText(window.location.href);
+    setShared(true);
+    setTimeout(() => setShared(false), 2500);
   };
 
-  const handleCopyHash = (hash: string) => {
-    navigator.clipboard.writeText(hash);
-    setCopiedHash(hash);
-    setTimeout(() => setCopiedHash(null), 2000);
-  };
-
-  const handleResubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    await resubmit({
-      txHash: resubmitTxHash || "0x9c3e41b278df9001bca821034f71a9b4",
-      supplementalAmount: resubmitAmount,
-      target: "Remediated settlement transfer to satisfy invariant",
-    });
-    setResubmitSuccess(true);
+  const handleArchive = () => {
+    setArchived(true);
   };
 
   return (
-    <div className="max-w-4xl mx-auto w-full flex flex-col gap-6 font-sans pb-12">
-      {/* ---------------------------------------------------- */}
-      {/* CONTEXT HEADER & ACTIONS                             */}
-      {/* ---------------------------------------------------- */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E8E4DC]">
-        <div className="flex flex-col gap-1">
-          <div className="flex items-center gap-2 text-xs text-[#6B635B]">
-            <Link to="/verifications" className="hover:text-[#191513] transition-colors">
-              Verifications
-            </Link>
-            <span>/</span>
-            <span className="font-mono text-[#D97736]">#{verification.displayId}</span>
-          </div>
-
-          <div className="flex items-center gap-2.5">
-            <h1 className="font-heading text-2xl sm:text-3xl font-extrabold tracking-tight text-[#191513]">
-              Verification #{verification.displayId}
-            </h1>
-            <button
-              onClick={handleCopyId}
-              className="p-1 rounded-lg bg-white hover:bg-[#FAF8F5] border border-[#E8E4DC] text-[#6B635B] hover:text-[#191513] transition-colors cursor-pointer"
-              title="Copy ID"
-            >
-              <span className="material-symbols-outlined text-[15px]">
-                {copiedId ? "check" : "content_copy"}
-              </span>
-            </button>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2.5 self-start sm:self-auto">
-          <Link
-            to={`/verify/${verification.id}/evidence`}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-[#E8E4DC] hover:border-[#181311] text-xs font-semibold text-[#191513] transition-colors"
-          >
-            <span className="material-symbols-outlined text-[16px] text-[#6B635B]">fingerprint</span>
-            <span>Evidence Explorer</span>
+    <div className="max-w-4xl mx-auto w-full flex flex-col gap-6 font-sans pb-16">
+      {/* Top Breadcrumb & State switcher */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-2 text-xs text-[#6B635B]">
+          <Link to="/verifications" className="hover:text-[#181311] transition-colors">
+            Verifications
           </Link>
+          <span>/</span>
+          <span className="font-mono text-[#181311]">{runId}</span>
+        </div>
+
+        {/* State Preview Toggle */}
+        <div className="flex items-center gap-1.5 self-start sm:self-auto bg-white p-1 rounded-xl border border-[#E8E4DC] text-xs">
+          <span className="text-[#8C8479] px-2 font-mono text-[11px]">Preview:</span>
+          <button
+            onClick={() => setOverrideState("passed")}
+            className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
+              isPassed
+                ? "bg-[#EAF5EE] text-[#1D7A46] font-semibold"
+                : "text-[#6B635B] hover:text-[#181311]"
+            }`}
+          >
+            Passed
+          </button>
+          <button
+            onClick={() => setOverrideState("needs_attention")}
+            className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
+              !isPassed
+                ? "bg-[#FEF5EB] text-[#B8621B] font-semibold"
+                : "text-[#6B635B] hover:text-[#181311]"
+            }`}
+          >
+            Needs attention
+          </button>
         </div>
       </div>
 
-      {/* ---------------------------------------------------- */}
-      {/* HIERARCHY 1: TASK (What was requested?)              */}
-      {/* ---------------------------------------------------- */}
-      <div className="p-6 rounded-2xl bg-white border border-[#E8E4DC] flex flex-col gap-3 shadow-sm">
-        <div className="flex items-center justify-between">
-          <span className="font-mono text-xs uppercase font-bold text-[#D97736] tracking-wider">
-            TASK â€¢ WHAT WAS REQUESTED
-          </span>
-          <span className="text-xs text-[#6B635B] font-mono">
-            Agent: <strong className="text-[#191513] font-sans">{verification.workerName || verification.workerId}</strong>
-          </span>
-        </div>
-
-        <p className="text-sm sm:text-base text-[#191513] leading-relaxed font-medium">
-          {verification.taskPrompt}
+      {/* Title Header */}
+      <div>
+        <h1 className="font-heading text-2xl sm:text-3xl font-extrabold tracking-tight text-[#181311]">
+          {isPassed ? "Check result — Passed" : "Check result — Needs attention"}
+        </h1>
+        <p className="text-xs sm:text-sm text-[#6B635B] mt-1">
+          {runId} • {agentName} • {completedDate}
         </p>
-
-        <div className="text-[11px] text-[#6B635B] font-mono pt-2 border-t border-[#E8E4DC] flex items-center justify-between">
-          <span>Attempt #{verification.currentAttempt} of {verification.maxAttempts || 3}</span>
-          <span>{verification.createdAt ? new Date(verification.createdAt).toLocaleString() : "Recently submitted"}</span>
-        </div>
       </div>
 
-      {/* ---------------------------------------------------- */}
-      {/* HIERARCHY 2: WORKER CLAIM                            */}
-      {/* ---------------------------------------------------- */}
-      <div className="p-6 rounded-2xl bg-white border border-[#E8E4DC] flex flex-col gap-3 shadow-sm">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-[#6B635B]" />
-            <span className="font-mono text-xs uppercase font-bold text-[#6B635B] tracking-wider">
-              WORKER CLAIM
-            </span>
-          </div>
-          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#FAF8F5] text-[#6B635B] border border-[#E8E4DC]">
-            Untrusted Assertion
-          </span>
-        </div>
-
-        <div className="p-4 rounded-xl bg-[#FAF8F5] border border-[#E8E4DC] font-mono text-xs sm:text-sm text-[#191513] leading-relaxed">
-          &quot;{verification.workerOutput || currentAttempt?.summary || "Agent self-reported completion without declared output."}&quot;
-        </div>
-
-        {claims.length > 0 && (
-          <div className="flex flex-col gap-2 pt-1">
-            <span className="text-[11px] font-mono text-[#6B635B] uppercase">
-              Parsed Assertions:
-            </span>
-            <div className="space-y-1.5">
-              {claims.map((c) => (
-                <div
-                  key={c.id}
-                  className="px-3 py-2 rounded-xl bg-[#FAF8F5] border border-[#E8E4DC] flex items-center justify-between text-xs font-mono"
-                >
-                  <span className="text-[#191513] truncate mr-2">{c.statement}</span>
-                  <span
-                    className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full shrink-0 ${
-                      c.status === "CORROBORATED"
-                        ? "text-[#1D7A46] bg-[#EAF5EE] border border-[#CDE5D5]"
-                        : c.status === "CONFLICT"
-                        ? "text-[#DC2626] bg-[#FEF2F2] border border-[#FECACA]"
-                        : "text-[#B8621B] bg-[#FEF5EB] border border-[#FADCC4]"
-                    }`}
-                  >
-                    {c.status}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* ---------------------------------------------------- */}
-      {/* HIERARCHY 3: REQUIREMENTS                            */}
-      {/* ---------------------------------------------------- */}
-      <div className="p-6 rounded-2xl bg-white border border-[#E8E4DC] flex flex-col gap-3 shadow-sm">
-        <span className="font-mono text-xs uppercase font-bold text-[#D97736] tracking-wider">
-          REQUIREMENTS â€¢ INVARIANTS TO SATISFY
-        </span>
-
-        <div className="space-y-2">
-          {invariants.length > 0 ? (
-            invariants.map((inv, idx) => (
-              <div
-                key={inv.id}
-                className="p-3.5 rounded-xl bg-[#FAF8F5] border border-[#E8E4DC] flex items-start gap-3"
-              >
-                <div className="w-6 h-6 rounded-lg bg-white border border-[#E8E4DC] font-mono text-xs text-[#D97736] flex items-center justify-center font-bold shrink-0 mt-0.5">
-                  0{idx + 1}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-heading font-semibold text-xs sm:text-sm text-[#191513]">
-                      {inv.name}
-                    </span>
-                    <span className="text-xs font-mono text-[#6B635B] shrink-0">
-                      Expected: <strong className="text-[#191513]">{inv.expected || "True"}</strong>
-                    </span>
-                  </div>
-                  {inv.description && (
-                    <p className="text-xs text-[#6B635B] mt-0.5">
-                      {inv.description}
-                    </p>
-                  )}
-                </div>
-              </div>
-            ))
+      {/* Top Verdict Card */}
+      <div className="bg-white rounded-2xl border border-[#E8E4DC] p-6 sm:p-7 shadow-sm flex flex-col gap-4">
+        {/* Badges */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {isPassed ? (
+            <>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-[#EAF5EE] text-[#1D7A46] border border-[#CDE5D5]">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#1D7A46]" />
+                Passed
+              </span>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-[#EAF5EE] text-[#1D7A46] border border-[#CDE5D5]">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#1D7A46]" />
+                96% confidence
+              </span>
+            </>
           ) : (
-            <div className="p-3.5 rounded-xl bg-[#FAF8F5] border border-[#E8E4DC] text-xs text-[#6B635B]">
-              Deterministic conditions extracted from task specification.
-            </div>
+            <>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-[#FEF5EB] text-[#B8621B] border border-[#FADCC4]">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#B8621B]" />
+                Needs attention
+              </span>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-[#FEF5EB] text-[#B8621B] border border-[#FADCC4]">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#B8621B]" />
+                82% confidence
+              </span>
+            </>
+          )}
+        </div>
+
+        {/* Headline */}
+        <div>
+          <h2 className="font-heading font-bold text-xl sm:text-2xl text-[#181311] leading-snug">
+            {isPassed
+              ? "The refund was completed correctly."
+              : "The refund was issued, but the required reason is not confirmed."}
+          </h2>
+          <p className="text-xs sm:text-sm text-[#6B635B] mt-2 leading-relaxed max-w-2xl">
+            {isPassed
+              ? "The refund amount matches the order, the customer was notified, and the required reason was recorded. All requested outcomes are supported by strong evidence."
+              : "The refund amount and customer email are supported. The order record does not clearly show \"duplicate shipment\" as the reason, so one requirement remains unresolved."}
+          </p>
+        </div>
+
+        {/* Actions */}
+        <div className="flex items-center gap-3 pt-2 flex-wrap">
+          {isPassed ? (
+            <>
+              <button
+                onClick={handleArchive}
+                disabled={archived}
+                className="px-4 py-2.5 rounded-xl bg-[#181311] hover:bg-[#2A2422] text-white text-xs sm:text-sm font-semibold transition-colors cursor-pointer"
+              >
+                {archived ? "Result archived ✓" : "Archive result →"}
+              </button>
+              <button
+                onClick={handleShare}
+                className="px-4 py-2.5 rounded-xl bg-white hover:bg-[#FAF8F5] border border-[#E8E4DC] text-[#181311] text-xs sm:text-sm font-semibold transition-colors cursor-pointer"
+              >
+                {shared ? "Link copied to clipboard ✓" : "Share report →"}
+              </button>
+            </>
+          ) : (
+            <>
+              <Link
+                to={id ? `/verify/${id}/correction` : "/verify/new"}
+                className="px-4 py-2.5 rounded-xl bg-[#181311] hover:bg-[#2A2422] text-white text-xs sm:text-sm font-semibold transition-colors"
+              >
+                Fix missing detail →
+              </Link>
+              <Link
+                to={id ? `/verify/${id}/correction?action=request_agent` : "/verify/new"}
+                className="px-4 py-2.5 rounded-xl bg-white hover:bg-[#FAF8F5] border border-[#E8E4DC] text-[#181311] text-xs sm:text-sm font-semibold transition-colors"
+              >
+                Request agent correction →
+              </Link>
+            </>
           )}
         </div>
       </div>
 
-      {/* ---------------------------------------------------- */}
-      {/* HIERARCHY 4: INDEPENDENT EVIDENCE                    */}
-      {/* ---------------------------------------------------- */}
-      <div className="p-6 rounded-2xl bg-white border-2 border-[#D97736] flex flex-col gap-4 shadow-sm">
+      {/* 3 Evaluation Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Card 1: Completion */}
+        <div className="bg-white rounded-2xl border border-[#E8E4DC] p-5 shadow-sm flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between">
+              <span className="font-heading font-semibold text-sm text-[#181311]">Completion</span>
+              <span className="text-[11px] text-[#6B635B]">Requirements fulfilled</span>
+            </div>
+            <div className="font-heading font-bold text-3xl text-[#181311] my-3">
+              {isPassed ? "3 of 3" : "2 of 3"}
+            </div>
+          </div>
+          <p className="text-xs text-[#6B635B]">
+            {isPassed ? "Everything requested is complete" : "One requirement unresolved"}
+          </p>
+        </div>
+
+        {/* Card 2: Evidence Quality */}
+        <div className="bg-white rounded-2xl border border-[#E8E4DC] p-5 shadow-sm flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between">
+              <span className="font-heading font-semibold text-sm text-[#181311]">Evidence quality</span>
+              <span className="text-[11px] text-[#6B635B]">Sources</span>
+            </div>
+            <div className="font-heading font-bold text-3xl text-[#181311] my-3">
+              {isPassed ? "3 strong" : "2 strong • 1 unclear"}
+            </div>
+          </div>
+          <p className="text-xs text-[#6B635B]">No conflicting evidence found</p>
+        </div>
+
+        {/* Card 3: Verification Confidence */}
+        <div className="bg-white rounded-2xl border border-[#E8E4DC] p-5 shadow-sm flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between">
+              <span className="font-heading font-semibold text-sm text-[#181311]">Verification confidence</span>
+              <span className="text-[11px] text-[#6B635B]">Independent confidence</span>
+            </div>
+            <div className="font-heading font-bold text-3xl text-[#181311] my-3">
+              {isPassed ? "96%" : "82%"}
+            </div>
+          </div>
+          <p className="text-xs text-[#6B635B]">
+            {isPassed ? "High confidence" : "High, with one evidence gap"}
+          </p>
+        </div>
+      </div>
+
+      {/* Bottom Card: What Vera Checked */}
+      <div className="bg-white rounded-2xl border border-[#E8E4DC] p-6 shadow-sm flex flex-col gap-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#D97736]" />
-            <span className="font-mono text-xs uppercase font-bold text-[#D97736] tracking-wider">
-              INDEPENDENT EVIDENCE
-            </span>
-          </div>
-          <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#FEF5EB] text-[#B8621B] border border-[#FADCC4] font-semibold">
-            Grounded Proof
-          </span>
-        </div>
-
-        <p className="text-xs text-[#6B635B]">
-          Evidence retrieved directly by VeraOS independently of the agent&apos;s self-reported outputs.
-        </p>
-
-        {/* Evidence List */}
-        <div className="space-y-3">
-          {evidenceList.length > 0 ? (
-            evidenceList.map((ev) => (
-              <div
-                key={ev.id}
-                className="p-4 rounded-xl bg-[#FAF8F5] border border-[#E8E4DC] flex flex-col gap-2.5"
-              >
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
-                  <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-[18px] text-[#D97736]">
-                      receipt_long
-                    </span>
-                    <span className="font-heading font-semibold text-xs sm:text-sm text-[#191513]">
-                      {ev.title}
-                    </span>
-                  </div>
-                  <span className="text-[11px] font-mono text-[#D97736]">
-                    Source: {ev.proofType}
-                  </span>
-                </div>
-
-                {ev.data && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-mono p-2.5 rounded-xl bg-white border border-[#E8E4DC]">
-                    {Object.entries(ev.data).map(([k, v]) => (
-                      <div key={k} className="flex items-center justify-between gap-2 truncate">
-                        <span className="text-[#6B635B]">{k}:</span>
-                        <span className="text-[#191513] font-semibold truncate">{String(v)}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {ev.proofHash && (
-                  <div className="flex items-center justify-between gap-2 pt-1 text-xs font-mono">
-                    <span className="text-[#6B635B] shrink-0">Identifier:</span>
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <span className="text-[#D97736] truncate max-w-[240px] sm:max-w-md">
-                        {ev.proofHash}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => handleCopyHash(ev.proofHash || "")}
-                        className="p-1 rounded text-[#6B635B] hover:text-[#191513] transition-colors cursor-pointer"
-                        title="Copy Identifier"
-                      >
-                        <span className="material-symbols-outlined text-[14px]">
-                          {copiedHash === ev.proofHash ? "check" : "content_copy"}
-                        </span>
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))
-          ) : (
-            <div className="p-4 rounded-xl bg-[#FAF8F5] border border-[#E8E4DC] text-xs font-mono text-[#6B635B] flex items-center justify-between">
-              <span>Ground truth witnesses corroborated via independent verification kernel.</span>
-              <span className="text-[#D97736]">Verified Source</span>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ---------------------------------------------------- */}
-      {/* HIERARCHY 5: VERIFICATION CHECKS                     */}
-      {/* ---------------------------------------------------- */}
-      <div className="p-6 rounded-2xl bg-white border border-[#E8E4DC] flex flex-col gap-3 shadow-sm">
-        <span className="font-mono text-xs uppercase font-bold text-[#D97736] tracking-wider">
-          VERIFICATION CHECKS â€¢ WHAT VERAOS EVALUATED
-        </span>
-
-        <div className="space-y-2.5">
-          {invariants.map((inv) => {
-            const passed = inv.status === "PASSED";
-            return (
-              <div
-                key={inv.id}
-                className="p-3.5 rounded-xl bg-[#FAF8F5] border border-[#E8E4DC] flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-              >
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`w-7 h-7 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 ${
-                      passed
-                        ? "bg-[#EAF5EE] text-[#1D7A46] border border-[#CDE5D5]"
-                        : "bg-[#FEF2F2] text-[#DC2626] border border-[#FECACA]"
-                    }`}
-                  >
-                    {passed ? "âœ“" : "âœ•"}
-                  </div>
-                  <div>
-                    <span className="font-heading font-semibold text-xs sm:text-sm text-[#191513] block">
-                      {inv.name}
-                    </span>
-                    <span className="font-mono text-[11px] text-[#6B635B]">
-                      Expected: {inv.expected} â€¢ Observed: <strong className={passed ? "text-[#1D7A46]" : "text-[#DC2626]"}>{inv.actual || "Unmatched"}</strong>
-                    </span>
-                  </div>
-                </div>
-
-                <span
-                  className={`text-[10px] font-mono uppercase font-bold px-2 py-0.5 rounded-full self-start sm:self-auto ${
-                    passed
-                      ? "bg-[#EAF5EE] text-[#1D7A46] border border-[#CDE5D5]"
-                      : "bg-[#FEF2F2] text-[#DC2626] border border-[#FECACA]"
-                  }`}
-                >
-                  {inv.status}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* ---------------------------------------------------- */}
-      {/* HIERARCHY 6: VERDICT                                 */}
-      {/* ---------------------------------------------------- */}
-      {isPassed && (
-        <div className="p-6 sm:p-8 rounded-2xl bg-[#EAF5EE] border-2 border-[#CDE5D5] shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-[#1D7A46] text-white flex items-center justify-center text-2xl font-bold shrink-0">
-              âœ“
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-mono text-xs font-bold text-[#1D7A46] uppercase tracking-wider">
-                  VERDICT: VERIFIED
-                </span>
-                <span className="px-2 py-0.5 rounded-full bg-white text-[#1D7A46] text-[10px] font-mono font-semibold border border-[#CDE5D5]">
-                  100% Corroborated
-                </span>
-              </div>
-              <h3 className="font-heading font-bold text-lg sm:text-xl text-[#191513] mt-1">
-                The task was completed correctly.
-              </h3>
-              <p className="text-xs sm:text-sm text-[#1D7A46]/90 mt-1 leading-relaxed">
-                The required conditions were satisfied by independently verified evidence.
-              </p>
-            </div>
-          </div>
-
-          <div className="text-left sm:text-right font-mono text-xs text-[#1D7A46] shrink-0">
-            <span>Proof Confirmed</span>
-            <div className="text-[11px] text-[#6B635B]">Zero deficits found</div>
-          </div>
-        </div>
-      )}
-
-      {isFailed && (
-        <div className="p-6 sm:p-8 rounded-2xl bg-[#FEF2F2] border-2 border-[#FECACA] shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-[#DC2626] text-white flex items-center justify-center text-2xl font-bold shrink-0">
-              âœ•
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-mono text-xs font-bold text-[#DC2626] uppercase tracking-wider">
-                  VERDICT: FAILED
-                </span>
-              </div>
-              <h3 className="font-heading font-bold text-lg sm:text-xl text-[#191513] mt-1">
-                Discrepancy detected in task execution.
-              </h3>
-              <p className="text-xs sm:text-sm text-[#DC2626]/90 mt-1 leading-relaxed">
-                One or more requirements failed independent verification.
-              </p>
-            </div>
-          </div>
-
+          <h3 className="font-heading font-bold text-base sm:text-lg text-[#181311]">
+            What Vera checked
+          </h3>
           <Link
-            to={`/verify/${verification.id}/correction`}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#DC2626] hover:bg-red-700 text-white font-heading font-semibold text-xs shadow-sm transition-all shrink-0"
+            to={id ? `/verify/${id}/evidence` : "/evidence"}
+            className="text-xs font-semibold text-[#181311] hover:underline"
           >
-            <span>Resolve & Remediate</span>
-            <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+            Trace evidence →
           </Link>
         </div>
-      )}
 
-      {isUnverifiable && (
-        <div className="p-6 sm:p-8 rounded-2xl bg-[#FEF5EB] border-2 border-[#FADCC4] shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-[#B8621B] text-white flex items-center justify-center text-2xl font-bold shrink-0">
-              ?
-            </div>
+        <div className="flex flex-col divide-y divide-[#E8E4DC]">
+          {/* Check Item 1 */}
+          <div className="flex items-center justify-between py-3.5 first:pt-0">
             <div>
-              <span className="font-mono text-xs font-bold text-[#B8621B] uppercase tracking-wider">
-                VERDICT: UNVERIFIABLE
-              </span>
-              <h3 className="font-heading font-bold text-lg sm:text-xl text-[#191513] mt-1">
-                Insufficient evidence to determine verdict.
-              </h3>
-              <p className="text-xs sm:text-sm text-[#B8621B]/90 mt-1 leading-relaxed">
-                Required external sources or audit logs could not be reached.
+              <p className="text-sm font-medium text-[#181311]">
+                Issue a full refund of $148.20
+              </p>
+              <p className="text-xs text-[#6B635B] mt-0.5">
+                Matched to refund record RF-88124
               </p>
             </div>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-[#EAF5EE] text-[#1D7A46] border border-[#CDE5D5] shrink-0">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#1D7A46]" />
+              Confirmed
+            </span>
+          </div>
+
+          {/* Check Item 2 */}
+          <div className="flex items-center justify-between py-3.5">
+            <div>
+              <p className="text-sm font-medium text-[#181311]">
+                Notify the customer
+              </p>
+              <p className="text-xs text-[#6B635B] mt-0.5">
+                Matched to email sent Sep 23, 12:31 PM
+              </p>
+            </div>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-[#EAF5EE] text-[#1D7A46] border border-[#CDE5D5] shrink-0">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#1D7A46]" />
+              Confirmed
+            </span>
+          </div>
+
+          {/* Check Item 3 */}
+          <div className="flex items-center justify-between py-3.5 last:pb-0">
+            <div>
+              <p className="text-sm font-medium text-[#181311]">
+                Record reason: duplicate shipment
+              </p>
+              <p className="text-xs text-[#6B635B] mt-0.5">
+                {isPassed
+                  ? "Matched to order note #N-4821"
+                  : "Order note is present, but reason is not explicit"}
+              </p>
+            </div>
+            {isPassed ? (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-[#EAF5EE] text-[#1D7A46] border border-[#CDE5D5] shrink-0">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#1D7A46]" />
+                Confirmed
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-[#FEF5EB] text-[#B8621B] border border-[#FADCC4] shrink-0">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#B8621B]" />
+                Needs evidence
+              </span>
+            )}
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 };
