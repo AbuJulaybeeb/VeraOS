@@ -1,4 +1,4 @@
-﻿import React, { useState } from "react";
+import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 export const LandingPage: React.FC = () => {
@@ -88,16 +88,6 @@ export const LandingPage: React.FC = () => {
 }`,
   ];
 
-  const pipelineSteps = [
-    { num: "01", name: "Origin", active: false },
-    { num: "02", name: "Payload", active: false },
-    { num: "03", name: "Transport", active: false },
-    { num: "04", name: "Arbiter: VeraOS Core", active: true },
-    { num: "05", name: "Spec", active: false },
-    { num: "06", name: "Assertions", active: false },
-    { num: "07", name: "Proof", active: false },
-    { num: "08", name: "Verdict: PASS", active: false },
-  ];
 
   return (
     <div className="bg-[#F7F5F0] text-[#191513] min-h-screen selection:bg-[#181311] selection:text-[#F7F5F0] overflow-x-hidden font-sans">
@@ -277,82 +267,72 @@ export const LandingPage: React.FC = () => {
         </div>
 
         {/* ---------------------------------------------------- */}
-        {/* HERO VISUAL CARD (GOLDEN ROBOT ART FROM FIGMA)       */}
+        {/* HERO PRODUCT REVIEW CARD (FIGMA VERIFICATION CARD)   */}
         {/* ---------------------------------------------------- */}
-        <div className="relative rounded-3xl bg-[#181311] border border-[#2A2320] overflow-hidden shadow-2xl text-left max-w-4xl mx-auto">
-          {/* Top metadata status header inside visual card */}
-          <div className="p-4 sm:p-5 flex flex-wrap items-center justify-between gap-3 border-b border-white/10 bg-[#140F0D]">
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#1D7A46]/20 border border-[#1D7A46]/40 text-[#4ADE80] text-xs font-medium">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#4ADE80] animate-pulse" />
-                <span>Verified v1.4</span>
-              </span>
-              <span className="font-mono text-xs text-white/60">
-                Instance #VR-2048
-              </span>
+        <div className="relative rounded-[28px] sm:rounded-3xl bg-[#160C08] border border-[#2A2320] p-3 sm:p-5 lg:p-6 shadow-2xl text-left max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 lg:gap-6 items-stretch">
+            {/* Left Column: Bronze Robot Portrait */}
+            <div className="md:col-span-5 rounded-2xl overflow-hidden bg-[#181311] min-h-[300px] md:min-h-[440px] flex items-center justify-center border border-white/5">
+              <img
+                src="/assets/hero-robot-art.png"
+                alt="VeraOS Verification Core Robot"
+                className="w-full h-full object-cover object-center"
+              />
             </div>
 
-            <div className="flex items-center gap-3 font-mono text-xs text-white/70">
-              <span>Proof: 0x17fa...60c0</span>
-              <span className="hidden sm:inline text-white/30">â€¢</span>
-              <span className="hidden sm:inline text-[#D97736]">
-                280ms â€¢ Zero-Knowledge Attested
-              </span>
-            </div>
-          </div>
-
-          {/* Golden Robot Art Illustration */}
-          <div className="relative h-64 sm:h-96 w-full bg-[#181311] overflow-hidden flex items-center justify-center">
-            <img
-              src="/assets/hero-robot-art.png"
-              alt="VeraOS Verification Core Robot"
-              className="w-full h-full object-cover object-center opacity-90 hover:scale-102 transition-transform duration-700"
-            />
-
-            {/* Inset Overlay Badge */}
-            <div className="absolute bottom-4 left-4 right-4 sm:left-6 sm:right-auto sm:max-w-md bg-[#181311]/90 backdrop-blur-md border border-white/15 rounded-2xl p-3.5 shadow-xl">
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="font-heading font-semibold text-xs text-white">
-                  ResearchAgent VR-2048
-                </span>
-                <span className="px-2 py-0.5 rounded text-[10px] font-bold font-mono bg-[#1D7A46] text-white">
-                  100% PASS
-                </span>
-              </div>
-              <p className="text-xs text-white/70">
-                Claim: Uniswap v3 Rebalance & Vault Settlement
-              </p>
-              <div className="mt-2 flex items-center gap-3 font-mono text-[11px] text-white/50">
-                <span>7 Checks</span>
-                <span>â€¢</span>
-                <span>11 Independent Sources</span>
-                <span>â€¢</span>
-                <span className="text-[#D97736]">ZK Grounded</span>
-              </div>
-            </div>
-          </div>
-
-          {/* 8-Step Verification Pipeline Bar (Image 1 Bottom of Card) */}
-          <div className="bg-[#120D0B] border-t border-white/10 p-3 sm:p-4 overflow-x-auto">
-            <div className="flex items-center justify-between min-w-[700px] text-xs">
-              {pipelineSteps.map((step, idx) => (
-                <div
-                  key={step.num}
-                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-all ${
-                    step.active
-                      ? "bg-[#D97736]/20 border border-[#D97736] text-[#F3E8DC] font-semibold"
-                      : "text-white/50"
-                  }`}
-                >
-                  <span className="font-mono text-[10px] opacity-60">{step.num}</span>
-                  <span>{step.name}</span>
-                  {idx < pipelineSteps.length - 1 && (
-                    <span className="material-symbols-outlined text-[14px] opacity-30 ml-1.5">
-                      chevron_right
-                    </span>
-                  )}
+            {/* Right Column: Clean White Product Review Card */}
+            <div className="md:col-span-7 rounded-2xl bg-white p-6 sm:p-8 lg:p-10 flex flex-col justify-between text-left border border-[#E8E4DC] shadow-sm">
+              <div>
+                {/* Passed Status Badge */}
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#EAF5EE] text-[#1D7A46] text-xs font-semibold w-fit mb-4">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#1D7A46]" />
+                  <span>Passed</span>
                 </div>
-              ))}
+
+                {/* Primary Verdict Headline */}
+                <h2 className="font-heading font-extrabold text-2xl sm:text-3xl lg:text-[34px] text-[#191513] tracking-tight leading-[1.2] mb-3">
+                  The customer refund was completed correctly.
+                </h2>
+
+                {/* Explanation Subtitle */}
+                <p className="text-xs sm:text-sm text-[#6B635B] leading-relaxed mb-6">
+                  Vera matched the request to the refund record, customer notification, and policy approval.
+                </p>
+
+                {/* Verification Confidence Bar */}
+                <div className="mb-6">
+                  <div className="text-[11px] font-semibold text-[#6B635B] tracking-wide mb-1.5">
+                    Verification confidence
+                  </div>
+                  <div className="text-xs sm:text-sm font-bold text-[#1D7A46] mb-2.5">
+                    96% high confidence
+                  </div>
+                  <div className="w-full h-1.5 bg-[#E8E4DC] rounded-full overflow-hidden">
+                    <div className="h-full bg-[#1D7A46] rounded-full w-[96%]" />
+                  </div>
+                </div>
+
+                {/* Evidence Reviewed Container */}
+                <div className="p-4 sm:p-5 rounded-xl border border-[#E8E4DC] bg-[#FAF8F5]/60 mb-6">
+                  <div className="font-bold text-xs sm:text-sm text-[#191513] mb-1">
+                    Evidence reviewed
+                  </div>
+                  <div className="text-xs text-[#6B635B] leading-relaxed">
+                    3 strong sources · 0 conflicts · all requirements addressed
+                  </div>
+                </div>
+              </div>
+
+              {/* Bottom Action CTA */}
+              <div>
+                <Link
+                  to="/verify/VR-2984"
+                  className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[#181311] hover:bg-[#2A2422] text-white text-xs sm:text-sm font-semibold transition-all cursor-pointer w-fit shadow-sm hover:shadow"
+                >
+                  <span>Open verification report</span>
+                  <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+                </Link>
+              </div>
             </div>
           </div>
         </div>
@@ -390,7 +370,7 @@ export const LandingPage: React.FC = () => {
               >
                 <div className="flex items-center justify-between mb-2">
                   <span className="font-mono text-xs font-bold text-[#D97736]">
-                    STAGE {st.step} â€¢ {st.tag}
+                    STAGE {st.step} • {st.tag}
                   </span>
                   <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-[#F3EFEA] text-[#6B635B]">
                     {st.badge}
