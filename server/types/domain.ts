@@ -2,12 +2,15 @@
 export const DOMAIN_VERSION = "1.0.0";
 
 export type RequirementType =
-
   | "count"
   | "threshold"
   | "category"
   | "ecosystem"
   | "transaction"
+  | "trade"
+  | "slippage"
+  | "log_audit"
+  | "reconciliation"
   | "format"
   | "general";
 
@@ -32,7 +35,7 @@ export interface WorkerClaim {
   source: "worker";
 }
 
-export type EvidenceType = "worker_output" | "deterministic" | "blockchain" | "web";
+export type EvidenceType = "worker_output" | "deterministic" | "blockchain" | "web" | "log_artifact";
 export type EvidenceStrength = "weak" | "medium" | "strong";
 export type EvidenceStatus = "received" | "verified" | "failed";
 
@@ -47,7 +50,7 @@ export interface Evidence {
   metadata?: Record<string, unknown>;
 }
 
-export type CheckMethod = "worker_output" | "deterministic" | "blockchain" | "web";
+export type CheckMethod = "worker_output" | "deterministic" | "blockchain" | "web" | "log_artifact";
 export type CheckStatus = "passed" | "failed" | "unverifiable";
 
 export interface VerificationCheck {
@@ -80,7 +83,10 @@ export interface RemediationDirective {
     | "CORRECT_TRANSACTION"
     | "PROVIDE_TRANSACTION_HASH"
     | "SUPPLY_MISSING_RESULTS"
-    | "RETRY_WITH_PROOF";
+    | "RETRY_WITH_PROOF"
+    | "CORRECT_SLIPPAGE"
+    | "RECONCILE_DISCREPANCY"
+    | "INVESTIGATE_DUPLICATES";
   requirementId: string;
   target?: string;
   reason?: string;

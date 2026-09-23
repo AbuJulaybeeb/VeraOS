@@ -187,6 +187,101 @@ export class ClaimExtractor {
       });
     }
 
+    // 5. Extract Web3 Autonomous Trade Execution Claims
+    // Examples: "Swapped 50 USDC for 425 XLM on Soroswap at effective price $0.1176 (slippage 0.42%). TxHash: 46129d6b..."
+    const tradeRegex =
+      /\b(?:swapped|traded|exchanged|bought)\s+(\d+(?:\.\d+)?)\s*([A-Za-z0-9]+)\s+(?:for|to|with)\s+(\d+(?:\.\d+)?)\s*([A-Za-z0-9]+)(?:\s+on\s+([A-Za-z0-9_-]+))?/i;
+    const tradeMatch = trimmed.match(tradeRegex);
+
+    if (tradeMatch) {
+      const inputAmount = parseFloat(tradeMatch[1]);
+      const inputToken = tradeMatch[2].toUpperCase();
+      const outputAmount = parseFloat(tradeMatch[3]);
+      const outputToken = tradeMatch[4].toUpperCase();
+      const dex = tradeMatch[5] || undefined;
+
+      // Extract price if reported
+      const priceMatch = trimmed.match(/\bprice(?:\s+of|:|\s+is|\s+at|\s+=\s*)?\s*\$?(\d+(?:\.\d+)?)\b/i);
+      const reportedPrice = priceMatch ? parseFloat(priceMatch[1]) : (inputAmount / outputAmount);
+
+      // Extract slippage if reported
+      const slipMatch = trimmed.match(/\bslippage(?:\s+of|:|\s+is|\s+=\s*)?\s*(\d+(?:\.\d+)?)\s*%/i);
+      const reportedSlippage = slipMatch ? parseFloat(slipMatch[1]) : 0;
+
+      // Extract tx hash
+      const txMatch =
+        trimmed.match(/\b(?:txhash|tx|hash):\s*([0-9a-fA-F]{64}|0x[0-9a-fA-F]{16,66})\b/i) ||
+        trimmed.match(/\b(0x[a-fA-F0-9]{16,66})\b/) ||
+        trimmed.match(/\b([a-fA-F0-9]{64})\b/);
+      const txHash = txMatch ? txMatch[1] : undefined;
+
+      const tradeReq = requirements.find((r) => r.type === "trade");
+      const slipReq = requirements.find((r) => r.type === "slippage");
+
+      claims.push({
+        id: `c${claimIndex++}`,
+        requirementId: tradeReq?.id,
+        statement: `Trade executed: ${inputAmount} ${inputToken} -> ${outputAmount} ${outputToken}${dex ? ` on ${dex}` : ""}${txHash ? ` (Tx: ${txHash})` : ""}`,
+        value: {
+          inputAmount,
+          inputToken,
+          outputAmount,
+          outputToken,
+          dex,
+          price: reportedPrice,
+          slippage: reportedSlippage,
+          txHash,
+        },
+        source: "worker",
+      });
+
+      if (slipReq && reportedSlippage !== undefined) {
+        claims.push({
+          id: `c${claimIndex++}`,
+          requirementId: slipReq.id,
+          statement: `Reported slippage: ${reportedSlippage}%`,
+          value: {
+            slippage: reportedSlippage,
+            txHash,
+          },
+          source: "worker",
+        });
+      }
+    }
+
+    // 6. Extract Web2 Log Monitoring & Payment Flow Reconciliation Claims
+    // Examples: "Processed 1,250 charges. Total volume: $148,200.00. Found 3 failed charges ($320). 0 duplicates detected."
+    const isLogClaim = /\b(?:reconciled|processed|scanned|audited)\s+(\d+(?:,\d+)*)\s*(?:charges?|payments?|transactions?|logs?|lines?)\b/i.test(trimmed);
+    if (isLogClaim) {
+      const procMatch = trimmed.match(/\b(?:reconciled|processed|scanned|audited)\s+(\d+(?:,\d+)*)\b/i);
+      const processedCount = procMatch ? parseInt(procMatch[1].replace(/,/g, ""), 10) : 0;
+
+      const volMatch = trimmed.match(/\b(?:volume|total|sum)\s*(?:of|:|\s+is|\s+=\s*)?\s*(?:[$€£])?\s*(\d+(?:,\d+)*(?:\.\d+)?)\b/i);
+      const volume = volMatch ? parseFloat(volMatch[1].replace(/,/g, "")) : 0;
+
+      const failMatch = trimmed.match(/\b(?:found|identified)?\s*(\d+)\s*(?:failed|error|rejected)\s*(?:charges?|payments?|transactions?)?\b/i);
+      const failedCount = failMatch ? parseInt(failMatch[1], 10) : 0;
+
+      const dupMatch = trimmed.match(/\b(\d+)\s*duplicates?\b/i) || (/\b(?:0|zero|no)\s+duplicates?\b/i.test(trimmed) ? [null, "0"] : null);
+      const duplicateCount = dupMatch ? parseInt(dupMatch[1], 10) : 0;
+
+      const reconReq = requirements.find((r) => r.type === "reconciliation");
+      const logReq = requirements.find((r) => r.type === "log_audit");
+
+      claims.push({
+        id: `c${claimIndex++}`,
+        requirementId: reconReq?.id || logReq?.id,
+        statement: `Log audit completed: ${processedCount} entries processed, volume $${volume.toLocaleString()}, ${failedCount} failures, ${duplicateCount} duplicates`,
+        value: {
+          processedCount,
+          volume,
+          failedCount,
+          duplicateCount,
+        },
+        source: "worker",
+      });
+    }
+
     // 5. Fallback general claim if nothing specific was isolated
     if (claims.length === 0) {
       claims.push({

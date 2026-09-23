@@ -1,8 +1,8 @@
 import type { Requirement, WorkerClaim, Evidence, CheckStatus } from "../../types/domain.ts";
 import type { EvidenceProvider, EvidenceResult, VerificationContext } from "./provider.ts";
 import { stellarRpcProvider } from "./stellarRpcProvider.ts";
-
-
+import { webProvider } from "./webProvider.ts";
+import { logEvidenceProvider } from "./logEvidenceProvider.ts";
 
 export class DeterministicProvider implements EvidenceProvider {
   name = "DeterministicProvider";
@@ -14,6 +14,10 @@ export class DeterministicProvider implements EvidenceProvider {
       "category",
       "threshold",
       "transaction",
+      "trade",
+      "slippage",
+      "log_audit",
+      "reconciliation",
       "format",
       "general",
     ].includes(requirement.type);
@@ -28,6 +32,22 @@ export class DeterministicProvider implements EvidenceProvider {
     const output = context.workerOutput;
 
     switch (requirement.type) {
+      // ----------------------------------------------------
+      // Trade & Slippage Invariants
+      // ----------------------------------------------------
+      case "trade":
+      case "slippage": {
+        return stellarRpcProvider.verify(requirement, claims, context);
+      }
+
+      // ----------------------------------------------------
+      // Web2 Log Audit & Payment Flow Reconciliation
+      // ----------------------------------------------------
+      case "log_audit":
+      case "reconciliation": {
+        return logEvidenceProvider.verify(requirement, claims, context);
+      }
+
       // ----------------------------------------------------
       // 1. Cardinality / Count Check
       // ----------------------------------------------------
@@ -157,9 +177,14 @@ export class DeterministicProvider implements EvidenceProvider {
       }
 
       // ----------------------------------------------------
-      // 4. Threshold Check (TVL, Numeric bounds)
+      // 4. Threshold Check (TVL, Numeric bounds, Price Limit)
       // ----------------------------------------------------
       case "threshold": {
+        const desc = requirement.description.toLowerCase();
+        if (desc.includes("price") || (requirement.operator === "lte" && typeof requirement.expected === "number" && requirement.expected < 50)) {
+          return webProvider.verify(requirement, claims, context);
+        }
+
         const expectedMin = typeof requirement.expected === "number" ? requirement.expected : 10_000_000;
         const tvlClaims = claims.filter((c) => c.value && typeof (c.value as { tvl?: number }).tvl === "number");
 

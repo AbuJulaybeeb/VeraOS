@@ -64,6 +64,22 @@ export class RemediationEngine {
             reason: `Payment discrepancy: ${check.explanation} Execute supplemental transfer to satisfy required amount.`,
           });
         }
+      } else if (req.type === "slippage") {
+        directives.push({
+          id: `dir_${dirIndex++}`,
+          type: "CORRECT_SLIPPAGE",
+          requirementId: req.id,
+          required: req.expected,
+          reason: `Slippage breach: ${check.explanation} Execute trade with tighter limit or route through higher liquidity pool.`,
+        });
+      } else if (req.type === "reconciliation" || req.type === "log_audit") {
+        directives.push({
+          id: `dir_${dirIndex++}`,
+          type: "RECONCILE_DISCREPANCY",
+          requirementId: req.id,
+          required: req.expected,
+          reason: `Log audit discrepancy: ${check.explanation} Re-run ingestion and reconcile missing or erroneous entries.`,
+        });
       } else {
         directives.push({
           id: `dir_${dirIndex++}`,
