@@ -1,4 +1,6 @@
 import { IncomingMessage, ServerResponse } from "node:http";
+import fs from "node:fs";
+import path from "node:path";
 import { verificationPipeline } from "../verification/pipeline.ts";
 import { defaultRepository } from "../storage/memoryRepository.ts";
 import { veraTelegramBot } from "../telegram/bot.ts";
@@ -12,7 +14,35 @@ import {
 import { defaultVeraDb } from "../db/database.ts";
 import { AuthService } from "../auth/authService.ts";
 
+try {
+  process.loadEnvFile?.();
+} catch {}
+
 const authService = new AuthService(defaultVeraDb);
+
+// Synchronize bot token dynamically from .env on disk if modified
+function syncEnvToken(): void {
+  try {
+    const envPath = path.resolve(process.cwd(), ".env");
+    if (fs.existsSync(envPath)) {
+      const content = fs.readFileSync(envPath, "utf-8");
+      const match = content.match(/^TELEGRAM_BOT_TOKEN=(.+)$/m);
+      if (match && match[1]) {
+        const diskToken = match[1].trim();
+        if (diskToken && diskToken !== veraTelegramBot.getBotToken()) {
+          process.env.TELEGRAM_BOT_TOKEN = diskToken;
+          veraTelegramBot.setBotToken(diskToken);
+          if (veraTelegramBot.isPollingActive()) {
+            veraTelegramBot.stopPolling();
+            veraTelegramBot.startPolling();
+          }
+        }
+      }
+    }
+  } catch {
+    // Ignore in non-Node or restricted sandboxes
+  }
+}
 
 
 
@@ -58,12 +88,25 @@ export async function handleApiRequest(
     return false;
   }
   const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
-  const isVerify = url.pathname.startsWith("/v1/verify");
-  const isWebhook = url.pathname.startsWith("/telegram/webhook") || url.pathname.startsWith("/v1/telegram/webhook");
-  const isHealth = url.pathname === "/health" || url.pathname === "/v1/health";
-  const isAuth = url.pathname.startsWith("/v1/auth");
-  const isInvite = url.pathname.startsWith("/v1/invite");
-  const isAgent = url.pathname.startsWith("/v1/agents");
+  let pathname = url.pathname;
+  if (pathname.startsWith("/api/verifications")) {
+    pathname = pathname.replace(/^\/api\/verifications/, "/v1/verify");
+  } else if (pathname.startsWith("/api/agents")) {
+    pathname = pathname.replace(/^\/api\/agents/, "/v1/agents");
+  } else if (pathname.startsWith("/api/telegram/webhook")) {
+    pathname = "/telegram/webhook";
+  } else if (pathname.startsWith("/api/auth")) {
+    pathname = pathname.replace(/^\/api\/auth/, "/v1/auth");
+  } else if (pathname.startsWith("/api/invite")) {
+    pathname = pathname.replace(/^\/api\/invite/, "/v1/invite");
+  }
+
+  const isVerify = pathname.startsWith("/v1/verify");
+  const isWebhook = pathname.startsWith("/telegram/webhook") || pathname.startsWith("/v1/telegram/webhook");
+  const isHealth = pathname === "/health" || pathname === "/v1/health" || pathname === "/api/health";
+  const isAuth = pathname.startsWith("/v1/auth");
+  const isInvite = pathname.startsWith("/v1/invite");
+  const isAgent = pathname.startsWith("/v1/agents");
   if (!isVerify && !isWebhook && !isHealth && !isAuth && !isInvite && !isAgent) {
     return false;
   }
@@ -78,8 +121,6 @@ export async function handleApiRequest(
     res.end();
     return true;
   }
-
-  const pathname = url.pathname;
 
   try {
     // ----------------------------------------------------
@@ -470,9 +511,20 @@ export async function handleApiRequest(
     // GET /health or /v1/health
     // ----------------------------------------------------
     if ((pathname === "/health" || pathname === "/v1/health") && req.method === "GET") {
+      syncEnvToken();
       const isTelegramConfigured = veraTelegramBot.isConfigured();
       const isPolling = veraTelegramBot.isPollingActive();
-      const botUsername = veraTelegramBot.getBotUsername();
+      let botUsername = veraTelegramBot.getBotUsername();
+      if (!botUsername && isTelegramConfigured) {
+        try {
+          const me = await veraTelegramBot.getMe();
+          if (me.ok && me.result?.username) {
+            botUsername = me.result.username;
+          }
+        } catch {
+          // Keep existing cached handle if request fails
+        }
+      }
 
       sendJson(res, 200, {
         status: "ok",

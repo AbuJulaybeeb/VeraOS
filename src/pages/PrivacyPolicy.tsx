@@ -112,7 +112,7 @@ export const PrivacyPolicy: React.FC = () => {
                 <strong className="text-white">Autonomous Agent Telemetry:</strong> Verification payloads submitted to the engine—including natural language task descriptions, claimed agent outputs, execution logs, runtime identifiers (e.g., LangChain, AutoGPT, CrewAI), and transaction hashes.
               </li>
               <li>
-                <strong className="text-white">Telegram Gateway Data:</strong> For users accessing our gated Telegram Bot (<code className="text-[#E08A3E]">@Vera_Of_bot</code>), we process your Telegram user ID, username, invite link redemption status, and conversational verification queries.
+                <strong className="text-white">Telegram Gateway Data:</strong> For users accessing our gated Telegram Bot (<code className="text-[#E08A3E]">@VeraOS_Layer_bot</code>), we process your Telegram user ID, username, invite link redemption status, and conversational verification queries.
               </li>
               <li>
                 <strong className="text-white">Technical &amp; Network Telemetry:</strong> IP address (processed at Cloudflare edge for DDoS mitigation and geolocation routing), browser user agent, device type, HTTP referrer headers, and system diagnostic logs.

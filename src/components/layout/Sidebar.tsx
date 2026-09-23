@@ -47,24 +47,36 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
   ];
 
   return (
-    <aside className="h-full w-72 bg-surface-container-lowest z-50 flex flex-col shadow-[0_1px_8px_rgba(0,0,0,0.3)] border-r border-white/5 overflow-y-auto">
+    <aside className="h-full lg:h-full max-h-[100dvh] w-72 max-w-[85vw] sm:w-72 bg-surface-container-lowest z-50 flex flex-col shadow-[0_1px_8px_rgba(0,0,0,0.3)] border-r border-white/5 overflow-y-auto pb-6 lg:pb-0">
 
       {/* ── Top: brand + CTA ── */}
       <div className="flex flex-col gap-3 px-4 pt-4 pb-3 border-b border-white/5">
 
-        {/* Logo */}
-        <Link
-          to="/"
-          onClick={onCloseMobile}
-          className="flex items-center gap-2 group w-fit"
-        >
-          <div className="w-7 h-7 rounded-xl bg-primary-container flex items-center justify-center shadow-[0_0_16px_rgba(255,87,8,0.35)] group-hover:scale-105 transition-transform shrink-0">
-            <span className="material-symbols-outlined text-on-primary-container text-[18px]">verified</span>
-          </div>
-          <span className="text-[15px] font-semibold tracking-tight text-on-surface font-headline-sm">
-            Vera<span className="text-primary-container">OS</span>
-          </span>
-        </Link>
+        {/* Logo & Mobile Close */}
+        <div className="flex items-center justify-between w-full">
+          <Link
+            to="/"
+            onClick={onCloseMobile}
+            className="flex items-center gap-2 group w-fit"
+          >
+            <div className="w-7 h-7 rounded-xl bg-primary-container flex items-center justify-center shadow-[0_0_16px_rgba(255,87,8,0.35)] group-hover:scale-105 transition-transform shrink-0">
+              <span className="material-symbols-outlined text-on-primary-container text-[18px]">verified</span>
+            </div>
+            <span className="text-[15px] font-semibold tracking-tight text-on-surface font-headline-sm">
+              Vera<span className="text-primary-container">OS</span>
+            </span>
+          </Link>
+          {onCloseMobile && (
+            <button
+              type="button"
+              onClick={onCloseMobile}
+              className="lg:hidden p-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors min-w-[36px] min-h-[36px] flex items-center justify-center cursor-pointer"
+              aria-label="Close navigation"
+            >
+              <span className="material-symbols-outlined text-[20px]">close</span>
+            </button>
+          )}
+        </div>
 
         {/* Workspace / user line */}
         <button

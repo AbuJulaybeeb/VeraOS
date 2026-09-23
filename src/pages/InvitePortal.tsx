@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Button } from "../components/ui/Button";
 import { useAuth } from "../context/AuthContext";
+import { TELEGRAM_BOT_URL } from "../config/env";
 
 export const InvitePortal: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -33,10 +34,9 @@ export const InvitePortal: React.FC = () => {
   // Operator Share Link Generator
   const [isGeneratingShare, setIsGeneratingShare] = useState(false);
   const [generatedShareLink, setGeneratedShareLink] = useState<string | null>(null);
-  const [generatedShareCode, setGeneratedShareCode] = useState<string | null>(null);
   const [copiedShareLink, setCopiedShareLink] = useState(false);
 
-  const botUsername = "Vera_Of_bot";
+  const botUsername = TELEGRAM_BOT_URL.split("/").pop() || "VeraOS_Layer_bot";
 
   // Auto-detect code from URL query param (?code=... or ?invite=...)
   useEffect(() => {
@@ -47,7 +47,7 @@ export const InvitePortal: React.FC = () => {
       const directUrl = `https://t.me/${botUsername}?start=invite_${clean}`;
       setRedeemSuccess(directUrl);
     }
-  }, [searchParams]);
+  }, [searchParams, botUsername]);
 
   // Request Email OTP Passcode
   const handleRequestOtp = async (e: React.FormEvent) => {
@@ -168,18 +168,15 @@ export const InvitePortal: React.FC = () => {
         const data = (await res.json()) as any;
         if (data.telegramInviteLink) {
           setGeneratedShareLink(data.telegramInviteLink);
-          setGeneratedShareCode(data.code || "");
           return;
         }
       }
       const fallback = Math.random().toString(36).slice(2, 8).toUpperCase();
       const fallbackCode = `VERA-INV-${fallback}`;
-      setGeneratedShareCode(fallbackCode);
       setGeneratedShareLink(`https://t.me/${botUsername}?start=invite_${fallbackCode}`);
     } catch {
       const fallback = Math.random().toString(36).slice(2, 8).toUpperCase();
       const fallbackCode = `VERA-INV-${fallback}`;
-      setGeneratedShareCode(fallbackCode);
       setGeneratedShareLink(`https://t.me/${botUsername}?start=invite_${fallbackCode}`);
     } finally {
       setIsGeneratingShare(false);

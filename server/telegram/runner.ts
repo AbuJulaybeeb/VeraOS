@@ -1,11 +1,10 @@
+import dns from "node:dns";
 import { veraTelegramBot } from "./bot.ts";
 
-// Attempt to load environment variables from .env if present
 try {
+  dns?.setDefaultResultOrder?.("ipv4first");
   process.loadEnvFile?.();
-} catch {
-  // .env file might not exist, which is fine
-}
+} catch {}
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
 
@@ -27,7 +26,9 @@ async function resolveAndCheckApiTarget(): Promise<string> {
   const uniqueCandidates = new Set<string>();
   if (explicitUrl) uniqueCandidates.add(explicitUrl.replace(/\/$/, ""));
   uniqueCandidates.add("http://localhost:3001");
+  uniqueCandidates.add("http://localhost:5174");
   uniqueCandidates.add("http://localhost:5173");
+  uniqueCandidates.add("http://localhost:5175");
   const candidates = Array.from(uniqueCandidates);
 
   for (const candidate of candidates) {
@@ -36,9 +37,22 @@ async function resolveAndCheckApiTarget(): Promise<string> {
       const timeoutId = setTimeout(() => controller.abort(), 1200);
       const res = await fetch(`${candidate}/health`, { signal: controller.signal });
       clearTimeout(timeoutId);
-      if (res.ok) {
-        console.log(`[Telegram Bot] Connected to VeraOS Verification Engine at ${candidate}`);
-        return candidate;
+      const contentType = res.headers.get("content-type") || "";
+      if (res.ok && contentType.includes("application/json")) {
+        const data = (await res.json().catch(() => null)) as {
+          status?: string;
+          name?: string;
+          service?: string;
+        } | null;
+        if (
+          data &&
+          (data.status === "ok" ||
+            data.name?.toLowerCase().includes("vera") ||
+            data.service?.toLowerCase().includes("vera"))
+        ) {
+          console.log(`[Telegram Bot] Connected to VeraOS Verification Engine at ${candidate}`);
+          return candidate;
+        }
       }
     } catch {
       // Try next candidate
@@ -47,7 +61,7 @@ async function resolveAndCheckApiTarget(): Promise<string> {
 
   const fallback = candidates[0];
   console.warn(`[Telegram Bot] Notice: Verification backend is not currently responding at ${fallback}.`);
-  console.warn(`[Telegram Bot] Start your backend via 'npm run dev' (5173) or 'npm run server' (3001) to process verifications.`);
+  console.warn(`[Telegram Bot] Start your backend via 'npm run dev' (5174/5173) or 'npm run server' (3001) to process verifications.`);
   return fallback;
 }
 

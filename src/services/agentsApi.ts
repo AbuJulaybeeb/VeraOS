@@ -50,7 +50,7 @@ export const agentsApi = {
         const res = await fetch(url);
         if (res.ok) {
           const data = (await res.json()) as any[];
-          if (Array.isArray(data) && data.length > 0) {
+          if (Array.isArray(data)) {
             const formatted = data.map(formatAgentRecord);
             persistAgents(formatted);
             return formatted;

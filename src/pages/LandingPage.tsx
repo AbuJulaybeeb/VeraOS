@@ -1,12 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useAgentContext } from "../context/AgentContext";
-import { ThemeToggle } from "../context/ThemeContext";
 import { AgentHeaderWidget } from "../components/agent/AgentHeaderWidget";
 import { InteractiveVerifyWidget } from "../components/verification/InteractiveVerifyWidget";
 import { HeroFlowingWave } from "../components/landing/HeroFlowingWave";
-import { TELEGRAM_BOT_URL, TELEGRAM_PERMANENT_INVITE_URL, GITHUB_REPO_URL } from "../config/env";
+import { TELEGRAM_PERMANENT_INVITE_URL, GITHUB_REPO_URL } from "../config/env";
 import { InviteLinkModal } from "../components/invite/InviteLinkModal";
 
 export const LandingPage: React.FC = () => {
@@ -16,8 +15,8 @@ export const LandingPage: React.FC = () => {
   const [copied, setCopied] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
-  const [activeScenario, setActiveScenario] = useState<"deceptive" | "valid">("deceptive");
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
+  const [inspectorTab, setInspectorTab] = useState<"claim" | "evidence">("claim");
 
   const handleCopyCode = () => {
     let code = "";
@@ -86,7 +85,7 @@ if result.verdict.status != "VERIFIED":
     },
     {
       q: "Can I use VeraOS without writing code?",
-      a: "Yes! You can interact directly with our verified Telegram bot (@Vera_Of_bot) on mobile or desktop to verify tasks, audit evidence, and approve remediation loops using natural language. You can also use the Web Dashboard to monitor all connected agents.",
+      a: "Yes! You can interact directly with our verified Telegram bot (@VeraOS_Layer_bot) on mobile or desktop to verify tasks, audit evidence, and approve remediation loops using natural language. You can also use the Web Dashboard to monitor all connected agents.",
     },
     {
       q: "What happens when an agent fails verification?",
@@ -130,7 +129,7 @@ if result.verdict.status != "VERIFIED":
           </div>
 
           {/* Right Action Group */}
-          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
             {/* Live Telegram Bot Link */}
             <a
               href={TELEGRAM_PERMANENT_INVITE_URL}
@@ -145,19 +144,21 @@ if result.verdict.status != "VERIFIED":
               <span>Open Telegram</span>
             </a>
 
-            {/* Wallet-Style Agent Connector */}
-            <AgentHeaderWidget />
+            {/* Wallet-Style Agent Connector — hidden on small mobile to prevent squishing */}
+            <div className="hidden sm:block">
+              <AgentHeaderWidget />
+            </div>
 
             {/* User Auth or Sign In */}
             {isAuthenticated ? (
-              <div className="hidden sm:flex items-center gap-2">
+              <div className="hidden md:flex items-center gap-2">
                 <span className="text-xs text-[#B9A99B] font-mono">
                   {user?.name || user?.email?.split("@")[0]}
                 </span>
                 <button
                   type="button"
                   onClick={logout}
-                  className="text-xs text-[#B9A99B] hover:text-white transition-colors"
+                  className="text-xs text-[#B9A99B] hover:text-white transition-colors cursor-pointer"
                 >
                   Sign Out
                 </button>
@@ -166,7 +167,7 @@ if result.verdict.status != "VERIFIED":
               <button
                 type="button"
                 onClick={() => openAuthModal("signin")}
-                className="hidden sm:inline-flex text-xs font-medium text-[#B9A99B] hover:text-[#FFF8F0] px-2 py-1 transition-colors"
+                className="hidden md:inline-flex text-xs font-medium text-[#B9A99B] hover:text-[#FFF8F0] px-2 py-1 transition-colors cursor-pointer"
               >
                 Sign In
               </button>
@@ -175,7 +176,7 @@ if result.verdict.status != "VERIFIED":
             {/* Primary CTA */}
             <Link
               to="/verify/new"
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold text-white bg-gradient-to-r from-[#C96A2B] via-[#D87431] to-[#E08A3E] hover:from-[#D87431] hover:to-[#E59247] shadow-[0_0_18px_rgba(201,106,43,0.4)] active:scale-[0.98] transition-all whitespace-nowrap"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs font-semibold text-white bg-gradient-to-r from-[#C96A2B] via-[#D87431] to-[#E08A3E] hover:from-[#D87431] hover:to-[#E59247] shadow-[0_0_18px_rgba(201,106,43,0.4)] active:scale-[0.98] transition-all whitespace-nowrap min-h-[36px]"
             >
               <span>Get Started</span>
               <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
@@ -185,7 +186,7 @@ if result.verdict.status != "VERIFIED":
             <button
               type="button"
               onClick={() => setMobileMenuOpen((prev) => !prev)}
-              className="lg:hidden w-8 h-8 rounded-full flex items-center justify-center bg-[#20110A] border border-[#4A2B1D] text-[#B9A99B] hover:text-[#FFF8F0]"
+              className="lg:hidden w-9 h-9 rounded-full flex items-center justify-center bg-[#20110A] border border-[#4A2B1D] text-[#B9A99B] hover:text-[#FFF8F0] min-w-[36px] min-h-[36px] cursor-pointer"
               aria-label="Toggle navigation"
             >
               <span className="material-symbols-outlined text-[18px]">
@@ -197,13 +198,18 @@ if result.verdict.status != "VERIFIED":
 
         {/* Mobile Navigation Dropdown */}
         {mobileMenuOpen && (
-          <div className="lg:hidden max-w-6xl mx-auto mt-2 p-4 rounded-2xl bg-[#160C08]/95 backdrop-blur-2xl border border-[#4A2B1D] shadow-2xl flex flex-col gap-2 pointer-events-auto">
-            <a href="#problem" onClick={() => setMobileMenuOpen(false)} className="px-3 py-2 text-xs font-medium text-[#B9A99B] hover:text-white">Product</a>
-            <a href="#how-it-works" onClick={() => setMobileMenuOpen(false)} className="px-3 py-2 text-xs font-medium text-[#B9A99B] hover:text-white">How it works</a>
-            <a href="#use-cases" onClick={() => setMobileMenuOpen(false)} className="px-3 py-2 text-xs font-medium text-[#B9A99B] hover:text-white">Use cases</a>
-            <a href="#developers" onClick={() => setMobileMenuOpen(false)} className="px-3 py-2 text-xs font-medium text-[#B9A99B] hover:text-white">Developers</a>
-            <Link to="/docs" onClick={() => setMobileMenuOpen(false)} className="px-3 py-2 text-xs font-medium text-[#B9A99B] hover:text-white">Docs</Link>
+          <div className="lg:hidden max-w-6xl mx-auto mt-2 p-4 rounded-2xl bg-[#160C08]/95 backdrop-blur-2xl border border-[#4A2B1D] shadow-2xl flex flex-col gap-2.5 pointer-events-auto animate-in fade-in slide-in-from-top-2 duration-150">
+            <a href="#problem" onClick={() => setMobileMenuOpen(false)} className="px-3 py-2 text-xs font-medium text-[#B9A99B] hover:text-white rounded-lg hover:bg-white/5 transition-colors">Product</a>
+            <a href="#how-it-works" onClick={() => setMobileMenuOpen(false)} className="px-3 py-2 text-xs font-medium text-[#B9A99B] hover:text-white rounded-lg hover:bg-white/5 transition-colors">How it works</a>
+            <a href="#use-cases" onClick={() => setMobileMenuOpen(false)} className="px-3 py-2 text-xs font-medium text-[#B9A99B] hover:text-white rounded-lg hover:bg-white/5 transition-colors">Use cases</a>
+            <a href="#developers" onClick={() => setMobileMenuOpen(false)} className="px-3 py-2 text-xs font-medium text-[#B9A99B] hover:text-white rounded-lg hover:bg-white/5 transition-colors">Developers</a>
+            <Link to="/docs" onClick={() => setMobileMenuOpen(false)} className="px-3 py-2 text-xs font-medium text-[#B9A99B] hover:text-white rounded-lg hover:bg-white/5 transition-colors">Docs</Link>
+
             <div className="pt-2 border-t border-[#4A2B1D]/50 flex flex-col gap-2">
+              <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-[#20110A] text-xs">
+                <span className="text-[#B9A99B]">Agent:</span>
+                <AgentHeaderWidget />
+              </div>
               <a
                 href={TELEGRAM_PERMANENT_INVITE_URL}
                 target="_blank"
@@ -211,13 +217,27 @@ if result.verdict.status != "VERIFIED":
                 onClick={() => setMobileMenuOpen(false)}
                 className="flex items-center justify-between px-3 py-2 rounded-xl bg-[#20110A] text-xs text-[#E08A3E] font-medium text-left cursor-pointer"
               >
-                <span>Open Telegram (Invite Link)</span>
+                <span>Open Telegram (Permanent Invite)</span>
                 <span className="material-symbols-outlined text-[14px]">send</span>
               </a>
+              {isAuthenticated ? (
+                <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-[#20110A] text-xs">
+                  <span className="text-[#B9A99B] font-mono truncate">{user?.name || user?.email}</span>
+                  <button onClick={logout} className="text-[#E08A3E] hover:text-white font-semibold cursor-pointer">Sign Out</button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => { setMobileMenuOpen(false); openAuthModal("signin"); }}
+                  className="w-full text-center px-4 py-2 rounded-xl bg-[#20110A] border border-[#4A2B1D] text-[#FFF8F0] font-medium text-xs block cursor-pointer"
+                >
+                  Sign In
+                </button>
+              )}
               <Link
                 to="/dashboard"
                 onClick={() => setMobileMenuOpen(false)}
-                className="w-full text-center px-4 py-2 rounded-xl bg-[#C96A2B] text-white font-semibold text-xs block"
+                className="w-full text-center px-4 py-2.5 rounded-xl bg-[#C96A2B] text-white font-semibold text-xs block"
               >
                 Open Dashboard
               </Link>
@@ -256,20 +276,20 @@ if result.verdict.status != "VERIFIED":
           </p>
 
           {/* Hero CTAs */}
-          <div className="flex flex-wrap items-center justify-center gap-3.5 mb-8">
+          <div className="flex flex-col sm:flex-row flex-wrap items-center justify-center gap-3.5 mb-8 w-full sm:w-auto">
             <Link
               to="/verify/new"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#C96A2B] hover:bg-[#E08A3E] text-white text-sm font-semibold transition-all shadow-[0_0_24px_rgba(201,106,43,0.45)] active:scale-[0.98]"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-[#C96A2B] hover:bg-[#E08A3E] text-white text-sm font-semibold transition-all shadow-[0_0_24px_rgba(201,106,43,0.45)] active:scale-[0.98] min-h-[44px]"
             >
               <span>Verify a task</span>
-              <span className="material-symbols-outlined text-[16px]">verified</span>
+              <span className="material-symbols-outlined text-[18px]">verified</span>
             </Link>
 
             <a
               href={TELEGRAM_PERMANENT_INVITE_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#1A0E08]/80 hover:bg-[#2C1710] border border-[#4A2B1D] text-[#FFF8F0] text-sm font-medium transition-all shadow-sm group cursor-pointer"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-[#1A0E08]/80 hover:bg-[#2C1710] border border-[#4A2B1D] text-[#FFF8F0] text-sm font-medium transition-all shadow-sm group cursor-pointer min-h-[44px]"
             >
               <svg className="w-4 h-4 fill-[#E08A3E] group-hover:scale-110 transition-transform" viewBox="0 0 24 24">
                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z" />
@@ -280,9 +300,9 @@ if result.verdict.status != "VERIFIED":
             <button
               type="button"
               onClick={() => openConnectModal()}
-              className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[#20110A] hover:bg-[#2C1710] border border-dashed border-[#E08A3E]/40 text-[#E08A3E] text-sm font-medium transition-all"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl bg-[#20110A] hover:bg-[#2C1710] border border-dashed border-[#E08A3E]/40 text-[#E08A3E] text-sm font-medium transition-all min-h-[44px] cursor-pointer"
             >
-              <span className="material-symbols-outlined text-[16px]">smart_toy</span>
+              <span className="material-symbols-outlined text-[18px]">smart_toy</span>
               <span>Connect Agent</span>
             </button>
           </div>
@@ -313,20 +333,47 @@ if result.verdict.status != "VERIFIED":
                 <span className="w-2.5 h-2.5 rounded-full bg-red-500/80" />
                 <span className="w-2.5 h-2.5 rounded-full bg-amber-500/80" />
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/80" />
-                <span className="ml-3 font-mono text-[11px] text-[#B9A99B]">
-                  task_verification_console.ts — VeraOS Inspector
+                <span className="ml-3 font-mono text-[11px] text-[#B9A99B] truncate max-w-[170px] sm:max-w-none">
+                  task_verification_console.ts
                 </span>
               </div>
               <div className="flex items-center gap-2 text-[10px] text-emerald-400 font-mono">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                <span>Stellar Testnet Horizon</span>
+                <span className="hidden sm:inline">Stellar Testnet Horizon</span>
+                <span className="sm:hidden">Stellar RPC</span>
               </div>
+            </div>
+
+            {/* Mobile Tab Switcher for Inspector Window */}
+            <div className="flex lg:hidden border-b border-[#4A2B1D]/70 bg-[#1A0E08]">
+              <button
+                type="button"
+                onClick={() => setInspectorTab("claim")}
+                className={`flex-1 py-2.5 text-xs font-semibold text-center transition-colors cursor-pointer ${
+                  inspectorTab === "claim"
+                    ? "text-[#E08A3E] border-b-2 border-[#E08A3E] bg-[#21110B]/50"
+                    : "text-[#B9A99B] hover:text-white"
+                }`}
+              >
+                1. Task & Claim
+              </button>
+              <button
+                type="button"
+                onClick={() => setInspectorTab("evidence")}
+                className={`flex-1 py-2.5 text-xs font-semibold text-center transition-colors cursor-pointer ${
+                  inspectorTab === "evidence"
+                    ? "text-[#E08A3E] border-b-2 border-[#E08A3E] bg-[#21110B]/50"
+                    : "text-[#B9A99B] hover:text-white"
+                }`}
+              >
+                2. Onchain Verdict
+              </button>
             </div>
 
             {/* Split Screen Body */}
             <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-[#4A2B1D]/60 p-4 sm:p-6 gap-6 bg-[#160C08]/95">
               {/* Left Pane: Task & Claimed Output */}
-              <div className="flex flex-col gap-4">
+              <div className={`flex flex-col gap-4 ${inspectorTab === "claim" ? "flex" : "hidden lg:flex"}`}>
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-bold uppercase tracking-wider text-[#E08A3E]">
                     TASK & CLAIMED DELIVERABLE
@@ -338,14 +385,14 @@ if result.verdict.status != "VERIFIED":
 
                 <div className="p-3.5 rounded-xl bg-[#1C0E09] border border-[#4A2B1D]/60 flex flex-col gap-1.5">
                   <span className="text-[11px] text-[#B9A99B] font-medium">Task Specification:</span>
-                  <p className="text-xs text-[#FFF8F0] font-mono">
+                  <p className="text-xs text-[#FFF8F0] font-mono break-words">
                     &quot;Execute 5.00 USDC settlement payment to recipient GCEYA... for protocol TVL analysis.&quot;
                   </p>
                 </div>
 
                 <div className="p-3.5 rounded-xl bg-[#1C0E09] border border-[#4A2B1D]/60 flex flex-col gap-1.5">
                   <span className="text-[11px] text-[#B9A99B] font-medium">Claimed Agent Output:</span>
-                  <p className="text-xs text-[#FFF8F0] font-mono leading-relaxed">
+                  <p className="text-xs text-[#FFF8F0] font-mono leading-relaxed break-all">
                     &quot;Payment complete. Transferred 5.00 USDC to recipient GCEYAUYCI3WTE5...
                     <br />
                     <span className="text-[#E08A3E]">TxHash: 62256096f306726197208231b00e422628b0bb83e104dabed9a74da5186afbaf</span>&quot;
@@ -359,7 +406,7 @@ if result.verdict.status != "VERIFIED":
               </div>
 
               {/* Right Pane: Deterministic Evidence & Verdict */}
-              <div className="flex flex-col gap-4 lg:pl-6">
+              <div className={`flex flex-col gap-4 lg:pl-6 ${inspectorTab === "evidence" ? "flex" : "hidden lg:flex"}`}>
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-bold uppercase tracking-wider text-[#E08A3E]">
                     DETERMINISTIC VERDICT
@@ -382,7 +429,7 @@ if result.verdict.status != "VERIFIED":
                     <span className="flex items-center gap-2">
                       <span className="text-emerald-400">✓</span> Exact Amount Check
                     </span>
-                    <span className="text-[11px] text-emerald-400">5.0000000 USDC Match</span>
+                    <span className="text-[11px] text-emerald-400">5.00 USDC Match</span>
                   </div>
 
                   <div className="p-2.5 rounded-lg bg-[#1C0E09] border border-[#4A2B1D]/60 flex items-center justify-between text-[#FFF8F0]">
@@ -401,7 +448,7 @@ if result.verdict.status != "VERIFIED":
                 </div>
 
                 <div className="p-3 rounded-xl bg-emerald-950/40 border border-emerald-800/40 text-[11px] text-emerald-300 flex items-center justify-between">
-                  <span>Escrow release authorized. Zero discrepancies.</span>
+                  <span>Escrow release authorized.</span>
                   <span className="font-mono font-bold">100% PASS</span>
                 </div>
               </div>
@@ -655,7 +702,7 @@ if result.verdict.status != "VERIFIED":
               </p>
               <div className="p-3.5 rounded-xl bg-[#160C08] border border-[#4A2B1D]/50 mb-6 text-xs space-y-2">
                 <div className="text-[#B9A99B] font-mono">User: /verify Task: Send 5 USDC...</div>
-                <div className="text-emerald-400 font-mono font-medium">@Vera_Of_bot: ✅ VERIFIED (Stellar Tx #620194)</div>
+                <div className="text-emerald-400 font-mono font-medium">@VeraOS_Layer_bot: ✅ VERIFIED (Stellar Tx #620194)</div>
               </div>
             </div>
             <button
@@ -663,7 +710,7 @@ if result.verdict.status != "VERIFIED":
               onClick={() => setInviteModalOpen(true)}
               className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#E08A3E] hover:text-[#FFF8F0] transition-colors cursor-pointer"
             >
-              <span>Launch @Vera_Of_bot (Invite Link)</span>
+              <span>Launch @VeraOS_Layer_bot (Invite Link)</span>
               <span className="material-symbols-outlined text-[14px]">send</span>
             </button>
           </div>
@@ -1173,7 +1220,7 @@ if result.verdict.status != "VERIFIED":
                     rel="noopener noreferrer"
                     className="hover:text-white transition-colors cursor-pointer text-left inline-flex items-center gap-1.5"
                   >
-                    <span>Telegram Bot (@Vera_Of_bot)</span>
+                    <span>Telegram Bot (@VeraOS_Layer_bot)</span>
                     <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#E08A3E]/20 text-[#E08A3E] border border-[#E08A3E]/30 font-medium">Invite</span>
                   </a>
                 </li>

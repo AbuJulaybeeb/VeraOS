@@ -9,7 +9,9 @@ import { defineConfig, loadEnv, type Plugin } from 'vite'
 import { handleApiRequest } from './server/api/routes.ts'
 import { veraTelegramBot } from './server/telegram/bot.ts'
 
+import dns from 'node:dns'
 try {
+  dns?.setDefaultResultOrder?.('ipv4first')
   process.loadEnvFile?.()
 } catch {}
 
@@ -18,19 +20,39 @@ function veraBackendPlugin(): Plugin {
   return {
     name: 'vera-backend-plugin',
     configureServer(server) {
-      if (!isInitialized) {
-        isInitialized = true
+      const initBot = () => {
+        if (isInitialized) return
         const token = process.env.TELEGRAM_BOT_TOKEN
-        if (token && !veraTelegramBot.isPollingActive()) {
-          veraTelegramBot.setBotToken(token.trim())
-          veraTelegramBot.setApiBaseUrl('http://localhost:5173')
+        if (!token) return
+
+        const addr = server.httpServer?.address()
+        let port = 5173
+        if (addr && typeof addr === 'object' && addr.port) {
+          port = addr.port
+        }
+        const activeUrl = `http://localhost:${port}`
+        veraTelegramBot.setBotToken(token.trim())
+        veraTelegramBot.setApiBaseUrl(activeUrl)
+        if (!veraTelegramBot.isPollingActive()) {
+          isInitialized = true
           veraTelegramBot.startPolling()
         }
       }
 
-      server.httpServer?.on('close', () => {
+      if (server.httpServer?.listening) {
+        initBot()
+      } else {
+        server.httpServer?.once('listening', initBot)
+      }
+
+      const cleanup = () => {
         veraTelegramBot.stopPolling()
-      })
+      }
+
+      server.httpServer?.once('close', cleanup)
+      server.httpServer?.once('error', cleanup)
+      process.once('SIGINT', cleanup)
+      process.once('SIGTERM', cleanup)
 
       server.middlewares.use(async (req, res, next) => {
         try {

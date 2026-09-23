@@ -49,7 +49,7 @@ export const VerificationDetail: React.FC = () => {
   const latestAttempt = verification.attempts[verification.attempts.length - 1];
 
   return (
-    <div className="flex flex-col w-full max-w-5xl mx-auto gap-space-lg">
+    <div className="flex flex-col w-full max-w-5xl mx-auto gap-space-lg pb-24 md:pb-0">
 
       {/* Breadcrumb + header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-space-md">
@@ -238,6 +238,33 @@ export const VerificationDetail: React.FC = () => {
           isResubmitting={isResubmitting}
         />
       )}
+
+      {/* Mobile Sticky Bottom Action Bar */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 p-3 bg-surface/95 backdrop-blur-xl border-t border-white/10 z-30 flex items-center gap-2 shadow-2xl">
+        <Link to={`/verify/${verification.id}/evidence`} className="flex-1">
+          <Button variant="secondary" size="md" className="w-full justify-center min-h-[44px]" icon={<span className="material-symbols-outlined text-[18px]">fingerprint</span>}>
+            Evidence
+          </Button>
+        </Link>
+        {verification.status !== "PASSED" ? (
+          <Button variant="primary" size="md" onClick={scrollToRemediation} className="flex-1 justify-center min-h-[44px]" icon={<span className="material-symbols-outlined text-[18px]">build_circle</span>}>
+            Fix & Resubmit
+          </Button>
+        ) : (
+          <Button
+            variant="secondary"
+            size="md"
+            className="flex-1 justify-center min-h-[44px]"
+            onClick={() => {
+              const tx = latestAttempt?.stellarTxHash ?? "62256096f306726197208231b00e422628b0bb83e104dabed9a74da5186afbaf";
+              window.open(`https://stellar.expert/explorer/testnet/tx/${tx}`, "_blank");
+            }}
+            icon={<span className="material-symbols-outlined text-[18px]">verified</span>}
+          >
+            On Stellar
+          </Button>
+        )}
+      </div>
     </div>
   );
 };

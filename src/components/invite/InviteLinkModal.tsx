@@ -30,7 +30,7 @@ export const InviteLinkModal: React.FC<InviteLinkModalProps> = ({
   const [otpError, setOtpError] = useState<string | null>(null);
 
   // Extract bot username from env or default
-  const botUsername = TELEGRAM_BOT_URL.split("/").pop() || "Vera_Of_bot";
+  const botUsername = TELEGRAM_BOT_URL.split("/").pop() || "VeraOS_Layer_bot";
 
   // Pre-seed or personal link
   const personalCode = defaultInviteCode || "VERA-OFFICIAL";
@@ -143,7 +143,7 @@ export const InviteLinkModal: React.FC<InviteLinkModalProps> = ({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-lg rounded-2xl bg-[#1C0F0A] border border-[#E08A3E]/30 shadow-2xl p-6 flex flex-col gap-5 text-left"
+        className="w-full max-w-lg rounded-2xl bg-[#1C0F0A] border border-[#E08A3E]/30 shadow-2xl p-4 sm:p-6 flex flex-col gap-5 text-left max-h-[90dvh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

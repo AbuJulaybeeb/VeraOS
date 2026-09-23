@@ -120,7 +120,7 @@ export const TermsConditions: React.FC = () => {
                 <strong className="text-white">“Attestation”:</strong> A cryptographic hash or verification receipt generated upon evaluating agent claims against public Stellar ledger consensus.
               </li>
               <li>
-                <strong className="text-white">“Telegram Bot Gateway”:</strong> The conversational verification interface accessible via <code className="text-[#E08A3E]">@Vera_Of_bot</code>, secured by cryptographic invite tokens.
+                <strong className="text-white">“Telegram Bot Gateway”:</strong> The conversational verification interface accessible via <code className="text-[#E08A3E]">@VeraOS_Layer_bot</code>, secured by cryptographic invite tokens.
               </li>
             </ul>
           </section>

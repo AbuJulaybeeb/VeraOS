@@ -5,10 +5,10 @@
  * Usage:
  *   node scripts/set-telegram-webhook.mjs [BOT_TOKEN] [DOMAIN_URL]
  * Example:
- *   node scripts/set-telegram-webhook.mjs 8398164925:AAHdxpRwoIOvBocQyEaJEGhb-FuVJ58O7Dk https://veraos-bot.pages.dev
+ *   node scripts/set-telegram-webhook.mjs 8989264156:AAGOcGNgV83w3rt5jIMpq-kErxdCHAK-P2c https://veraos-bot.pages.dev
  */
 
-const token = process.argv[2] || process.env.TELEGRAM_BOT_TOKEN || "8398164925:AAHdxpRwoIOvBocQyEaJEGhb-FuVJ58O7Dk";
+const token = process.argv[2] || process.env.TELEGRAM_BOT_TOKEN || "8989264156:AAGOcGNgV83w3rt5jIMpq-kErxdCHAK-P2c";
 let domain = process.argv[3] || process.env.CLOUDFLARE_URL || "https://veraos-bot.pages.dev";
 
 if (!domain.startsWith("http")) {

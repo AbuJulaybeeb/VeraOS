@@ -28,8 +28,8 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose }) =
         onClick={onClose}
       />
       {/* Drawer */}
-      <div className="fixed inset-y-0 left-0 max-w-full flex">
-        <div className="w-72">
+      <div className="fixed inset-y-0 left-0 max-w-[85vw] sm:max-w-xs flex z-50 transition-transform">
+        <div className="w-72 max-w-[85vw] sm:w-72 h-[100dvh]">
           <Sidebar onCloseMobile={onClose} />
         </div>
       </div>

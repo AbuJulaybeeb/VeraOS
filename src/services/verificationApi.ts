@@ -1,7 +1,6 @@
 import {
   VerificationRecord,
   CreateVerificationInput,
-  VerificationAttempt,
 } from "../types/verification";
 import {
   delay,
@@ -82,168 +81,33 @@ export const verificationApi = {
   },
 
   async create(input: CreateVerificationInput): Promise<VerificationRecord> {
-    try {
-      const res = await fetch("/v1/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          task: input.taskPrompt,
-          worker: {
-            id: input.workerId || "worker-alpha-09",
-            name: input.workerName || "Autonomous Worker",
-            output: input.workerOutput,
-          },
-          options: {
-            maxAttempts: input.maxAttempts || 3,
-            evidenceSources: input.evidenceSources,
-          },
-        }),
-      });
-      if (res.ok) {
-        const data = (await res.json()) as { record?: VerificationRecord } & VerificationRecord;
-        const record = data.record || data;
-        const list = getStoredVerifications();
-        persistVerifications([record, ...list.filter((x) => x.id !== record.id)]);
-        return record;
-      }
-    } catch (err) {
-      console.warn("Backend /v1/verify unreachable, using local simulation fallback:", err);
+    const res = await fetch("/v1/verify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        task: input.taskPrompt,
+        worker: {
+          id: input.workerId || "worker-alpha-09",
+          name: input.workerName || "Autonomous Worker",
+          output: input.workerOutput,
+        },
+        options: {
+          maxAttempts: input.maxAttempts || 3,
+          evidenceSources: input.evidenceSources,
+        },
+      }),
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.message || errData.error || `Verification failed (HTTP ${res.status})`);
     }
 
-    await delay(300);
+    const data = (await res.json()) as { record?: VerificationRecord } & VerificationRecord;
+    const record = data.record || data;
     const list = getStoredVerifications();
-    const nextNum = list.length + 1048;
-    const newId = `v_run_${Date.now().toString(36)}`;
-    const displayId = `V-${nextNum}`;
-
-    // Determine initial simulated evaluation based on prompt content
-    const isSuccessScenario =
-      input.taskPrompt.toLowerCase().includes("audit 3") ||
-      input.workerOutput.toLowerCase().includes("all passed") ||
-      input.workerOutput.toLowerCase().includes("corroborated");
-
-    const isUnverifiedScenario =
-      input.workerOutput.toLowerCase().includes("no proof") ||
-      input.workerOutput.toLowerCase().includes("unverified");
-
-    const status = isSuccessScenario
-      ? "PASSED"
-      : isUnverifiedScenario
-      ? "UNVERIFIED"
-      : "FAILED";
-
-    const initialAttempt: VerificationAttempt = {
-      attemptNumber: 1,
-      timestamp: new Date().toISOString(),
-      status,
-      summary:
-        status === "PASSED"
-          ? "ALL INVARIANTS VERIFIED — STATUS: VERDICT_CONFIRMED"
-          : status === "UNVERIFIED"
-          ? "TASK UNVERIFIED — NO INDEPENDENT EVIDENCE AVAILABLE"
-          : "TASK NOT VERIFIED — STATUS: VERDICT_REJECTED",
-      detailedReason:
-        status === "PASSED"
-          ? "All declarative invariants independently corroborated onchain. Cryptographic attestation generated."
-          : status === "UNVERIFIED"
-          ? "Worker asserted completion, but no verifiable independent evidence was located."
-          : "Invariant threshold checks breached during independent RPC and Oracle triangulation.",
-      stellarTxHash:
-        status === "PASSED"
-          ? "62256096f306726197208231b00e422628b0bb83e104dabed9a74da5186afbaf"
-          : undefined,
-      ledgerNumber: 4688142 + list.length,
-      workerClaims: [
-        {
-          id: `claim_${Date.now()}_1`,
-          title: "Worker Result Claim",
-          statement: input.workerOutput.slice(0, 160) || "Task completed as specified.",
-          source: "WORKER_OUTPUT",
-          timestamp: new Date().toISOString(),
-          status: status === "PASSED" ? "CORROBORATED" : "CONFLICT",
-        },
-      ],
-      invariants: [
-        {
-          id: `inv_${Date.now()}_1`,
-          name: "Invariant 1: Cardinality & Bounds",
-          category: "cardinality",
-          description: "Execution parameters respected declared bounds.",
-          expected: "Exact requirement satisfaction",
-          actual:
-            status === "PASSED"
-              ? "All parameters validated"
-              : "Discrepancy detected during validation",
-          status: status === "PASSED" ? "PASSED" : "FAILED",
-          latencyMs: 18,
-        },
-        {
-          id: `inv_${Date.now()}_2`,
-          name: "Invariant 2: Target Network Verification",
-          category: "ecosystem",
-          description: "Canonical execution verified on Stellar Testnet.",
-          expected: "Stellar Testnet",
-          actual: "Stellar Testnet",
-          status: "PASSED",
-          latencyMs: 24,
-        },
-      ],
-      evidence: [
-        {
-          id: `ev_${Date.now()}_1`,
-          requirementId: `inv_${Date.now()}_1`,
-          type: "ONCHAIN",
-          title: "Stellar Horizon Receipt",
-          provider: "Stellar Horizon Testnet Node",
-          proofType: "Ledger State Diff",
-          independent: true,
-          status: status === "PASSED" ? "CONFIRMED" : "REJECTED",
-          timestamp: new Date().toISOString(),
-          isMock: false,
-          data: {
-            Network: input.network || "Stellar Testnet",
-            Worker: input.workerId,
-            EvidenceGrounding: status === "PASSED" ? "CORROBORATED" : "BREACH_DETECTED",
-          },
-        },
-      ],
-      remediationDirectives:
-        status === "FAILED"
-          ? [
-              {
-                id: `dir_${Date.now()}`,
-                invariantId: `inv_${Date.now()}_1`,
-                action: "RETRY_WITH_PROOF",
-                reason: "Invariant check failed. Provide verified transaction evidence and correct parameters.",
-                mandatory: true,
-              },
-            ]
-          : undefined,
-    };
-
-    const newRecord: VerificationRecord = {
-      id: newId,
-      displayId,
-      taskId: `task_${Date.now().toString(36)}`,
-      taskPrompt: input.taskPrompt,
-      workerId: input.workerId,
-      workerName: input.workerId.includes("bot")
-        ? `${input.workerId} (v1.0)`
-        : `${input.workerId} (v2.0)`,
-      network: input.network || "Stellar Testnet",
-      chainId: 0,
-      createdAt: new Date().toISOString(),
-      currentAttempt: 1,
-      maxAttempts: 3,
-      status,
-      quorum: "3/3 Quorum Checked",
-      latencyMs: 135,
-      attempts: [initialAttempt],
-    };
-
-    const updated = [newRecord, ...list];
-    persistVerifications(updated);
-    return newRecord;
+    persistVerifications([record, ...list.filter((x) => x.id !== record.id)]);
+    return record;
   },
 
   async resubmit(
@@ -254,202 +118,26 @@ export const verificationApi = {
       txHash?: string;
     }
   ): Promise<VerificationRecord> {
-    try {
-      const res = await fetch(`/v1/verify/${encodeURIComponent(id)}/resubmit`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          supplementalTxHash: patch?.txHash,
-          workerOutput: patch?.target
-            ? `Remediated target: ${patch.target}\nSupplemental Transfer: ${patch.supplementalAmount || 4.5} USDC TxHash: ${patch.txHash || "0x5f9e2b1892f3900a41cd8a7b3c21a4de99f2b1892f3900a41cd8a7b3c21a4de"}`
-            : undefined,
-        }),
-      });
-      if (res.ok) {
-        const record = (await res.json()) as VerificationRecord;
-        if (record && record.id) {
-          const list = getStoredVerifications();
-          persistVerifications(list.map((r) => (r.id === record.id || r.displayId === record.displayId ? record : r)));
-          return record;
-        }
-      }
-    } catch {
-      // fallback
+    const res = await fetch(`/v1/verify/${encodeURIComponent(id)}/resubmit`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        supplementalTxHash: patch?.txHash,
+        workerOutput: patch?.target
+          ? `Remediated target: ${patch.target}\nSupplemental Transfer: ${patch.supplementalAmount || 4.5} USDC TxHash: ${patch.txHash || "0x5f9e2b1892f3900a41cd8a7b3c21a4de99f2b1892f3900a41cd8a7b3c21a4de"}`
+          : undefined,
+      }),
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.message || errData.error || `Resubmission failed (HTTP ${res.status})`);
     }
 
-    await delay(350);
+    const record = (await res.json()) as VerificationRecord;
     const list = getStoredVerifications();
-    const index = list.findIndex((item) => item.id === id || item.displayId === id);
-    if (index === -1) {
-      throw new Error(`Verification not found: ${id}`);
-    }
-
-    const item = list[index];
-    const nextAttemptNum = item.currentAttempt + 1;
-
-    // Simulate progressive remediation
-    // Attempt 2: Target replaced with Aerodrome ($214M TVL), TVL invariant passes.
-    // If supplemental amount is supplied or attempt >= 2, all pass!
-    const isFinalPass = nextAttemptNum >= 2;
-
-    const newAttempt: VerificationAttempt = {
-      attemptNumber: nextAttemptNum,
-      timestamp: new Date().toISOString(),
-      status: isFinalPass ? "PASSED" : "FAILED",
-      summary: isFinalPass
-        ? "ALL INVARIANTS VERIFIED — STATUS: VERDICT_CONFIRMED"
-        : "TASK STILL UNVERIFIED — 1 INVARIANT DEFICIT REMAINING",
-      detailedReason: isFinalPass
-        ? `Remediation directives successfully executed. Replaced protocol with ${patch?.target || "Blend Protocol ($18M TVL)"} and reconciled 4.5 USDC deficit. Grounded payment verified on Stellar Testnet.`
-        : "Replaced protocol with Blend Protocol, but compensation payment deficit is still awaiting supplemental transfer.",
-      stellarTxHash: isFinalPass ? (patch?.txHash || "62256096f306726197208231b00e422628b0bb83e104dabed9a74da5186afbaf") : undefined,
-      ledgerNumber: 4688142 + nextAttemptNum * 5,
-      workerClaims: [
-        {
-          id: `claim_att_${nextAttemptNum}_1`,
-          requirementId: "inv_cardinality",
-          title: "Remediated Protocols",
-          statement: `Updated protocols: ${patch?.target || "Blend Protocol ($18M)"}, Aquarius ($12M), YieldBlox ($15M).`,
-          source: "WORKER_OUTPUT",
-          timestamp: new Date().toISOString(),
-          status: "CORROBORATED",
-        },
-        {
-          id: `claim_att_${nextAttemptNum}_2`,
-          requirementId: "inv_usdc_payment",
-          title: "Reconciled Payment",
-          statement: `Supplemental transfer broadcast: 4.50 USDC -> recipient GCEYAUYCI3WTE5GOD7CDLRJQPATQCLHMXY4Q3CEQ64RP5SVDWPFF5L2L (Tx: ${patch?.txHash || "62256096f306726197208231b00e422628b0bb83e104dabed9a74da5186afbaf"})`,
-          source: "WORKER_OUTPUT",
-          timestamp: new Date().toISOString(),
-          status: "CORROBORATED",
-        },
-      ],
-      invariants: [
-        {
-          id: "inv_cardinality",
-          name: "Invariant 1: Cardinality (3 Protocols)",
-          category: "cardinality",
-          description: "Task requires exactly 3 distinct protocols identified.",
-          expected: "3 protocols",
-          actual: "3 protocols parsed",
-          status: "PASSED",
-          latencyMs: 14,
-        },
-        {
-          id: "inv_ecosystem",
-          name: "Invariant 2: Stellar Network Conformance",
-          category: "ecosystem",
-          description: "All protocols possess active contracts deployed on Stellar Testnet.",
-          expected: "Stellar Testnet",
-          actual: "Stellar Testnet confirmed",
-          status: "PASSED",
-          latencyMs: 22,
-        },
-        {
-          id: "inv_classification",
-          name: "Invariant 3: Lending Category Classification",
-          category: "custom",
-          description: "Oracle ontology registers all targets under taxonomy defi.lending_market.",
-          expected: "defi.lending_market",
-          actual: "defi.lending_market corroborated",
-          status: "PASSED",
-          latencyMs: 38,
-        },
-        {
-          id: "inv_lending_tvl",
-          name: "Invariant 4: TVL Threshold Minimum (≥ $10,000,000)",
-          category: "threshold",
-          description: `Target substituted: ${patch?.target || "Blend Protocol"}. Independent Oracle returns $18.5M at ledger #${4688142 + nextAttemptNum * 5}.`,
-          expected: "≥ $10,000,000 USD",
-          actual: "$18,500,000 USD",
-          delta: "+$8,500,000 surplus",
-          status: "PASSED",
-          latencyMs: 29,
-          oracleProof: {
-            source: "DefiLlama Web Oracle",
-            proofId: "0x89ee12",
-            verified: true,
-          },
-        },
-        {
-          id: "inv_usdc_payment",
-          name: "Invariant 5: Accurate Compensation Transfer (5.00 USDC)",
-          category: "payment",
-          description: "Initial 0.50 USDC + Supplemental 4.50 USDC = 5.00 USDC total transferred to recipient GCEYAUYCI3WTE5GOD7CDLRJQPATQCLHMXY4Q3CEQ64RP5SVDWPFF5L2L.",
-          expected: "5.000000 USDC (5,000,000 base units)",
-          actual: "5.000000 USDC confirmed across 2 tx receipts",
-          delta: "0.00 USDC (Reconciled)",
-          status: "PASSED",
-          latencyMs: 25,
-        },
-      ],
-      evidence: [
-        {
-          id: `ev_stellar_reconciled_${nextAttemptNum}`,
-          requirementId: "inv_usdc_payment",
-          type: "ONCHAIN",
-          title: "Stellar Horizon Receipt (Supplemental Payout)",
-          provider: "Stellar Horizon Testnet",
-          proofType: "Stellar Ledger State",
-          independent: true,
-          status: "CONFIRMED",
-          timestamp: new Date().toISOString(),
-          isMock: false,
-          proofHash: patch?.txHash || "62256096f306726197208231b00e422628b0bb83e104dabed9a74da5186afbaf",
-          explorerUrl: `https://stellar.expert/explorer/testnet/tx/${patch?.txHash || "62256096f306726197208231b00e422628b0bb83e104dabed9a74da5186afbaf"}`,
-          data: {
-            Chain: "Stellar Testnet",
-            Ledger: `#${4688142 + nextAttemptNum * 5}`,
-            SupplementalTx: patch?.txHash || "62256096f306726197208231b00e422628b0bb83e104dabed9a74da5186afbaf",
-            SupplementalTransferred: "4.500000 USDC",
-            TotalReconciled: "5.000000 USDC",
-            Status: "SUCCESS (Confirmed Reconciled)",
-          },
-        },
-        {
-          id: `ev_oracle_remediated_${nextAttemptNum}`,
-          requirementId: "inv_lending_tvl",
-          type: "WEB_ORACLE",
-          title: "Web Oracle Witness (Blend Protocol)",
-          provider: "DefiLlama REST API via Web Witness",
-          proofType: "Web Oracle Proof",
-          independent: true,
-          status: "CONFIRMED",
-          timestamp: new Date().toISOString(),
-          isMock: false,
-          proofHash: "0x89ee12",
-          data: {
-            Provider: "DefiLlama REST API",
-            Target: patch?.target || "Blend Protocol",
-            LiveTVL: "$18,500,000 USD",
-            InvariantSatisfaction: "CONFIRMED (> $10M threshold)",
-          },
-        },
-      ],
-      rawTraceJson: JSON.stringify(
-        {
-          agent: item.workerName,
-          attempt: nextAttemptNum,
-          remediated_selection: [
-            { slug: "blend-protocol", tvl: 18500000 },
-            { slug: "aquarius", tvl: 12000000 },
-            { slug: "yieldblox", tvl: 15000000 },
-          ],
-          supplemental_payout_tx: patch?.txHash || "62256096f306726197208231b00e422628b0bb83e104dabed9a74da5186afbaf",
-          supplemental_units: "4500000",
-          total_reconciled_units: "5000000",
-        },
-        null,
-        2
-      ),
-    };
-
-    item.currentAttempt = nextAttemptNum;
-    item.status = isFinalPass ? "PASSED" : "FAILED";
-    item.attempts.push(newAttempt);
-
-    persistVerifications(list);
-    return JSON.parse(JSON.stringify(item));
+    persistVerifications(list.map((r) => (r.id === record.id || r.displayId === record.displayId ? record : r)));
+    return record;
   },
 
   async clearLocalCache(): Promise<void> {

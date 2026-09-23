@@ -6,6 +6,7 @@ import { Button } from "../components/ui/Button";
 import { Badge } from "../components/ui/Badge";
 import { Card } from "../components/ui/Card";
 import { cn } from "../lib/utils";
+import { TELEGRAM_PERMANENT_INVITE_URL, TELEGRAM_BOT_URL } from "../config/env";
 
 export const Account: React.FC = () => {
   const {
@@ -52,7 +53,8 @@ export const Account: React.FC = () => {
 
   // Telegram Invite Copy State
   const [copiedTelegram, setCopiedTelegram] = useState(false);
-  const TELEGRAM_PERMANENT_INVITE = "https://t.me/Vera_Of_bot?start=invite_VERA-OFFICIAL";
+  const TELEGRAM_PERMANENT_INVITE = TELEGRAM_PERMANENT_INVITE_URL;
+  const botUsername = TELEGRAM_BOT_URL.split("/").pop() || "VeraOS_Layer_bot";
 
   // Agent Probe State
   const [probingAgentId, setProbingAgentId] = useState<string | null>(null);
@@ -589,7 +591,7 @@ export const Account: React.FC = () => {
                         </span>
                       </div>
                       <span className="font-code-sm text-[11px] text-on-surface-variant">
-                        Bot handle: @Vera_Of_bot • Permanent invite authorization enabled
+                        Bot handle: @{botUsername} • Permanent invite authorization enabled
                       </span>
                     </div>
                   </div>

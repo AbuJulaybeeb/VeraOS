@@ -225,7 +225,7 @@ export const AgentConnectModal: React.FC = () => {
       />
 
       {/* Modal Card */}
-      <div className="relative w-full max-w-lg rounded-2xl bg-[#1D110B] border border-[#4A2B1D] shadow-[0_20px_60px_rgba(0,0,0,0.8)] p-space-md sm:p-space-lg flex flex-col gap-space-md z-10 animate-in fade-in zoom-in-95 duration-200">
+      <div className="relative w-full max-w-lg rounded-2xl bg-[#1D110B] border border-[#4A2B1D] shadow-[0_20px_60px_rgba(0,0,0,0.8)] p-space-md sm:p-space-lg flex flex-col gap-space-md z-10 animate-in fade-in zoom-in-95 duration-200 max-h-[90dvh] overflow-y-auto">
         {/* Top Header */}
         <div className="flex items-start justify-between gap-3 border-b border-white/5 pb-3">
           <div className="flex items-center gap-3">

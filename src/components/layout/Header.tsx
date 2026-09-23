@@ -83,13 +83,13 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="flex items-center gap-space-sm">
           <button
             onClick={onToggleMobileMenu}
-            className="lg:hidden p-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors"
+            className="lg:hidden p-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center cursor-pointer"
             aria-label="Open mobile navigation"
           >
-            <span className="material-symbols-outlined text-[22px]">menu</span>
+            <span className="material-symbols-outlined text-[24px]">menu</span>
           </button>
 
-          <div className="lg:hidden flex items-center gap-space-xs">
+          <Link to="/" className="lg:hidden flex items-center gap-space-xs">
             <div className="w-7 h-7 rounded-xl bg-primary-container flex items-center justify-center">
               <span className="material-symbols-outlined text-on-primary-container text-[18px]">
                 verified
@@ -98,7 +98,7 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="font-headline-sm text-headline-sm font-bold text-on-surface">
               Vera<span className="text-primary-container">OS</span>
             </span>
-          </div>
+          </Link>
 
           <nav
             className="hidden sm:flex items-center gap-2 font-body-sm text-body-sm text-on-surface-variant ml-2"
@@ -215,8 +215,10 @@ export const Header: React.FC<HeaderProps> = ({
             size="sm"
             onClick={() => navigate("/verify/new")}
             icon={<span className="material-symbols-outlined text-[18px]">add_circle</span>}
+            className="min-h-[38px] px-3 sm:px-4"
           >
             <span className="hidden sm:inline">New Verification</span>
+            <span className="sm:hidden">Verify</span>
           </Button>
 
           {/* Profile / Auth */}
