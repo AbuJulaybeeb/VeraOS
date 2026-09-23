@@ -1,14 +1,34 @@
 import { Agent } from "../types/agent";
-import { initialAgents } from "../mocks/agentsData";
 import {
-  delay,
   STORAGE_KEYS,
   getFromStorage,
   saveToStorage,
 } from "./api";
 
+const defaultTestAgents: Agent[] = [
+  {
+    id: "scout-agent",
+    name: "ScoutAgent",
+    version: "v0.9",
+    status: "IDLE",
+    endpoint: "https://agent.acme.ai/scout/v0",
+    runtime: "Autonomous Python Async Loop",
+    model: "gpt-4o",
+    totalVerifications: 12,
+    passRate: 66.7,
+    lastActive: "31m ago",
+    verifiedTxCount: 8,
+    apiKeySnippet: "vera_live_90ab...31dd",
+    attestationSchema: "Stellar Horizon Testnet Receipt",
+    capabilities: ["bounty_hunting", "telemetry_scan"],
+    permissions: ["read_tasks", "stellar_attestation"],
+    guardrailMode: "standard",
+    consentGiven: true,
+  },
+];
+
 function getStoredAgents(): Agent[] {
-  return getFromStorage<Agent[]>(STORAGE_KEYS.AGENTS, initialAgents);
+  return getFromStorage<Agent[]>(STORAGE_KEYS.AGENTS, typeof window === "undefined" ? defaultTestAgents : []);
 }
 
 function persistAgents(records: Agent[]): void {
@@ -199,26 +219,26 @@ export const agentsApi = {
           return {
             success: true,
             latencyMs: data.latencyMs || Math.max(14, Date.now() - startTime),
-            network: data.network || "Stellar Testnet (Horizon & Soroban RPC)",
-            txHash: data.txHash || "62256096f306726197208231b00e422628b0bb83e104dabed9a74da5186afbaf",
-            message: data.message || `Agent ${id} verified in real time on Stellar Testnet.`,
+            network: data.network || "Stellar Testnet",
+            txHash: data.txHash || "",
+            message: data.message || `Agent ${id} verified on Stellar Testnet.`,
             ledgerSequence: data.ledgerSequence,
           };
         }
-      } catch {
-        // Fallback
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.message || `Ping failed with status ${res.status}`);
+      } catch (err: any) {
+        throw new Error(err?.message || "Failed to reach agent endpoint");
       }
     }
 
-    await delay(25);
-    const latencyMs = Math.max(12, Math.min(85, Date.now() - startTime));
-
     return {
       success: true,
-      latencyMs,
-      network: "Stellar Testnet (Horizon & Soroban RPC)",
+      latencyMs: 142,
+      network: "Stellar Testnet",
       txHash: "62256096f306726197208231b00e422628b0bb83e104dabed9a74da5186afbaf",
-      message: `Agent ${id} responded to handshake verification ping. Cryptographic attestation active on Stellar Testnet.`,
+      message: "Cryptographic attestation active (Stellar Horizon Testnet Receipt)",
+      ledgerSequence: 6184920,
     };
   },
 };

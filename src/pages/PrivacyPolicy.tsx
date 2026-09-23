@@ -25,17 +25,17 @@ export const PrivacyPolicy: React.FC = () => {
           <Link to="/" className="text-[#B9A99B] hover:text-white transition-colors">
             Home
           </Link>
-          <Link to="/dashboard" className="text-[#B9A99B] hover:text-white transition-colors">
-            Dashboard
-          </Link>
-          <Link to="/docs" className="text-[#B9A99B] hover:text-white transition-colors">
-            Docs
-          </Link>
           <Link
             to="/terms"
             className="text-xs px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white border border-white/10 transition-colors font-medium"
           >
             Terms of Service
+          </Link>
+          <Link
+            to="/welcome"
+            className="text-xs px-3.5 py-1.5 rounded-xl bg-[#C96A2B] hover:bg-[#E08A3E] text-white font-heading font-semibold transition-colors"
+          >
+            Get Started
           </Link>
         </div>
       </header>
@@ -55,7 +55,7 @@ export const PrivacyPolicy: React.FC = () => {
             Effective Date: <span className="text-white font-medium">September 20, 2026</span> • Last Updated: <span className="text-white font-medium">September 20, 2026</span>
           </p>
           <p className="text-sm text-[#F3E5D5]/80 leading-relaxed bg-[#1C0F0A] p-4 rounded-xl border border-white/5">
-            At <strong>VeraOS</strong> (“we”, “us”, or “our”), we operate an enterprise-grade autonomous AI agent verification protocol anchored to the Stellar blockchain and deployed on Cloudflare edge computing infrastructure. This Privacy Policy details the types of personal data and cryptographic payloads we collect, how that information is processed, your statutory rights, and our zero-trust data protection principles.
+            At <strong>VeraOS</strong> (“we”, “us”, or “our”), we operate the verification layer for autonomous AI agents. This Privacy Policy details the types of personal data and cryptographic verification payloads we process, how that information is handled, your statutory rights, and our zero-trust data protection principles.
           </p>
         </div>
 

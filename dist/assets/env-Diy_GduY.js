@@ -1,0 +1,1 @@
+var e=`https://t.me/Vera_Of_bot`;`${e}`;var t=`https://github.com/k-deejah/VeraOS`;export{e as n,t};

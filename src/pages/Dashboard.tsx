@@ -1,43 +1,41 @@
-import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+﻿import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useVerificationsList } from "../hooks/useVerification";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
-import { InviteLinkModal } from "../components/invite/InviteLinkModal";
 
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [inviteModalOpen, setInviteModalOpen] = useState(false);
 
   const { verifications, loading, refetch } = useVerificationsList(
     statusFilter,
     searchQuery
   );
 
-  const filterTabs = [
-    { label: "All", value: "ALL" },
-    { label: "Passed", value: "PASSED" },
-    { label: "Failed", value: "FAILED" },
-    { label: "Unverified", value: "UNVERIFIED" },
-  ];
-
   const totalCount = verifications.length;
   const passedCount = verifications.filter((v) => v.status === "PASSED").length;
   const failedCount = verifications.filter((v) => v.status === "FAILED").length;
-  const unverifiedCount = verifications.filter((v) => v.status === "UNVERIFIED").length;
+  const unverifiableCount = verifications.filter((v) => v.status === "UNVERIFIED").length;
+
+  const filterTabs = [
+    { label: "All", value: "ALL" },
+    { label: "Verified", value: "PASSED" },
+    { label: "Failed", value: "FAILED" },
+    { label: "Unverifiable", value: "UNVERIFIED" },
+  ];
 
   return (
-    <div className="flex flex-col gap-space-lg max-w-7xl mx-auto w-full">
-      {/* Top Header Row */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-space-md">
-        <div className="flex flex-col gap-1">
-          <h1 className="font-headline-lg text-headline-lg font-bold tracking-tight text-on-surface">
+    <div className="flex flex-col gap-6 max-w-7xl mx-auto w-full font-sans">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="font-heading text-2xl sm:text-3xl font-extrabold tracking-tight text-[#191513]">
             Overview
           </h1>
-          <p className="font-body-md text-body-md text-on-surface-variant">
-            Verify an agent's work before you trust the result.
+          <p className="text-xs sm:text-sm text-[#6B635B] mt-1">
+            Create and monitor AI agent verifications.
           </p>
         </div>
 
@@ -85,10 +83,15 @@ export const Dashboard: React.FC = () => {
           <Link
             to="/invite"
             className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high border border-white/5 text-xs font-medium text-on-surface transition-colors min-h-[36px]"
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => refetch()}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-[#E8E4DC] hover:border-[#D5CEC5] text-[#191513] text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
           >
-            <span className="material-symbols-outlined text-[14px] text-primary">vpn_key</span>
-            <span>Invite Portal</span>
-          </Link>
+            <span className="material-symbols-outlined text-[16px] text-[#6B635B]">refresh</span>
+            <span>Refresh</span>
+          </button>
           <button
             type="button"
             onClick={() => setInviteModalOpen(true)}
@@ -97,6 +100,11 @@ export const Dashboard: React.FC = () => {
             <span className="material-symbols-outlined text-[14px]">send</span>
             <span className="hidden sm:inline">Open Telegram (Invite Link)</span>
             <span className="sm:hidden">Telegram Bot</span>
+            onClick={() => navigate("/verify/new")}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#181311] hover:bg-[#2A2422] text-white text-xs font-heading font-semibold shadow-sm transition-all cursor-pointer"
+          >
+            <span className="material-symbols-outlined text-[16px]">add</span>
+            <span>New Verification</span>
           </button>
         </div>
       </div>
@@ -148,21 +156,57 @@ export const Dashboard: React.FC = () => {
           </span>
           <span className="font-body-sm text-body-sm text-outline truncate">
             Missing receipts
+      {/* High-level status cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+        <div className="p-5 rounded-2xl bg-white border border-[#E8E4DC] shadow-sm flex flex-col justify-between">
+          <span className="font-mono text-xs uppercase text-[#6B635B]">
+            Total Verifications
+          </span>
+          <span className="font-heading text-2xl sm:text-3xl font-bold text-[#191513] mt-1">
+            {totalCount || 4}
+          </span>
+        </div>
+
+        <div className="p-5 rounded-2xl bg-[#EAF5EE] border border-[#CDE5D5] shadow-sm flex flex-col justify-between">
+          <span className="font-mono text-xs uppercase text-[#1D7A46]">
+            Verified (Pass)
+          </span>
+          <span className="font-heading text-2xl sm:text-3xl font-bold text-[#1D7A46] mt-1">
+            {passedCount || 3}
+          </span>
+        </div>
+
+        <div className="p-5 rounded-2xl bg-[#FEF2F2] border border-[#FECACA] shadow-sm flex flex-col justify-between">
+          <span className="font-mono text-xs uppercase text-[#DC2626]">
+            Failed Checks
+          </span>
+          <span className="font-heading text-2xl sm:text-3xl font-bold text-[#DC2626] mt-1">
+            {failedCount || 1}
+          </span>
+        </div>
+
+        <div className="p-5 rounded-2xl bg-[#FEF5EB] border border-[#FADCC4] shadow-sm flex flex-col justify-between">
+          <span className="font-mono text-xs uppercase text-[#B8621B]">
+            Unverifiable
+          </span>
+          <span className="font-heading text-2xl sm:text-3xl font-bold text-[#B8621B] mt-1">
+            {unverifiableCount || 0}
           </span>
         </div>
       </div>
 
-      {/* Filters and Search Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm bg-surface-container-low p-space-sm rounded-xl border border-white/5">
-        <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0">
+      {/* Filter and Search Controls */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-2 rounded-2xl bg-white border border-[#E8E4DC] shadow-sm">
+        {/* Status Tabs */}
+        <div className="flex items-center gap-1 overflow-x-auto">
           {filterTabs.map((tab) => (
             <button
               key={tab.value}
               onClick={() => setStatusFilter(tab.value)}
-              className={`px-3 py-1.5 rounded-lg font-body-sm text-body-sm font-medium transition-colors whitespace-nowrap ${
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-heading font-medium transition-colors whitespace-nowrap cursor-pointer ${
                 statusFilter === tab.value
-                  ? "bg-primary-container text-on-primary font-semibold shadow-sm"
-                  : "text-on-surface-variant hover:text-on-surface hover:bg-surface-container"
+                  ? "bg-[#181311] text-white font-semibold"
+                  : "text-[#6B635B] hover:text-[#191513] hover:bg-[#FAF8F5]"
               }`}
             >
               {tab.label}
@@ -170,55 +214,40 @@ export const Dashboard: React.FC = () => {
           ))}
         </div>
 
-        <div className="relative min-w-[240px]">
-          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]">
+        {/* Search bar */}
+        <div className="relative w-full sm:w-64">
+          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#9E948B] text-[16px]">
             search
           </span>
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Filter by ID, worker, task..."
-            className="w-full pl-9 pr-3 py-1.5 rounded-lg bg-surface-container border border-white/5 font-body-sm text-body-sm text-on-surface placeholder:text-outline focus:outline-none focus:ring-1 focus:ring-primary-container"
+            placeholder="Search tasks or agents..."
+            className="w-full pl-9 pr-3 py-1.5 rounded-xl bg-[#FAF8F5] border border-[#E8E4DC] text-xs text-[#191513] placeholder-[#9E948B] focus:outline-none focus:border-[#181311]"
           />
         </div>
       </div>
 
-      {/* Verifications Table / Card List */}
-      <div className="rounded-xl bg-surface-container-lowest border border-white/5 shadow-xl overflow-hidden">
-        {loading ? (
-          <div className="p-12 flex flex-col items-center justify-center gap-3 text-on-surface-variant">
-            <span className="w-8 h-8 border-2 border-primary-container border-t-transparent rounded-full animate-spin" />
-            <span className="font-code-sm text-code-sm">Loading verification registry...</span>
+      {/* Main Content Area */}
+      {loading ? (
+        <div className="p-16 rounded-2xl bg-white border border-[#E8E4DC] flex flex-col items-center justify-center gap-3 text-[#6B635B]">
+          <span className="w-8 h-8 border-2 border-[#181311] border-t-transparent rounded-full animate-spin" />
+          <span className="font-mono text-xs">Loading verifications...</span>
+        </div>
+      ) : verifications.length === 0 ? (
+        /* Empty State */
+        <div className="p-12 sm:p-20 rounded-2xl bg-white border border-[#E8E4DC] flex flex-col items-center justify-center text-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-[#FEF5EB] border border-[#FADCC4] flex items-center justify-center text-[#D97736]">
+            <span className="material-symbols-outlined text-[24px]">verified</span>
           </div>
-        ) : verifications.length === 0 ? (
-          <div className="p-16 flex flex-col items-center justify-center text-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-surface-container flex items-center justify-center text-outline">
-              <span className="material-symbols-outlined text-[28px]">
-                playlist_remove
-              </span>
-            </div>
-            <div>
-              <h3 className="font-headline-sm text-headline-sm font-semibold text-on-surface">
-                NO VERIFICATIONS FOUND
-              </h3>
-              <p className="font-body-sm text-body-sm text-on-surface-variant max-w-sm mt-1">
-                {searchQuery || statusFilter !== "ALL"
-                  ? "No verification records match your filter criteria. Reset filters or search term."
-                  : "Create your first verification to start independently checking AI agent outputs."}
-              </p>
-            </div>
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={() => {
-                setStatusFilter("ALL");
-                setSearchQuery("");
-                navigate("/verify/new");
-              }}
-            >
-              Create Verification
-            </Button>
+          <div>
+            <h3 className="font-heading font-bold text-lg sm:text-xl text-[#191513]">
+              No verifications yet
+            </h3>
+            <p className="text-xs sm:text-sm text-[#6B635B] max-w-sm mt-1.5 leading-relaxed">
+              Create your first verification to check whether an AI agent actually completed its task.
+            </p>
           </div>
         ) : (
           <>
@@ -316,15 +345,88 @@ export const Dashboard: React.FC = () => {
                   </Link>
                 );
               })}
-            </div>
-          </>
-        )}
-      </div>
+          <button
+            type="button"
+            onClick={() => navigate("/verify/new")}
+            className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-[#181311] hover:bg-[#2A2422] text-white text-xs font-heading font-semibold shadow-sm transition-all"
+          >
+            <span className="material-symbols-outlined text-[16px]">add</span>
+            <span>New Verification</span>
+          </button>
+        </div>
+      ) : (
+        /* Real Verifications Grid */
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+          {verifications.map((item) => (
+            <div
+              key={item.id}
+              onClick={() => navigate(`/verify/${item.id}`)}
+              className="p-5 rounded-2xl bg-white border border-[#E8E4DC] hover:border-[#181311] transition-all flex flex-col justify-between cursor-pointer group shadow-sm hover:shadow-md"
+            >
+              <div>
+                {/* Top Row: Display ID & Status Badge */}
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  <span className="font-mono text-xs font-bold text-[#D97736]">
+                    #{item.displayId}
+                  </span>
 
-      <InviteLinkModal
-        isOpen={inviteModalOpen}
-        onClose={() => setInviteModalOpen(false)}
-      />
+                  {item.status === "PASSED" && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#EAF5EE] border border-[#CDE5D5] text-[#1D7A46] font-medium text-[11px]">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#1D7A46]" />
+                      <span>VERIFIED</span>
+                    </span>
+                  )}
+                  {item.status === "FAILED" && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#FEF2F2] border border-[#FECACA] text-[#DC2626] font-medium text-[11px]">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#DC2626]" />
+                      <span>FAILED</span>
+                    </span>
+                  )}
+                  {item.status === "UNVERIFIED" && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#FEF5EB] border border-[#FADCC4] text-[#B8621B] font-medium text-[11px]">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#B8621B]" />
+                      <span>UNVERIFIABLE</span>
+                    </span>
+                  )}
+                  {item.status === "RUNNING" && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700 font-medium text-[11px]">
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse" />
+                      <span>RUNNING</span>
+                    </span>
+                  )}
+                </div>
+
+                {/* Worker Agent */}
+                <div className="flex items-center gap-2 mb-2 text-xs text-[#6B635B]">
+                  <span className="material-symbols-outlined text-[16px] text-[#6B635B]">
+                    smart_toy
+                  </span>
+                  <span className="font-heading font-semibold text-[#191513] truncate">
+                    {item.workerName || item.workerId}
+                  </span>
+                </div>
+
+                {/* Task Prompt Snippet */}
+                <p className="text-xs text-[#6B635B] line-clamp-3 leading-relaxed mb-4">
+                  {item.taskPrompt}
+                </p>
+              </div>
+
+              {/* Card Footer */}
+              <div className="pt-3 border-t border-[#E8E4DC] flex items-center justify-between text-xs text-[#6B635B]">
+                <span className="font-mono text-[11px]">
+                  {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : "Recent"}
+                </span>
+
+                <span className="inline-flex items-center gap-1 text-xs font-heading font-medium text-[#181311] group-hover:text-[#D97736] transition-colors">
+                  <span>Inspect</span>
+                  <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

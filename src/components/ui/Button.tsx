@@ -23,25 +23,29 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     ref
   ) => {
     const baseStyles =
-      "inline-flex items-center justify-center font-headline-sm transition-colors focus:outline-none focus:ring-2 focus:ring-primary-container/40 disabled:opacity-50 disabled:pointer-events-none select-none";
+      "inline-flex items-center justify-center font-heading transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-[#E08A3E]/40 disabled:opacity-50 disabled:pointer-events-none select-none cursor-pointer";
 
     const variantStyles = {
       primary:
-        "bg-primary-container hover:bg-[#e04c05] text-on-primary font-semibold border border-primary-container/40 shadow-sm",
+        "bg-[#181311] hover:bg-[#2A2422] text-white font-medium border border-black/10 shadow-sm active:scale-[0.98]",
       secondary:
-        "bg-surface-container hover:bg-surface-container-high text-on-surface border border-white/5 hover:border-white/10",
+        "bg-white hover:bg-[#FAF8F5] text-[#191513] font-medium border border-[#E8E4DC] active:scale-[0.98]",
       outline:
-        "bg-transparent hover:bg-surface-container text-on-surface border border-white/15 hover:border-white/25",
+        "bg-transparent hover:bg-[#FAF8F5] text-[#191513] font-medium border border-[#E8E4DC] active:scale-[0.98]",
       ghost:
-        "bg-transparent hover:bg-surface-container text-on-surface-variant hover:text-on-surface",
+        "bg-transparent hover:bg-[#F0ECE1] text-[#706864] hover:text-[#191513] font-medium",
+      accent:
+        "bg-[#D97736] hover:bg-[#E28543] text-white font-medium shadow-sm active:scale-[0.98]",
+      cream:
+        "bg-[#F3E8DC] hover:bg-[#EBDDCF] text-[#181311] font-medium border border-[#E6D8CA] active:scale-[0.98]",
       danger:
-        "bg-error-container/60 hover:bg-error-container text-on-error-container border border-error/30 font-semibold",
+        "bg-[#FEF2F2] hover:bg-[#FEE2E2] text-[#DC2626] font-medium border border-[#FECACA]",
     };
 
     const sizeStyles = {
-      sm: "text-body-sm px-3 py-1.5 rounded-md gap-1.5",
-      md: "text-body-md px-4 py-2 rounded-lg gap-2",
-      lg: "text-headline-sm px-6 py-3 rounded-lg gap-2.5",
+      sm: "text-xs px-3 py-1.5 rounded-lg gap-1.5",
+      md: "text-sm px-4 py-2 rounded-xl gap-2",
+      lg: "text-sm sm:text-base px-6 py-3 rounded-xl gap-2.5",
     };
 
     return (

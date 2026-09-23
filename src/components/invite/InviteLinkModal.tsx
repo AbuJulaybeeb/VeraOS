@@ -143,7 +143,7 @@ export const InviteLinkModal: React.FC<InviteLinkModalProps> = ({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-lg rounded-2xl bg-[#1C0F0A] border border-[#E08A3E]/30 shadow-2xl p-4 sm:p-6 flex flex-col gap-5 text-left max-h-[90dvh] overflow-y-auto"
+        className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl bg-[#1C0F0A] border border-[#E08A3E]/30 shadow-2xl p-4 sm:p-6 flex flex-col gap-5 text-left"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

@@ -1,312 +1,217 @@
 import React, { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useVerification } from "../hooks/useVerification";
-import { Badge } from "../components/ui/Badge";
-import { Button } from "../components/ui/Button";
+
+interface SourceItem {
+  id: string;
+  name: string;
+  origin: string;
+  timestamp: string;
+  badge: string;
+  hash: string;
+  snippet: string;
+  supports: string;
+}
+
+const SOURCES: SourceItem[] = [
+  {
+    id: "source-1",
+    name: "Refund record RF-88124",
+    origin: "Commerce API",
+    timestamp: "Sep 23, 12:29 PM",
+    badge: "Strong",
+    hash: "sha256: 4fc2..99a1 • source unchanged",
+    snippet: `refund_id: RF-88124
+order_id: AC-19482
+amount_refunded: 148.20 USD
+status: settled
+processor: stripe_live_core
+verified_at: 2026-09-23T12:29:44Z`,
+    supports: "Refund amount matches original transaction exactly ($148.20)",
+  },
+  {
+    id: "source-2",
+    name: "Customer email",
+    origin: "Support inbox",
+    timestamp: "Sep 23, 12:31 PM",
+    badge: "Strong",
+    hash: "sha256: 18b7..3e59 • source unchanged",
+    snippet: `message_id: MSG-9812410
+recipient: customer@example.org
+subject: "Your refund of $148.20 has been processed"
+delivered_at: 2026-09-23T12:31:02Z
+template_id: refund_confirmation_v2`,
+    supports: "Customer notification delivered with matching refund amount",
+  },
+  {
+    id: "source-3",
+    name: "Order note N-4821",
+    origin: "Commerce API",
+    timestamp: "Sep 23, 12:32 PM",
+    badge: "Selected",
+    hash: "sha256: 7ea9..41bd • source unchanged",
+    snippet: `order_id: AC-19482
+action: full_refund
+amount: 148.20 USD
+note: Duplicate shipment confirmed; refund approved
+recorded_by: resolution-agent-prod`,
+    supports: "Refund reason recorded as duplicate shipment",
+  },
+];
 
 export const EvidenceExplorer: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const { verification, loading, error } = useVerification(id);
-  const [selectedType, setSelectedType] = useState<string>("ALL");
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const { verification } = useVerification(id);
+  const [selectedSourceId, setSelectedSourceId] = useState<string>("source-3");
 
-  if (loading) {
-    return (
-      <div className="p-16 flex flex-col items-center justify-center gap-3 text-on-surface-variant max-w-7xl mx-auto">
-        <span className="w-8 h-8 border-2 border-primary-container border-t-transparent rounded-full animate-spin" />
-        <span className="font-code-sm text-code-sm">
-          Loading evidence triangulation records...
-        </span>
-      </div>
-    );
-  }
+  const selectedSource =
+    SOURCES.find((s) => s.id === selectedSourceId) || SOURCES[2];
 
-  if (error || !verification) {
-    return (
-      <div className="max-w-2xl mx-auto p-12 text-center flex flex-col items-center gap-4 bg-surface-container-low rounded-2xl border border-white/5">
-        <h2 className="font-headline-md font-bold text-on-surface">
-          Verification Not Found
-        </h2>
-        <Link to="/dashboard">
-          <Button variant="primary">Back to Dashboard</Button>
-        </Link>
-      </div>
-    );
-  }
-
-  const currentAttempt =
-    verification.attempts[verification.attempts.length - 1];
-  const invariants = currentAttempt?.invariants || [];
-  const evidenceList = currentAttempt?.evidence || [];
-  const claims = currentAttempt?.workerClaims || [];
-
+  const runId = verification?.displayId ? `VR-${verification.displayId}` : "VR-2984";
 
   return (
-    <div className="max-w-7xl mx-auto w-full flex flex-col gap-space-lg">
-      {/* Breadcrumb Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-space-md">
-        <div className="flex flex-col gap-1">
-          <div className="flex items-center gap-space-xs font-body-sm text-body-sm text-outline">
-            <Link to="/dashboard" className="hover:text-on-surface transition-colors">
-              Verifications
-            </Link>
-            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-            <Link
-              to={`/verify/${verification.id}`}
-              className="text-secondary font-medium hover:underline"
-            >
-              {verification.displayId}
-            </Link>
-            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-            <span className="text-on-surface">Evidence Explorer</span>
-          </div>
-
-          <h1 className="font-headline-lg text-headline-lg font-bold tracking-tight text-on-surface">
-            Evidence Triangulation Explorer
-          </h1>
-          <p className="font-body-md text-body-md text-on-surface-variant">
-            Inspect requirement-by-requirement assertions, worker claims, independent witnesses, and cryptographic proofs.
-          </p>
+    <div className="max-w-4xl mx-auto w-full flex flex-col gap-6 font-sans pb-16">
+      {/* Breadcrumb & Navigation */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-2 text-xs text-[#6B635B]">
+          <Link to="/verifications" className="hover:text-[#181311] transition-colors">
+            Verifications
+          </Link>
+          <span>/</span>
+          <Link
+            to={id ? `/verify/${id}` : "/verifications"}
+            className="hover:text-[#181311] transition-colors"
+          >
+            {runId}
+          </Link>
+          <span>/</span>
+          <span className="text-[#181311]">Evidence details</span>
         </div>
 
-        <Link to={`/verify/${verification.id}`}>
-          <Button
-            variant="secondary"
-            icon={
-              <span className="material-symbols-outlined text-[16px]">
-                arrow_back
-              </span>
-            }
+        {id && (
+          <Link
+            to={`/verify/${id}`}
+            className="text-xs font-semibold text-[#181311] hover:underline self-start sm:self-auto"
           >
-            Back to Verification
-          </Button>
-        </Link>
+            ← Back to check result
+          </Link>
+        )}
       </div>
 
-      {/* Tripartite Principle Banner */}
-      <div className="p-4 rounded-xl bg-surface-container-low border border-primary-container/20 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <span className="material-symbols-outlined text-primary-container text-[24px]">
-            balance
-          </span>
-          <div className="flex flex-col">
-            <span className="font-headline-sm text-headline-sm font-semibold text-on-surface">
-              Tripartite Verification Principle
-            </span>
-            <span className="font-body-sm text-body-sm text-on-surface-variant">
-              Worker Claim (untrusted assertion) ≠ Independent Evidence (cryptographically witnessed) ≠ Verdict (consensus logic).
-            </span>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="px-2 py-1 rounded bg-surface-container font-code-sm text-code-sm text-outline">
-            Evidence: Stellar Horizon + Invariant Kernel
+      {/* Title */}
+      <div>
+        <h1 className="font-heading text-2xl sm:text-3xl font-extrabold tracking-tight text-[#181311]">
+          Evidence details
+        </h1>
+        <p className="text-xs sm:text-sm text-[#6B635B] mt-1">
+          Trace every finding back to the source Vera reviewed.
+        </p>
+      </div>
+
+      {/* Card 1: Sources reviewed */}
+      <div className="bg-white rounded-2xl border border-[#E8E4DC] p-6 shadow-sm flex flex-col gap-4">
+        <div className="flex items-center justify-between">
+          <h2 className="font-heading font-bold text-base sm:text-lg text-[#181311]">
+            Sources reviewed
+          </h2>
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-[#F3EFEA] text-[#6B635B] border border-[#E8E4DC]">
+            • 3 sources
           </span>
         </div>
-      </div>
 
-      {/* Filter Tabs */}
-      <div className="flex items-center gap-2 border-b border-white/5 pb-3">
-        {["ALL", "ONCHAIN", "WEB_ORACLE", "TRACE_AUDIT"].map((type) => (
-          <button
-            key={type}
-            onClick={() => setSelectedType(type)}
-            className={`px-3.5 py-1.5 rounded-lg font-label-caps text-label-caps uppercase transition-colors ${
-              selectedType === type
-                ? "bg-primary-container text-on-primary font-bold"
-                : "text-on-surface-variant hover:text-on-surface hover:bg-surface-container"
-            }`}
-          >
-            {type.replace("_", " ")}
-          </button>
-        ))}
-      </div>
-
-      {/* Evidence Hierarchy Cards */}
-      <div className="flex flex-col gap-space-md">
-        {invariants.map((inv, index) => {
-          const matchingClaim = claims.find(
-            (c) => c.requirementId === inv.id
-          );
-          const matchingEvidence = evidenceList.filter(
-            (e) =>
-              e.requirementId === inv.id &&
-              (selectedType === "ALL" || e.type === selectedType)
-          );
-          const isExpanded = expandedId === inv.id || expandedId === null;
-
-          return (
-            <div
-              key={inv.id}
-              className="rounded-xl bg-surface-container border border-white/10 shadow-lg overflow-hidden"
-            >
-              {/* Requirement Header */}
-              <div
-                onClick={() =>
-                  setExpandedId(expandedId === inv.id ? null : inv.id)
-                }
-                className="p-5 bg-surface-container-high/70 hover:bg-surface-container-high transition-colors cursor-pointer flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/5"
+        <div className="flex flex-col divide-y divide-[#E8E4DC]">
+          {SOURCES.map((source) => {
+            const isSelected = source.id === selectedSourceId;
+            return (
+              <button
+                key={source.id}
+                onClick={() => setSelectedSourceId(source.id)}
+                className={`flex items-center justify-between py-3.5 first:pt-0 last:pb-0 text-left transition-colors cursor-pointer rounded-lg px-2 -mx-2 ${
+                  isSelected ? "bg-[#FAF8F5]" : "hover:bg-[#FAF8F5]/50"
+                }`}
               >
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center font-code-sm text-code-sm font-bold text-primary shrink-0">
-                    0{index + 1}
+                <div>
+                  <div className="font-semibold text-sm text-[#181311]">
+                    {source.name}
                   </div>
-                  <div className="flex flex-col">
-                    <div className="flex items-center gap-2">
-                      <span className="font-label-caps text-label-caps text-outline uppercase">
-                        REQ-00{index + 1}
-                      </span>
-                      <span className="font-headline-sm text-headline-sm font-bold text-on-surface">
-                        {inv.name}
-                      </span>
-                    </div>
-                    <p className="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
-                      {inv.description}
-                    </p>
+                  <div className="text-xs text-[#6B635B] mt-0.5">
+                    {source.origin} • {source.timestamp}
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 self-start md:self-auto">
-                  {inv.status === "PASSED" ? (
-                    <Badge variant="passed">PASS</Badge>
-                  ) : inv.status === "FAILED" ? (
-                    <Badge variant="failed">FAILED</Badge>
-                  ) : (
-                    <Badge variant="unverified">UNVERIFIED</Badge>
-                  )}
-                  <span className="material-symbols-outlined text-outline">
-                    {isExpanded ? "expand_less" : "expand_more"}
+                {isSelected ? (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-[#181311] text-white">
+                    • Selected
                   </span>
-                </div>
-              </div>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-[#EAF5EE] text-[#1D7A46] border border-[#CDE5D5]">
+                    • Strong
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
-              {/* Requirement Body Breakdown */}
-              {isExpanded && (
-                <div className="p-5 flex flex-col gap-5 bg-surface-container/90">
-                  {/* Step 1: Worker Claim */}
-                  <div className="p-4 rounded-xl bg-surface-container-lowest border border-white/5 flex flex-col gap-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="material-symbols-outlined text-outline text-[18px]">
-                          smart_toy
-                        </span>
-                        <span className="font-label-caps text-label-caps uppercase text-outline font-bold">
-                          Worker Claim (Untrusted Statement)
-                        </span>
-                      </div>
-                      <span className="font-code-sm text-code-sm text-outline">
-                        Source: Worker Output Trace
-                      </span>
-                    </div>
-                    <p className="font-body-md text-body-md text-on-surface pl-2 border-l-2 border-outline/30 italic">
-                      "{matchingClaim?.statement || "Claimed task completion satisfying requirement."}"
-                    </p>
-                  </div>
+      {/* Card 2: Selected Source Viewer */}
+      <div className="bg-white rounded-2xl border border-[#E8E4DC] p-6 shadow-sm flex flex-col">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-1">
+          <div>
+            <h3 className="font-heading font-bold text-base sm:text-lg text-[#181311]">
+              {selectedSource.name}
+            </h3>
+            <p className="font-mono text-xs text-[#6B635B] mt-0.5">
+              {selectedSource.hash}
+            </p>
+          </div>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-[#EAF5EE] text-[#1D7A46] border border-[#CDE5D5] self-start sm:self-auto">
+            • Verified source
+          </span>
+        </div>
 
-                  {/* Step 2: Independent Evidence */}
-                  <div className="p-4 rounded-xl bg-surface-container-low border border-white/10 flex flex-col gap-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="material-symbols-outlined text-primary-container text-[18px]">
-                          verified
-                        </span>
-                        <span className="font-label-caps text-label-caps uppercase text-primary font-bold">
-                          Independent Grounding Evidence
-                        </span>
-                      </div>
-                      <span className="px-2 py-0.5 rounded bg-surface-container text-secondary font-label-caps text-label-caps">
-                        Witnessed by VeraOS Kernel
-                      </span>
-                    </div>
+        {/* Code Terminal */}
+        <div className="bg-[#181311] rounded-xl p-4 sm:p-5 my-4 overflow-x-auto border border-[#2A2422]">
+          <pre className="font-mono text-xs sm:text-sm text-[#F3E8DC] leading-relaxed whitespace-pre">
+            {selectedSource.snippet}
+          </pre>
+        </div>
 
-                    {matchingEvidence.length > 0 ? (
-                      matchingEvidence.map((ev) => (
-                        <div
-                          key={ev.id}
-                          className="p-3.5 rounded-lg bg-surface-container-lowest border border-white/5 flex flex-col gap-2"
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className="font-headline-sm text-headline-sm font-semibold text-on-surface">
-                              {ev.title}
-                            </span>
-                            <span className="font-code-sm text-code-sm text-secondary">
-                              {ev.proofType}
-                            </span>
-                          </div>
-
-                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 font-code-sm text-code-sm pt-1">
-                            {Object.entries(ev.data).map(([key, val]) => (
-                              <div
-                                key={key}
-                                className="p-2 rounded bg-surface-container/60 flex flex-col"
-                              >
-                                <span className="text-outline text-[10px] uppercase">
-                                  {key}
-                                </span>
-                                <span className="text-on-surface font-mono truncate">
-                                  {String(val)}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-
-                          {ev.proofHash && (
-                            <div className="flex items-center justify-between pt-2 border-t border-white/5 text-code-sm">
-                              <span className="text-outline">Proof Hash:</span>
-                              <span className="font-mono text-primary truncate max-w-xs">
-                                {ev.proofHash}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      ))
-                    ) : (
-                      <div className="p-3.5 rounded-lg bg-surface-container-lowest border border-white/5 text-code-sm text-outline">
-                        No independent blockchain or web oracle evidence was found to corroborate this claim.
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Step 3: Verdict Breakdown */}
-                  <div className="p-4 rounded-xl bg-surface-container-high border border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <div className="flex flex-col gap-0.5">
-                      <span className="font-label-caps text-label-caps uppercase text-outline">
-                        DETERMINISTIC VERDICT
-                      </span>
-                      <span className="font-headline-sm text-headline-sm font-bold text-on-surface">
-                        Expected: {inv.expected} → Observed: {inv.actual || "Uncorroborated"}
-                      </span>
-                      {inv.delta && (
-                        <span className="font-code-sm text-code-sm text-error font-medium">
-                          Violation Delta: {inv.delta}
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                      <span className="font-code-sm text-code-sm text-outline">
-                        Latency: {inv.latencyMs || 25}ms
-                      </span>
-                      {inv.status === "PASSED" ? (
-                        <Badge variant="passed" dot>
-                          GROUNDED PASS
-                        </Badge>
-                      ) : inv.status === "FAILED" ? (
-                        <Badge variant="failed" dot>
-                          INVARIANT REJECTED
-                        </Badge>
-                      ) : (
-                        <Badge variant="unverified" dot>
-                          UNVERIFIED
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
+        {/* THIS SOURCE SUPPORTS */}
+        <div className="pt-2">
+          <div className="text-[11px] font-bold uppercase tracking-wider text-[#6B635B] mb-2">
+            THIS SOURCE SUPPORTS
+          </div>
+          <div className="flex items-center gap-2.5">
+            <div className="w-5 h-5 rounded-full bg-[#EAF5EE] text-[#1D7A46] border border-[#CDE5D5] flex items-center justify-center text-xs font-bold shrink-0">
+              ✓
             </div>
-          );
-        })}
+            <span className="text-sm font-medium text-[#181311]">
+              {selectedSource.supports}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Card 3: Evidence trail */}
+      <div className="bg-white rounded-2xl border border-[#E8E4DC] p-6 shadow-sm flex flex-col gap-3">
+        <h3 className="font-heading font-bold text-base sm:text-lg text-[#181311]">
+          Evidence trail
+        </h3>
+        <div className="flex items-center gap-2.5 flex-wrap pt-1">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-[#F3EFEA] text-[#6B635B] border border-[#E8E4DC]">
+            • Collected 12:32:04
+          </span>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-[#F3EFEA] text-[#6B635B] border border-[#E8E4DC]">
+            • Integrity checked 12:32:05
+          </span>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-[#F3EFEA] text-[#6B635B] border border-[#E8E4DC]">
+            • Matched 12:32:18
+          </span>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-[#EAF5EE] text-[#1D7A46] border border-[#CDE5D5]">
+            • Verdict 12:32:41
+          </span>
+        </div>
       </div>
     </div>
   );

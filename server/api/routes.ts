@@ -124,6 +124,43 @@ export async function handleApiRequest(
 
   try {
     // ----------------------------------------------------
+    // TELEGRAM BOT WEBHOOK GATEWAY
+    // ----------------------------------------------------
+    if (pathname === "/telegram/webhook" || pathname === "/v1/telegram/webhook") {
+      if (req.method === "POST") {
+        const webhookSecret = process.env.TELEGRAM_WEBHOOK_SECRET;
+        if (webhookSecret) {
+          const receivedToken = req.headers["x-telegram-bot-api-secret-token"];
+          if (receivedToken !== webhookSecret) {
+            sendJson(res, 403, { error: "Forbidden", message: "Invalid webhook secret token" });
+            return true;
+          }
+        }
+        try {
+          const body = await parseJsonBody<any>(req);
+          const result = await veraTelegramBot.handleUpdate(body);
+          sendJson(res, 200, { ok: true, handled: result.handled, reply: result.reply });
+          return true;
+        } catch (err: any) {
+          sendJson(res, 400, { error: "Invalid Telegram payload", message: err?.message });
+          return true;
+        }
+      }
+      if (req.method === "GET") {
+        sendJson(res, 200, {
+          ok: true,
+          service: "VeraOS Telegram Webhook Gateway",
+          bot: "@Vera_Of_bot",
+          status: "ready",
+          configured: veraTelegramBot.isConfigured(),
+        });
+        return true;
+      }
+      sendJson(res, 405, { error: "Method Not Allowed" });
+      return true;
+    }
+
+    // ----------------------------------------------------
     // AUTHENTICATION & INVITE ENDPOINTS
     // ----------------------------------------------------
     if (pathname === "/v1/auth/google" && req.method === "POST") {

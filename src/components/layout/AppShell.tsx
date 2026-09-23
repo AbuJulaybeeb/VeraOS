@@ -5,27 +5,25 @@ import { Header } from "./Header";
 import { MobileDrawer } from "./MobileDrawer";
 
 export const AppShell: React.FC = () => {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-background font-body-md text-on-surface antialiased flex flex-col">
-      {/* Desktop Sidebar (Permanent) */}
-      <div className="hidden lg:flex fixed left-0 top-0 h-full w-72 z-50">
+    <div className="min-h-screen bg-[#F7F5F0] text-[#191513] flex flex-row overflow-x-hidden font-sans">
+      {/* Desktop Persistent Sidebar */}
+      <div className="hidden lg:block shrink-0">
         <Sidebar />
       </div>
 
-      {/* Mobile Drawer */}
+      {/* Mobile Drawer Navigation */}
       <MobileDrawer
-        isOpen={mobileMenuOpen}
-        onClose={() => setMobileMenuOpen(false)}
+        isOpen={mobileDrawerOpen}
+        onClose={() => setMobileDrawerOpen(false)}
       />
 
       {/* Main Content Area */}
-      <div className="lg:pl-72 flex flex-col min-h-screen">
-        <Header
-          onToggleMobileMenu={() => setMobileMenuOpen(true)}
-        />
-        <main className="w-full pt-16 bg-surface flex-1 px-4 sm:px-space-md lg:px-space-lg py-space-lg">
+      <div className="flex-1 flex flex-col min-w-0 min-h-screen bg-[#F7F5F0]">
+        <Header onOpenMobileMenu={() => setMobileDrawerOpen(true)} />
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full overflow-y-auto">
           <Outlet />
         </main>
       </div>

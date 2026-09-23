@@ -137,7 +137,7 @@ export const InvitePortal: React.FC = () => {
       return;
     }
 
-    const validSeeds = ["VERA-VIP-2026", "STELLAR-AUDITOR-01", "FOUNDER-ALPHA"];
+    const validSeeds = ["VERA-VIP-2026", "STELLAR-AUDITOR-01", "ENTERPRISE-ALPHA"];
     if (
       validSeeds.includes(clean) ||
       clean.startsWith("VERA-") ||
@@ -445,7 +445,7 @@ export const InvitePortal: React.FC = () => {
           </div>
 
           <div className="pt-4 border-t border-[#4A2B1D]/60 flex items-center justify-between text-[11px] text-[#B9A99B]">
-            <span>Preset VIP Code: <code className="text-[#E08A3E] font-mono">VERA-VIP-2026</code></span>
+            <span>Access Code: <code className="text-[#E08A3E] font-mono">VERA-VIP-2026</code></span>
             <button
               onClick={() => setCode("VERA-VIP-2026")}
               className="text-[#E08A3E] hover:underline font-semibold cursor-pointer"

@@ -1,11 +1,4 @@
-// Core API client utilities & simulation helpers
-export const SIMULATED_LATENCY_MS = 250;
-
-export async function delay(ms = SIMULATED_LATENCY_MS): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-// Local storage persistent mock store keys
+// Core API client storage utilities
 export const STORAGE_KEYS = {
   VERIFICATIONS: "vera_verifications_store_v1",
   AGENTS: "vera_agents_store_v1",

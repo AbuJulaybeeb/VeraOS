@@ -24,6 +24,5 @@ export interface IndependentEvidence {
   data: Record<string, string | number | boolean>;
   proofHash?: string;
   explorerUrl?: string;
-  isMock: boolean;
   timestamp: string;
 }

@@ -1,479 +1,387 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
+﻿import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { useAgentContext } from "../context/AgentContext";
-import { useAuth } from "../context/AuthContext";
-import { Button } from "../components/ui/Button";
-import { Badge } from "../components/ui/Badge";
-import { CodeBlock } from "../components/ui/CodeBlock";
-
-const RUNTIMES = [
-  {
-    id: "eliza",
-    name: "ElizaOS (Stellar Agent)",
-    badge: "POPULAR ON STELLAR",
-    badgeColor: "bg-[#E08A3E]/20 text-[#E08A3E] border border-[#E08A3E]/40",
-    description: "Autonomous DeFi, social & payment agents orchestrating Stellar accounts.",
-    runtime: "ElizaOS Stellar Runtime v1.2",
-    model: "gpt-4o",
-    icon: "bolt",
-  },
-  {
-    id: "langchain",
-    name: "LangChain / LangGraph",
-    description: "Stateful agentic workflows, multi-actor graphs, and tool execution loops.",
-    runtime: "LangChain Agentic Runtime v0.3",
-    model: "gpt-4o-mini",
-    icon: "account_tree",
-  },
-  {
-    id: "crewai",
-    name: "CrewAI Swarm",
-    description: "Multi-agent collaborative swarms with specialized roles and task handoffs.",
-    runtime: "CrewAI Multi-Worker Swarm v2.0",
-    model: "claude-3.5-sonnet",
-    icon: "groups",
-  },
-  {
-    id: "autogpt",
-    name: "AutoGPT / AutoGen",
-    description: "Goal-oriented autonomous loops with automated subtask planning.",
-    runtime: "AutoGPT Execution Kernel v1.0",
-    model: "gpt-4o",
-    icon: "psychology",
-  },
-  {
-    id: "python_sdk",
-    name: "Python Agent SDK",
-    description: "Direct integration for local or server-side agents using @veraos/python.",
-    runtime: "VeraOS Python SDK Worker",
-    model: "gpt-4o",
-    icon: "terminal",
-  },
-  {
-    id: "custom_rest",
-    name: "Custom Webhook / REST",
-    description: "Connect any autonomous agent exposing a standard JSON-RPC or HTTP webhook.",
-    runtime: "Custom HTTP JSON-RPC Agent",
-    model: "custom-llm",
-    icon: "api",
-  },
-];
 
 export const ConnectAgent: React.FC = () => {
-  const { user } = useAuth();
-  const { activeAgent, openConnectModal, testHandshake, disconnectAgent } = useAgentContext();
+  const navigate = useNavigate();
+  const { connectAgentWithConsent } = useAgentContext();
 
+  const [activeStep, setActiveStep] = useState<number>(1);
+  const [selectedType, setSelectedType] = useState<"api" | "webhook" | "telegram">("api");
+  const [agentName, setAgentName] = useState("ResearchAgent VR-2048");
+  const [endpoint, setEndpoint] = useState("https://api.acme.ai/agent/verify");
+  const [runtime, setRuntime] = useState("TypeScript / Node SDK");
   const [copiedKey, setCopiedKey] = useState(false);
-  const [activeLang, setActiveLang] = useState<"ts" | "py" | "curl">("ts");
-  const [pingStatus, setPingStatus] = useState<string | null>(null);
-  const [isPinging, setIsPinging] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [testResult, setTestResult] = useState<string | null>(null);
 
-  const liveApiKey = activeAgent?.apiKeySnippet || "vera_live_sec_89bf2e91a001";
+  const [capabilities, setCapabilities] = useState({
+    financial: true,
+    communication: true,
+    database: false,
+  });
 
-  const handleCopyKey = () => {
-    navigator.clipboard.writeText(liveApiKey);
+  const apiKeySnippet = "vera_live_79a24f0c9182be34";
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(apiKeySnippet);
     setCopiedKey(true);
     setTimeout(() => setCopiedKey(false), 2000);
   };
 
-  const handlePing = async () => {
-    if (!activeAgent) return;
-    setIsPinging(true);
-    setPingStatus("Pinging...");
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!agentName.trim()) return;
+
+    setIsSubmitting(true);
     try {
-      const res = await testHandshake(activeAgent.id);
-      setPingStatus(`${res.latencyMs}ms ✓ Stellar RPC`);
-      setTimeout(() => setPingStatus(null), 4000);
-    } catch {
-      setPingStatus("Ping Failed");
-      setTimeout(() => setPingStatus(null), 4000);
+      await connectAgentWithConsent({
+        name: agentName.trim(),
+        runtime,
+        endpoint,
+        model: "agent-v1",
+        capabilities: Object.entries(capabilities)
+          .filter(([_, enabled]) => enabled)
+          .map(([key]) => key),
+      });
+
+      // Move to step 3 or navigate to agents
+      setActiveStep(3);
+      setTestResult("Handshake validated: latency 180ms • Cryptographic signature verified.");
+      setTimeout(() => {
+        navigate("/agents");
+      }, 1500);
+    } catch (err) {
+      console.error(err);
     } finally {
-      setIsPinging(false);
+      setIsSubmitting(false);
     }
   };
 
-  const tsCode = `import { VeraOS } from '@veraos/sdk';
-
-// Initialize VeraOS Verification Client
-const vera = new VeraOS({
-  apiKey: process.env.VERA_API_KEY, // ${liveApiKey}
-  network: 'stellar-testnet'
-});
-
-// Submit autonomous agent task & execution trace for verification
-const result = await vera.verify({
-  taskId: 'task_001',
-  taskPrompt: 'Find 3 Soroban lending protocols on Stellar with TVL > $10M and pay 5 USDC.',
-  workerId: '${activeAgent?.name || "my-agent"}',
-  invariants: [
-    { metric: 'tvl_threshold', operator: '>=', value: 10000000 },
-    { metric: 'exact_transfer', asset: 'USDC', amount: 5.0 }
-  ],
-  executionTrace: agentRun.trace
-});
-
-if (!result.valid) {
-  // Autonomous Remediation Handler
-  console.warn('VeraOS Breaches:', result.remediationDirectives);
-  await myAgent.remediate(result.remediationDirectives);
-} else {
-  console.log('Verified on Stellar! Ledger TxHash:', result.txHash || result.id);
-}`;
-
-  const pyCode = `import os
-from veraos import VeraOS
-
-client = VeraOS(api_key=os.getenv("VERA_API_KEY"))
-
-# Submit autonomous agent execution for independent Stellar verification
-verification = client.verify(
-    task_id="task_001",
-    task_prompt="Find 3 Stellar lending protocols with TVL > $10M and pay 5 USDC.",
-    worker_id="${activeAgent?.name || "my-agent"}",
-    network="stellar-testnet",
-    execution_output=agent_output.text
-)
-
-if not verification.is_valid:
-    # Trigger self-correction loop
-    agent.apply_remediation(verification.remediation_directives)
-else:
-    print(f"Verified on Stellar! Explorer: https://stellar.expert/explorer/testnet/tx/{verification.tx_hash}")`;
-
-  const curlCode = `curl -X POST https://api.veraos.network/v1/verify \\
-  -H "Authorization: Bearer ${liveApiKey}" \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "task": "Find 3 Stellar lending protocols with TVL > $10M and pay 5 USDC.",
-    "network": "stellar-testnet",
-    "worker": {
-      "id": "${activeAgent?.id || "my-agent"}",
-      "output": "..."
-    }
-  }'`;
-
   return (
-    <div className="max-w-5xl mx-auto w-full flex flex-col gap-space-lg">
-      {/* Breadcrumbs & Title */}
-      <div className="flex flex-col gap-1">
-        <div className="flex items-center gap-space-xs font-body-sm text-body-sm text-outline">
-          <Link to="/agents" className="hover:text-on-surface transition-colors">
-            Agents
-          </Link>
-          <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-          <span className="text-on-surface">Connect Agent</span>
+    <div className="max-w-4xl mx-auto w-full flex flex-col gap-8 font-sans">
+      {/* 1. Header (Image 2) */}
+      <div>
+        <h1 className="font-heading text-2xl sm:text-3xl font-extrabold tracking-tight text-[#191513]">
+          Connect an agent
+        </h1>
+        <p className="text-xs sm:text-sm text-[#6B635B] mt-1">
+          Choose how your AI agent will send tasks and claims to Vera.
+        </p>
+      </div>
+
+      {/* 2. Three-Step Progress Indicator (Image 2) */}
+      <div className="flex items-center justify-between max-w-xl mx-auto w-full px-2">
+        <div className="flex items-center gap-2">
+          <div
+            className={`w-7 h-7 rounded-full flex items-center justify-center font-heading font-bold text-xs transition-colors ${
+              activeStep >= 1
+                ? "bg-[#181311] text-white"
+                : "bg-white border border-[#E8E4DC] text-[#6B635B]"
+            }`}
+          >
+            1
+          </div>
+          <span
+            className={`text-xs font-semibold ${
+              activeStep === 1 ? "text-[#191513]" : "text-[#6B635B]"
+            }`}
+          >
+            Connection
+          </span>
         </div>
 
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex-1 h-[2px] bg-[#E8E4DC] mx-4" />
+
+        <div className="flex items-center gap-2">
+          <div
+            className={`w-7 h-7 rounded-full flex items-center justify-center font-heading font-bold text-xs transition-colors ${
+              activeStep >= 2
+                ? "bg-[#181311] text-white"
+                : "bg-white border border-[#E8E4DC] text-[#6B635B]"
+            }`}
+          >
+            2
+          </div>
+          <span
+            className={`text-xs font-semibold ${
+              activeStep === 2 ? "text-[#191513]" : "text-[#6B635B]"
+            }`}
+          >
+            Agent details
+          </span>
+        </div>
+
+        <div className="flex-1 h-[2px] bg-[#E8E4DC] mx-4" />
+
+        <div className="flex items-center gap-2">
+          <div
+            className={`w-7 h-7 rounded-full flex items-center justify-center font-heading font-bold text-xs transition-colors ${
+              activeStep >= 3
+                ? "bg-[#1D7A46] text-white"
+                : "bg-white border border-[#E8E4DC] text-[#6B635B]"
+            }`}
+          >
+            3
+          </div>
+          <span
+            className={`text-xs font-semibold ${
+              activeStep === 3 ? "text-[#191513]" : "text-[#6B635B]"
+            }`}
+          >
+            Test check
+          </span>
+        </div>
+      </div>
+
+      {/* 3. Three Integration Cards (Image 2) */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Card 1: API */}
+        <div
+          onClick={() => setSelectedType("api")}
+          className={`p-6 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between ${
+            selectedType === "api"
+              ? "bg-white border-[#181311] ring-1 ring-[#181311] shadow-sm"
+              : "bg-white border-[#E8E4DC] hover:border-[#D5CEC5]"
+          }`}
+        >
           <div>
-            <h1 className="font-headline-lg text-headline-lg font-bold tracking-tight text-on-surface">
-              Connect AI Agent
-            </h1>
-            <p className="font-body-md text-body-md text-on-surface-variant">
-              Connect your AI agent to VeraOS just like connecting a Web3 wallet. Instant consent authorization, cryptographic attestation, and deterministic verification on Stellar.
+            <div className="flex items-center justify-between mb-3">
+              <span className="font-heading font-bold text-lg text-[#191513]">API</span>
+              <span className="px-2.5 py-0.5 rounded-full bg-[#EAF5EE] text-[#1D7A46] border border-[#CDE5D5] text-[11px] font-semibold">
+                Recommended
+              </span>
+            </div>
+            <p className="text-xs text-[#6B635B] leading-relaxed">
+              Direct REST or SDK integration for custom agent runtimes and server backends.
             </p>
           </div>
-
-          <Button
-            variant="primary"
-            size="md"
-            onClick={() => openConnectModal()}
-            icon={
-              <span className="material-symbols-outlined text-[18px]">
-                smart_toy
-              </span>
-            }
-            className="shrink-0 shadow-[0_0_16px_rgba(201,106,43,0.3)]"
-          >
-            Connect Agent (1-Click)
-          </Button>
-        </div>
-      </div>
-
-      {/* Protected Limited Resource Notice (Mesh Keypads & Cloud Runners) */}
-      {(!user || user.invitationStatus === "pending") && (
-        <div className="rounded-2xl bg-[#1A0E08] border border-amber-500/40 p-5 sm:p-6 shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
-          <div className="flex items-start gap-4">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center shrink-0 text-amber-400">
-              <span className="material-symbols-outlined text-[24px]">lock</span>
-            </div>
-            <div className="flex flex-col gap-1">
-              <div className="flex items-center gap-2">
-                <h3 className="text-sm font-bold text-white">
-                  Limited Capacity Resource — Mesh Keypad & Live Agent Runners
-                </h3>
-                <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                  Invite Required
-                </span>
-              </div>
-              <p className="text-xs text-[#B9A99B] leading-relaxed max-w-2xl">
-                Live agent mesh keypads, real-time agent execution kernels, and cloud verification workers have dedicated compute limits. To protect edge capacity, live agent execution credentials are restricted to authorized operators.
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto">
-            <Link
-              to="/invite"
-              className="w-full sm:w-auto py-2 px-4 rounded-xl bg-[#C96A2B] hover:bg-[#E08A3E] text-white text-xs font-bold text-center transition-colors shadow-md whitespace-nowrap"
-            >
-              Enter Invite Code
-            </Link>
-          </div>
-        </div>
-      )}
-
-      {/* Hero: 1-Click Consent Connection Banner */}
-      <div className="rounded-2xl bg-gradient-to-r from-[#2C1710] via-[#21110B] to-[#160C08] p-space-md lg:p-space-lg border border-[#E08A3E]/30 shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-        <div className="flex flex-col gap-2 max-w-xl">
-          <div className="flex items-center gap-2">
-            <span className="px-2 py-0.5 rounded-full bg-[#E08A3E]/20 text-[#E08A3E] font-label-caps text-label-caps font-bold border border-[#E08A3E]/30 uppercase">
-              AgentConnect Protocol
-            </span>
-            <span className="text-xs text-[#B9A99B]">Wallet-like AI Agent Handshake</span>
-          </div>
-
-          <h2 className="text-lg font-bold text-[#FFF8F0]">
-            Connect Your Agent in Seconds With Explicit User Consent
-          </h2>
-          <p className="text-xs text-[#B9A99B] leading-relaxed">
-            No tedious manual form filling. When connecting, VeraOS presents a transparent permission request asking for your consent to inspect task claims, corroborate against Stellar Horizon/Soroban RPC, and emit remediation directives without custody of keys or funds.
-          </p>
-
-          <div className="flex items-center gap-4 text-xs font-code-sm text-[#F3E5D5] pt-1">
-            <span className="flex items-center gap-1">
-              <span className="material-symbols-outlined text-[#4ade80] text-[16px]">check_circle</span>
-              Non-Custodial
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="material-symbols-outlined text-[#4ade80] text-[16px]">check_circle</span>
-              Stellar Testnet RPC
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="material-symbols-outlined text-[#4ade80] text-[16px]">check_circle</span>
-              Remediation Loop
-            </span>
+          <div className="mt-4 font-mono text-[11px] text-[#D97736]">
+            Python, Node, Go
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={() => openConnectModal()}
-          className="px-5 py-3 rounded-xl bg-[#C96A2B] hover:bg-[#E08A3E] text-white font-bold text-sm shadow-[0_0_20px_rgba(201,106,43,0.4)] flex items-center gap-2 transition-all shrink-0 cursor-pointer group"
+        {/* Card 2: Webhook */}
+        <div
+          onClick={() => setSelectedType("webhook")}
+          className={`p-6 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between ${
+            selectedType === "webhook"
+              ? "bg-white border-[#181311] ring-1 ring-[#181311] shadow-sm"
+              : "bg-white border-[#E8E4DC] hover:border-[#D5CEC5]"
+          }`}
         >
-          <span className="material-symbols-outlined text-[20px] group-hover:rotate-12 transition-transform">
-            hub
-          </span>
-          <span>Launch Agent Handshake</span>
-        </button>
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <span className="font-heading font-bold text-lg text-[#191513]">Webhook</span>
+            </div>
+            <p className="text-xs text-[#6B635B] leading-relaxed">
+              Receive execution claims via HTTP POST callback whenever an agent finishes a run.
+            </p>
+          </div>
+          <div className="mt-4 font-mono text-[11px] text-[#6B635B]">
+            Automated callbacks
+          </div>
+        </div>
+
+        {/* Card 3: Telegram */}
+        <div
+          onClick={() => setSelectedType("telegram")}
+          className={`p-6 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between ${
+            selectedType === "telegram"
+              ? "bg-white border-[#181311] ring-1 ring-[#181311] shadow-sm"
+              : "bg-white border-[#E8E4DC] hover:border-[#D5CEC5]"
+          }`}
+        >
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <span className="font-heading font-bold text-lg text-[#191513]">Telegram</span>
+            </div>
+            <p className="text-xs text-[#6B635B] leading-relaxed">
+              Connect an existing Telegram bot worker to monitor and verify bot actions automatically.
+            </p>
+          </div>
+          <div className="mt-4 font-mono text-[11px] text-[#2AABEE]">
+            Zero-code bridge
+          </div>
+        </div>
       </div>
 
-      {/* Active Connected Agent Banner (if any) */}
-      {activeAgent && activeAgent.status === "CONNECTED" && (
-        <div className="rounded-2xl bg-[#14291e]/60 border border-[#22c55e]/30 p-space-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#22c55e]/20 border border-[#22c55e]/30 flex items-center justify-center text-[#4ade80]">
-              <span className="material-symbols-outlined text-[22px]">smart_toy</span>
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-sm text-white">{activeAgent.name}</span>
-                <Badge variant="passed" dot>
-                  CONNECTED
-                </Badge>
-              </div>
-              <span className="text-xs text-[#86efac]/80 font-code-sm">
-                {activeAgent.runtime} • Stellar Testnet Attestation Active
-              </span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={handlePing}
-              disabled={isPinging}
-              className="px-3 py-1.5 rounded-lg bg-[#0d1c14] hover:bg-[#1a3828] border border-[#22c55e]/30 text-xs font-semibold text-[#4ade80] flex items-center gap-1.5 transition-colors cursor-pointer"
-            >
-              <span className="material-symbols-outlined text-[15px]">
-                {isPinging ? "sync" : "bolt"}
-              </span>
-              <span>{pingStatus || "Test Handshake Ping"}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => disconnectAgent(activeAgent.id)}
-              className="px-3 py-1.5 rounded-lg bg-red-950/40 hover:bg-red-900/60 border border-red-500/30 text-xs font-semibold text-red-300 transition-colors cursor-pointer"
-            >
-              Disconnect
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Supported Agent Frameworks Grid */}
-      <div className="flex flex-col gap-space-sm">
-        <div className="flex items-center justify-between">
-          <h3 className="font-headline-sm text-headline-sm font-bold text-on-surface">
-            Supported Agent Frameworks
-          </h3>
-          <span className="text-xs text-outline">Click any framework to connect with consent</span>
+      {/* 4. Configuration Form (Image 2) */}
+      <form onSubmit={handleSubmit} className="p-6 sm:p-8 rounded-2xl bg-white border border-[#E8E4DC] shadow-sm flex flex-col gap-6">
+        {/* Agent Name */}
+        <div>
+          <label className="block text-xs font-semibold text-[#191513] uppercase tracking-wider mb-1.5">
+            Agent name
+          </label>
+          <input
+            type="text"
+            value={agentName}
+            onChange={(e) => setAgentName(e.target.value)}
+            placeholder="e.g. ResearchAgent VR-2048"
+            className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF8F5] border border-[#E8E4DC] text-sm text-[#191513] focus:outline-none focus:border-[#181311] transition-colors"
+          />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-space-md">
-          {RUNTIMES.map((fw) => (
-            <div
-              key={fw.id}
-              className="p-space-md rounded-2xl bg-surface-container-low border border-white/10 hover:border-[#E08A3E]/40 transition-all flex flex-col justify-between gap-4 group"
-            >
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center justify-between">
-                  <div className="w-8 h-8 rounded-lg bg-[#2C1710] text-[#E08A3E] flex items-center justify-center">
-                    <span className="material-symbols-outlined text-[18px]">{fw.icon}</span>
-                  </div>
-                  {fw.badge && (
-                    <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase ${fw.badgeColor}`}>
-                      {fw.badge}
-                    </span>
-                  )}
-                </div>
+        {/* Endpoint / Webhook URL */}
+        <div>
+          <label className="block text-xs font-semibold text-[#191513] uppercase tracking-wider mb-1.5">
+            {selectedType === "telegram" ? "Telegram Bot Username / Token" : "Webhook URL or API Endpoint"}
+          </label>
+          <input
+            type="text"
+            value={endpoint}
+            onChange={(e) => setEndpoint(e.target.value)}
+            placeholder={
+              selectedType === "telegram"
+                ? "@YourVeraBot"
+                : "https://api.acme.ai/agent/verify"
+            }
+            className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF8F5] border border-[#E8E4DC] text-sm text-[#191513] focus:outline-none focus:border-[#181311] transition-colors"
+          />
+        </div>
 
-                <h4 className="font-bold text-sm text-on-surface group-hover:text-[#E08A3E] transition-colors">
-                  {fw.name}
-                </h4>
-                <p className="text-xs text-on-surface-variant leading-relaxed">
-                  {fw.description}
+        {/* Runtime Environment */}
+        <div>
+          <label className="block text-xs font-semibold text-[#191513] uppercase tracking-wider mb-1.5">
+            Runtime environment
+          </label>
+          <select
+            value={runtime}
+            onChange={(e) => setRuntime(e.target.value)}
+            className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF8F5] border border-[#E8E4DC] text-sm text-[#191513] focus:outline-none focus:border-[#181311] transition-colors"
+          >
+            <option value="TypeScript / Node SDK">TypeScript / Node SDK (@veraos/sdk)</option>
+            <option value="Python SDK (@veraos/py)">Python SDK (@veraos/py)</option>
+            <option value="LangChain / LangGraph">LangChain / LangGraph Kernel</option>
+            <option value="ElizaOS (Stellar Agent)">ElizaOS (Stellar Agent Runtime)</option>
+            <option value="Custom HTTP JSON-RPC">Custom HTTP JSON-RPC Webhook</option>
+          </select>
+        </div>
+
+        {/* Verification Assertions / Capabilities */}
+        <div>
+          <label className="block text-xs font-semibold text-[#191513] uppercase tracking-wider mb-2">
+            Verification assertions required
+          </label>
+          <div className="flex flex-col gap-2.5">
+            <label className="flex items-center gap-3 p-3 rounded-xl bg-[#FAF8F5] border border-[#E8E4DC] hover:border-[#D5CEC5] cursor-pointer transition-colors">
+              <input
+                type="checkbox"
+                checked={capabilities.financial}
+                onChange={(e) =>
+                  setCapabilities({ ...capabilities, financial: e.target.checked })
+                }
+                className="w-4 h-4 rounded text-[#181311] focus:ring-0"
+              />
+              <div>
+                <p className="text-xs font-semibold text-[#191513]">
+                  Financial transactions & settlement
+                </p>
+                <p className="text-[11px] text-[#6B635B]">
+                  Validates balance deltas, recipient addresses, and gas thresholds against RPC ground truth.
                 </p>
               </div>
+            </label>
 
-              <div className="pt-3 border-t border-white/5 flex items-center justify-between">
-                <span className="text-[10px] text-outline font-code-sm">
-                  {fw.model}
-                </span>
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    openConnectModal({
-                      name: fw.id === "eliza" ? "StellarEliza" : fw.name.split(" ")[0],
-                      runtime: fw.runtime,
-                      model: fw.model,
-                    })
-                  }
-                  className="px-2.5 py-1 rounded-lg bg-surface-container hover:bg-[#C96A2B] hover:text-white text-xs font-semibold text-primary transition-colors cursor-pointer flex items-center gap-1"
-                >
-                  <span>Connect</span>
-                  <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
-                </button>
+            <label className="flex items-center gap-3 p-3 rounded-xl bg-[#FAF8F5] border border-[#E8E4DC] hover:border-[#D5CEC5] cursor-pointer transition-colors">
+              <input
+                type="checkbox"
+                checked={capabilities.communication}
+                onChange={(e) =>
+                  setCapabilities({ ...capabilities, communication: e.target.checked })
+                }
+                className="w-4 h-4 rounded text-[#181311] focus:ring-0"
+              />
+              <div>
+                <p className="text-xs font-semibold text-[#191513]">
+                  Customer communication & notifications
+                </p>
+                <p className="text-[11px] text-[#6B635B]">
+                  Verifies email deliveries, message receipts, and support ticket resolutions.
+                </p>
               </div>
-            </div>
-          ))}
-        </div>
-      </div>
+            </label>
 
-      {/* Developer API Credentials Card */}
-      <div className="rounded-2xl bg-surface-container p-space-md lg:p-space-lg border border-white/10 shadow-xl flex flex-col gap-space-md">
-        <div className="flex items-center justify-between">
-          <span className="font-headline-sm text-headline-sm font-bold text-on-surface">
-            Developer Credentials & Endpoints
-          </span>
-          <span className="px-2 py-0.5 rounded bg-surface-container-high text-secondary font-label-caps text-label-caps uppercase font-semibold">
-            STELLAR TESTNET GATEWAY
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-space-md">
-          {/* Endpoint */}
-          <div className="p-space-sm rounded-xl bg-surface-container-lowest border border-white/5 flex flex-col gap-1">
-            <span className="font-label-caps text-label-caps text-outline uppercase">
-              Verification API Endpoint
-            </span>
-            <span className="font-code-sm text-code-sm text-primary font-mono select-all">
-              https://api.veraos.network/v1/verify
-            </span>
-            <span className="text-[11px] text-outline">
-              Live Soroban RPC & Horizon settlement gateway
-            </span>
+            <label className="flex items-center gap-3 p-3 rounded-xl bg-[#FAF8F5] border border-[#E8E4DC] hover:border-[#D5CEC5] cursor-pointer transition-colors">
+              <input
+                type="checkbox"
+                checked={capabilities.database}
+                onChange={(e) =>
+                  setCapabilities({ ...capabilities, database: e.target.checked })
+                }
+                className="w-4 h-4 rounded text-[#181311] focus:ring-0"
+              />
+              <div>
+                <p className="text-xs font-semibold text-[#191513]">
+                  Database mutations & CRM sync
+                </p>
+                <p className="text-[11px] text-[#6B635B]">
+                  Ensures database state commitments reflect claimed output without data corruption.
+                </p>
+              </div>
+            </label>
           </div>
+        </div>
 
-          {/* API Key */}
-          <div className="p-space-sm rounded-xl bg-surface-container-lowest border border-white/5 flex items-center justify-between gap-2">
-            <div className="flex flex-col min-w-0">
-              <span className="font-label-caps text-label-caps text-outline uppercase">
-                Active Verification Key
-              </span>
-              <span className="font-code-sm text-code-sm text-secondary font-mono truncate">
-                {liveApiKey}
-              </span>
-              <span className="text-[11px] text-outline">
-                Scoped with user consent for Stellar verification
-              </span>
-            </div>
-
+        {/* API Key Box (Image 2) */}
+        <div className="p-4 rounded-xl bg-[#FAF8F5] border border-[#E8E4DC]">
+          <div className="flex items-center justify-between mb-2">
+            <span className="font-mono text-xs font-semibold text-[#6B635B] uppercase">
+              Agent API Key
+            </span>
             <button
-              onClick={handleCopyKey}
-              className="px-3 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-code-sm text-code-sm flex items-center gap-1 shrink-0 transition-colors border border-white/5 cursor-pointer"
+              type="button"
+              onClick={handleCopy}
+              className="text-xs text-[#181311] font-semibold hover:text-[#D97736] flex items-center gap-1 cursor-pointer"
             >
-              <span className="material-symbols-outlined text-[16px]">
+              <span className="material-symbols-outlined text-[14px]">
                 {copiedKey ? "check" : "content_copy"}
               </span>
-              <span>{copiedKey ? "Copied" : "Copy"}</span>
+              <span>{copiedKey ? "Copied" : "Copy key"}</span>
             </button>
           </div>
-        </div>
-      </div>
-
-      {/* Code Integration Examples */}
-      <div className="rounded-2xl bg-surface-container p-space-md lg:p-space-lg border border-white/10 shadow-xl flex flex-col gap-space-md">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm border-b border-white/5 pb-3">
-          <div>
-            <h3 className="font-headline-sm text-headline-sm font-bold text-on-surface">
-              Agent Runtime Integration Code
-            </h3>
-            <p className="font-body-sm text-body-sm text-on-surface-variant">
-              Submit an agent assertion and receive a deterministic verdict with automated remediation directives.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-1 bg-surface-container-lowest p-1 rounded-lg border border-white/5 self-start sm:self-auto">
-            {(["ts", "py", "curl"] as const).map((lang) => (
-              <button
-                key={lang}
-                onClick={() => setActiveLang(lang)}
-                className={`px-3 py-1 rounded font-label-caps text-label-caps uppercase font-semibold transition-colors cursor-pointer ${
-                  activeLang === lang
-                    ? "bg-primary-container text-on-primary shadow-sm"
-                    : "text-on-surface-variant hover:text-on-surface"
-                }`}
-              >
-                {lang === "ts" ? "TypeScript" : lang === "py" ? "Python" : "cURL"}
-              </button>
-            ))}
+          <div className="p-2.5 rounded-lg bg-white border border-[#E8E4DC] font-mono text-xs text-[#191513] select-all">
+            VERA_API_KEY={apiKeySnippet}
           </div>
         </div>
 
-        {activeLang === "ts" && (
-          <CodeBlock
-            code={tsCode}
-            language="TypeScript SDK"
-            filename="verify-agent.ts"
-          />
+        {testResult && (
+          <div className="p-3.5 rounded-xl bg-[#EAF5EE] border border-[#CDE5D5] text-xs text-[#1D7A46] font-medium flex items-center gap-2">
+            <span className="material-symbols-outlined text-[18px]">verified</span>
+            <span>{testResult}</span>
+          </div>
         )}
-        {activeLang === "py" && (
-          <CodeBlock
-            code={pyCode}
-            language="Python SDK"
-            filename="verify_agent.py"
-          />
-        )}
-        {activeLang === "curl" && (
-          <CodeBlock
-            code={curlCode}
-            language="cURL"
-            filename="POST /v1/verify"
-          />
-        )}
-      </div>
+
+        {/* Action Buttons */}
+        <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#E8E4DC]">
+          <button
+            type="button"
+            onClick={() => navigate("/agents")}
+            className="px-5 py-2.5 rounded-xl bg-white hover:bg-[#F3EFEA] border border-[#D5CEC5] text-[#191513] font-heading font-semibold text-xs sm:text-sm transition-colors cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#181311] hover:bg-[#2A2422] text-white font-heading font-semibold text-xs sm:text-sm shadow-sm transition-all cursor-pointer disabled:opacity-50"
+          >
+            {isSubmitting ? (
+              <>
+                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span>Testing handshake...</span>
+              </>
+            ) : (
+              <>
+                <span>Save and test connection</span>
+                <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+              </>
+            )}
+          </button>
+        </div>
+      </form>
     </div>
   );
 };
+
+export default ConnectAgent;

@@ -104,7 +104,7 @@ export const StellarWalletModal: React.FC<StellarWalletModalProps> = ({
       <div className="fixed inset-0 bg-black/80 backdrop-blur-md" onClick={onClose} />
 
       {/* Modal Box */}
-      <div className="relative w-full max-w-md rounded-2xl bg-surface-container border border-white/10 shadow-2xl p-6 flex flex-col gap-5 z-10 text-left">
+      <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl bg-surface-container border border-white/10 shadow-2xl p-4 sm:p-6 flex flex-col gap-5 z-10 text-left">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">

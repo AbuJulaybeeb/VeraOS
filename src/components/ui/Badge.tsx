@@ -7,8 +7,7 @@ export type BadgeVariant =
   | "unverified"
   | "running"
   | "neutral"
-  | "orange"
-  | "purple";
+  | "orange";
 
 interface BadgeProps {
   children: React.ReactNode;
@@ -27,32 +26,28 @@ export const Badge: React.FC<BadgeProps> = ({
 }) => {
   const variantStyles: Record<BadgeVariant, { container: string; dot: string }> = {
     passed: {
-      container: "bg-[#14291e] text-[#4ade80] border border-[#22c55e]/30",
+      container: "bg-[#142818] text-[#4ade80] border border-[#1b4324]",
       dot: "bg-[#4ade80]",
     },
     failed: {
-      container: "bg-error-container/50 text-error border border-error/30 font-semibold",
-      dot: "bg-error",
+      container: "bg-[#2a1210] text-[#f87171] border border-[#5c1e19] font-semibold",
+      dot: "bg-[#f87171]",
     },
     unverified: {
-      container: "bg-surface-variant text-on-surface-variant border border-white/10",
-      dot: "bg-outline",
+      container: "bg-[#2b1c10] text-[#E6A15A] border border-[#54331a]",
+      dot: "bg-[#E6A15A]",
     },
     running: {
-      container: "bg-secondary-container/30 text-secondary border border-secondary/30",
-      dot: "bg-secondary",
+      container: "bg-[#2C1710] text-[#E08A3E] border border-[#4A2B1D]",
+      dot: "bg-[#E08A3E]",
     },
     orange: {
-      container: "bg-primary-container/20 text-primary border border-primary-container/30",
-      dot: "bg-primary-container",
-    },
-    purple: {
-      container: "bg-tertiary-container/30 text-tertiary-fixed-dim border border-tertiary-container/30",
-      dot: "bg-tertiary",
+      container: "bg-[#2C1710] text-[#C96A2B] border border-[#E08A3E]/40",
+      dot: "bg-[#C96A2B]",
     },
     neutral: {
-      container: "bg-surface-container text-outline border border-white/5",
-      dot: "bg-outline",
+      container: "bg-[#21110B] text-[#B9A99B] border border-[#4A2B1D]",
+      dot: "bg-[#B9A99B]",
     },
   };
 

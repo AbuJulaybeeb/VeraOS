@@ -1,30 +1,28 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useAgentContext } from "../context/AgentContext";
+import { useVerificationsList } from "../hooks/useVerification";
 import { Button } from "../components/ui/Button";
 import { Badge } from "../components/ui/Badge";
-import { Card } from "../components/ui/Card";
 import { cn } from "../lib/utils";
 import { TELEGRAM_PERMANENT_INVITE_URL, TELEGRAM_BOT_URL } from "../config/env";
 
 export const Account: React.FC = () => {
+  const navigate = useNavigate();
   const {
     user,
     isAuthenticated,
     openAuthModal,
     updateProfile,
     regenerateApiKey,
-    updatePassword,
-    unlinkWallet,
-    connectWallet,
     logout,
   } = useAuth();
 
-  const { agents, openConnectModal, testHandshake, disconnectAgent } =
-    useAgentContext();
+  const { agents, testHandshake, disconnectAgent } = useAgentContext();
+  const { verifications } = useVerificationsList();
 
-  const [activeTab, setActiveTab] = useState<"overview" | "credentials" | "agents">("overview");
+  const [activeTab, setActiveTab] = useState<"profile" | "apikeys" | "agents" | "audit" | "danger">("profile");
 
   // Profile Edit State
   const [isEditingProfile, setIsEditingProfile] = useState(false);
@@ -62,6 +60,10 @@ export const Account: React.FC = () => {
     Record<string, { latencyMs: number; network: string; message: string }>
   >({});
 
+  // Delete Account Confirmation State
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deleteConfirmationText, setDeleteConfirmationText] = useState("");
+
   useEffect(() => {
     if (user) {
       setProfileName(user.name);
@@ -74,12 +76,6 @@ export const Account: React.FC = () => {
     navigator.clipboard.writeText(user.apiKey);
     setCopiedKey(true);
     setTimeout(() => setCopiedKey(false), 2500);
-  };
-
-  const handleCopyTelegramInvite = () => {
-    navigator.clipboard.writeText(TELEGRAM_PERMANENT_INVITE);
-    setCopiedTelegram(true);
-    setTimeout(() => setCopiedTelegram(false), 2500);
   };
 
   const handleSaveProfile = async (e: React.FormEvent) => {
@@ -109,63 +105,12 @@ export const Account: React.FC = () => {
       const newKey = await regenerateApiKey();
       setIsRegenModalOpen(false);
       setShowApiKey(true);
-      setApiKeyMsg(`New API key generated successfully (${newKey.slice(0, 15)}...). Old key has been revoked.`);
+      setApiKeyMsg(`New API key generated successfully (${newKey.slice(0, 14)}...). Old key has been revoked.`);
       setTimeout(() => setApiKeyMsg(null), 6000);
     } catch (err: any) {
       setApiKeyMsg("Failed to regenerate API key: " + (err?.message || "Unknown error"));
     } finally {
       setIsRegenerating(false);
-    }
-  };
-
-  const handleUpdatePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setPasswordMsg(null);
-
-    if (newPassword.length < 6) {
-      setPasswordMsg({ type: "error", text: "New password must be at least 6 characters long." });
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      setPasswordMsg({ type: "error", text: "New password and confirmation do not match." });
-      return;
-    }
-
-    setIsUpdatingPassword(true);
-    try {
-      const ok = await updatePassword(currentPassword, newPassword);
-      if (ok) {
-        setPasswordMsg({ type: "success", text: "Password updated successfully." });
-        setCurrentPassword("");
-        setNewPassword("");
-        setConfirmPassword("");
-      } else {
-        setPasswordMsg({ type: "error", text: "Current password verification failed. Please try again." });
-      }
-    } catch (err: any) {
-      setPasswordMsg({ type: "error", text: err?.message || "Failed to update password." });
-    } finally {
-      setIsUpdatingPassword(false);
-    }
-  };
-
-  const handleToggleWallet = async () => {
-    setIsManagingWallet(true);
-    setWalletMsg(null);
-    try {
-      if (user?.walletAddress) {
-        await unlinkWallet();
-        setWalletMsg({ type: "success", text: "Stellar wallet unlinked from account." });
-      } else {
-        const ok = await connectWallet();
-        if (ok) {
-          setWalletMsg({ type: "success", text: "Stellar wallet connected and linked." });
-        }
-      }
-    } catch (err: any) {
-      setWalletMsg({ type: "error", text: err?.message || "Wallet operation failed." });
-    } finally {
-      setIsManagingWallet(false);
     }
   };
 
@@ -186,8 +131,8 @@ export const Account: React.FC = () => {
         ...prev,
         [agentId]: {
           latencyMs: 0,
-          network: "stellar-testnet",
-          message: "Probe failed: " + (err?.message || "Network timeout"),
+          network: "verification-rpc",
+          message: "Probe failed: " + (err?.message || "Timeout"),
         },
       }));
     } finally {
@@ -195,36 +140,35 @@ export const Account: React.FC = () => {
     }
   };
 
+  const handleDeleteAccount = () => {
+    if (deleteConfirmationText.trim().toLowerCase() !== "delete my account") return;
+    logout();
+    navigate("/");
+  };
+
   if (!isAuthenticated || !user) {
     return (
-      <div className="p-space-lg max-w-5xl mx-auto flex flex-col gap-6">
-        <div className="p-8 rounded-2xl bg-surface-container border border-white/10 flex flex-col items-center justify-center text-center gap-4">
-          <div className="w-16 h-16 rounded-2xl bg-primary-container/20 border border-primary-container/40 flex items-center justify-center text-primary-container shadow-[0_0_24px_rgba(255,87,8,0.25)]">
+      <div className="max-w-4xl mx-auto flex flex-col gap-6 py-12 px-4 font-sans">
+        <div className="p-8 sm:p-12 rounded-3xl bg-[#21110B] border border-[#4A2819] flex flex-col items-center justify-center text-center gap-4">
+          <div className="w-16 h-16 rounded-2xl bg-[#3A2015] border border-[#63361F] flex items-center justify-center text-[#E08A3E]">
             <span className="material-symbols-outlined text-[36px]">manage_accounts</span>
           </div>
           <div className="flex flex-col gap-1 max-w-md">
-            <h2 className="font-headline-sm text-headline-sm text-on-surface font-semibold">
-              Sign In to View Account & Credentials
+            <h2 className="font-heading text-xl sm:text-2xl text-[#FFF8F0] font-bold">
+              Account Access Required
             </h2>
-            <p className="font-body-sm text-body-sm text-on-surface-variant">
-              Access your real-time API keys, cryptographic attestations, linked Google Workspace, and connected autonomous agents.
+            <p className="text-sm text-[#B9A99B]">
+              Sign in with your Google account to manage programmatic verification keys and agent connections.
             </p>
           </div>
-          <div className="flex items-center gap-3 pt-2">
+          <div className="pt-2">
             <Button
               variant="primary"
               size="md"
               onClick={() => openAuthModal("signin")}
               icon={<span className="material-symbols-outlined text-[18px]">login</span>}
             >
-              Sign In to Account
-            </Button>
-            <Button
-              variant="outline"
-              size="md"
-              onClick={() => openAuthModal("signup")}
-            >
-              Create Account
+              Continue with Google
             </Button>
           </div>
         </div>
@@ -233,40 +177,40 @@ export const Account: React.FC = () => {
   }
 
   return (
-    <div className="p-space-md md:p-space-lg max-w-6xl mx-auto flex flex-col gap-6 pb-20">
-      {/* Header Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/5 pb-6">
+    <div className="max-w-6xl mx-auto w-full flex flex-col gap-6 font-sans">
+      {/* Header Profile Bar */}
+      <div className="p-6 rounded-3xl bg-[#21110B] border border-[#4A2819] flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="flex items-center gap-4">
           {user.avatar ? (
             <img
               src={user.avatar}
               alt={user.name}
               referrerPolicy="no-referrer"
-              className="w-14 h-14 rounded-2xl object-cover border-2 border-primary-container/40 shadow-md"
+              className="w-16 h-16 rounded-2xl object-cover border-2 border-[#63361F]"
             />
           ) : (
-            <div className="w-14 h-14 rounded-2xl bg-primary-container flex items-center justify-center text-on-primary-container font-headline-sm font-bold text-xl shadow-[0_0_20px_rgba(255,87,8,0.3)]">
+            <div className="w-16 h-16 rounded-2xl bg-[#3A2015] border border-[#63361F] flex items-center justify-center text-[#E08A3E] font-heading font-bold text-2xl">
               {user.name.slice(0, 1).toUpperCase()}
             </div>
           )}
           <div className="flex flex-col">
-            <div className="flex items-center gap-2.5">
-              <h1 className="font-headline-sm text-xl md:text-2xl font-bold text-on-surface">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <h1 className="font-heading text-xl sm:text-2xl font-bold text-[#FFF8F0]">
                 {user.name}
               </h1>
               <Badge variant="passed" dot>
-                {user.invitationStatus === "admin" ? "PLATFORM OWNER" : "VERIFIED USER"}
+                GOOGLE AUTHENTICATED
               </Badge>
             </div>
-            <p className="font-code-sm text-code-sm text-on-surface-variant flex items-center gap-2">
+            <p className="font-mono text-xs text-[#B9A99B] flex items-center gap-2 mt-1">
               <span>{user.email}</span>
-              <span className="text-outline">•</span>
-              <span className="text-[#E08A3E] font-medium">{user.role}</span>
+              <span className="text-[#63361F]">•</span>
+              <span className="text-[#E08A3E]">{user.role || "AI Engineer"}</span>
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <Button
             variant="outline"
             size="sm"
@@ -280,92 +224,122 @@ export const Account: React.FC = () => {
             size="sm"
             onClick={logout}
             icon={<span className="material-symbols-outlined text-[16px]">logout</span>}
-            className="text-error hover:bg-error/10 hover:text-error"
+            className="text-[#f87171] hover:bg-[#2a1210] hover:text-[#f87171]"
           >
             Sign Out
           </Button>
         </div>
       </div>
 
-      {/* Navigation Tabs */}
-      <div className="flex items-center gap-2 border-b border-white/10 pb-2">
+      {/* Tabs */}
+      <div className="flex items-center gap-2 border-b border-[#3A2015] pb-2 overflow-x-auto">
         <button
           type="button"
-          onClick={() => setActiveTab("overview")}
+          onClick={() => setActiveTab("profile")}
           className={cn(
-            "flex items-center gap-2 px-4 py-2 rounded-lg font-headline-sm text-sm font-medium transition-colors cursor-pointer",
-            activeTab === "overview"
-              ? "bg-primary-container text-on-primary font-semibold shadow-[0_0_16px_rgba(255,87,8,0.25)]"
-              : "text-on-surface-variant hover:bg-surface-container hover:text-on-surface"
+            "flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-medium transition-colors whitespace-nowrap cursor-pointer",
+            activeTab === "profile"
+              ? "bg-[#C96A2B] text-[#FFF8F0] font-bold"
+              : "text-[#B9A99B] hover:bg-[#21110B] hover:text-[#FFF8F0]"
           )}
         >
-          <span className="material-symbols-outlined text-[18px]">account_circle</span>
-          <span>Account Overview</span>
+          <span className="material-symbols-outlined text-[18px]">badge</span>
+          <span>Google Account</span>
         </button>
 
         <button
           type="button"
-          onClick={() => setActiveTab("credentials")}
+          onClick={() => setActiveTab("apikeys")}
           className={cn(
-            "flex items-center gap-2 px-4 py-2 rounded-lg font-headline-sm text-sm font-medium transition-colors cursor-pointer",
-            activeTab === "credentials"
-              ? "bg-primary-container text-on-primary font-semibold shadow-[0_0_16px_rgba(255,87,8,0.25)]"
-              : "text-on-surface-variant hover:bg-surface-container hover:text-on-surface"
+            "flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-medium transition-colors whitespace-nowrap cursor-pointer",
+            activeTab === "apikeys"
+              ? "bg-[#C96A2B] text-[#FFF8F0] font-bold"
+              : "text-[#B9A99B] hover:bg-[#21110B] hover:text-[#FFF8F0]"
           )}
         >
           <span className="material-symbols-outlined text-[18px]">key</span>
-          <span>Credentials & API Keys</span>
+          <span>API Keys</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab("agents")}
           className={cn(
-            "flex items-center gap-2 px-4 py-2 rounded-lg font-headline-sm text-sm font-medium transition-colors cursor-pointer",
+            "flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-medium transition-colors whitespace-nowrap cursor-pointer",
             activeTab === "agents"
-              ? "bg-primary-container text-on-primary font-semibold shadow-[0_0_16px_rgba(255,87,8,0.25)]"
-              : "text-on-surface-variant hover:bg-surface-container hover:text-on-surface"
+              ? "bg-[#C96A2B] text-[#FFF8F0] font-bold"
+              : "text-[#B9A99B] hover:bg-[#21110B] hover:text-[#FFF8F0]"
           )}
         >
           <span className="material-symbols-outlined text-[18px]">smart_toy</span>
           <span>Connected Agents</span>
-          <span className="px-1.5 py-0.2 rounded-full text-[11px] bg-black/30 font-code-sm">
+          <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-black/40 font-mono">
             {agents.length}
           </span>
         </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab("audit")}
+          className={cn(
+            "flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-medium transition-colors whitespace-nowrap cursor-pointer",
+            activeTab === "audit"
+              ? "bg-[#C96A2B] text-[#FFF8F0] font-bold"
+              : "text-[#B9A99B] hover:bg-[#21110B] hover:text-[#FFF8F0]"
+          )}
+        >
+          <span className="material-symbols-outlined text-[18px]">history</span>
+          <span>Audit Log</span>
+          <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-black/40 font-mono">
+            {verifications.length}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab("danger")}
+          className={cn(
+            "flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-medium transition-colors whitespace-nowrap cursor-pointer ml-auto",
+            activeTab === "danger"
+              ? "bg-[#ef4444] text-[#FFF8F0] font-bold"
+              : "text-[#f87171] hover:bg-[#2a1210]"
+          )}
+        >
+          <span className="material-symbols-outlined text-[18px]">warning</span>
+          <span>Danger Zone</span>
+        </button>
       </div>
 
-      {/* Global Alerts / Messages */}
+      {/* Global Alerts */}
       {apiKeyMsg && (
-        <div className="p-3 rounded-xl bg-[#14291e] border border-[#22c55e]/40 text-[#4ade80] font-code-sm text-xs flex items-center gap-2">
+        <div className="p-3.5 rounded-2xl bg-[#142818] border border-[#4ade80]/40 text-[#4ade80] font-mono text-xs flex items-center gap-2">
           <span className="material-symbols-outlined text-[18px]">check_circle</span>
           <span>{apiKeyMsg}</span>
         </div>
       )}
 
       {/* ========================================================================= */}
-      {/* TAB 1: ACCOUNT OVERVIEW */}
+      {/* TAB 1: GOOGLE ACCOUNT DETAILS */}
       {/* ========================================================================= */}
-      {activeTab === "overview" && (
+      {activeTab === "profile" && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Identity & Workspace Card */}
           <div className="md:col-span-2 flex flex-col gap-6">
-            <Card className="p-space-lg flex flex-col gap-4">
-              <div className="flex items-center justify-between border-b border-white/5 pb-3">
-                <div className="flex items-center gap-2 text-on-surface font-semibold">
-                  <span className="material-symbols-outlined text-primary-container text-[20px]">badge</span>
-                  <span>User Identity & Access Details</span>
+            <div className="p-6 rounded-3xl bg-[#21110B] border border-[#4A2819] flex flex-col gap-5">
+              <div className="flex items-center justify-between border-b border-[#3A2015] pb-3">
+                <div className="flex items-center gap-2 text-[#FFF8F0] font-semibold text-sm">
+                  <span className="material-symbols-outlined text-[#E08A3E] text-[20px]">account_box</span>
+                  <span>Google Account Details</span>
                 </div>
-                <span className="text-[11px] font-code-sm text-outline">Real-time database record</span>
+                <span className="text-[11px] font-mono text-[#B9A99B]">OAuth 2.0 Verified</span>
               </div>
 
               {profileMsg && (
                 <div
                   className={cn(
-                    "p-3 rounded-lg text-xs font-code-sm flex items-center gap-2",
+                    "p-3 rounded-xl text-xs font-mono flex items-center gap-2",
                     profileMsg.type === "success"
-                      ? "bg-[#14291e] border border-[#22c55e]/30 text-[#4ade80]"
-                      : "bg-error-container/50 border border-error/30 text-error"
+                      ? "bg-[#142818] border border-[#4ade80]/40 text-[#4ade80]"
+                      : "bg-[#2a1210] border border-[#f87171]/40 text-[#f87171]"
                   )}
                 >
                   <span className="material-symbols-outlined text-[16px]">
@@ -376,165 +350,76 @@ export const Account: React.FC = () => {
               )}
 
               {isEditingProfile ? (
-                <form onSubmit={handleSaveProfile} className="flex flex-col gap-4 pt-2">
+                <form onSubmit={handleSaveProfile} className="flex flex-col gap-4">
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-medium text-on-surface-variant">Full Name</label>
+                    <label className="text-xs font-medium text-[#B9A99B]">Display Name</label>
                     <input
                       type="text"
                       value={profileName}
                       onChange={(e) => setProfileName(e.target.value)}
                       required
-                      className="px-3 py-2 rounded-lg bg-surface-container-high border border-white/10 text-on-surface text-sm focus:outline-none focus:border-primary-container"
+                      className="px-3.5 py-2.5 rounded-xl bg-[#160C08] border border-[#4A2819] text-[#FFF8F0] text-sm focus:outline-none focus:border-[#C96A2B]"
                     />
                   </div>
 
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-medium text-on-surface-variant">Job Title / Role</label>
+                    <label className="text-xs font-medium text-[#B9A99B]">Role / Title</label>
                     <input
                       type="text"
                       value={profileRole}
                       onChange={(e) => setProfileRole(e.target.value)}
                       required
-                      className="px-3 py-2 rounded-lg bg-surface-container-high border border-white/10 text-on-surface text-sm focus:outline-none focus:border-primary-container"
+                      className="px-3.5 py-2.5 rounded-xl bg-[#160C08] border border-[#4A2819] text-[#FFF8F0] text-sm focus:outline-none focus:border-[#C96A2B]"
                     />
                   </div>
 
                   <div className="flex items-center gap-2 pt-2">
                     <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setIsEditingProfile(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
                       type="submit"
                       variant="primary"
                       size="sm"
                       loading={profileSaving}
-                      icon={<span className="material-symbols-outlined text-[16px]">save</span>}
                     >
-                      Save Changes
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setIsEditingProfile(false);
-                        setProfileName(user.name);
-                        setProfileRole(user.role);
-                      }}
-                    >
-                      Cancel
+                      Save Profile
                     </Button>
                   </div>
                 </form>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                  <div className="p-3 rounded-xl bg-surface-container-low border border-white/5 flex flex-col gap-1">
-                    <span className="text-[11px] font-code-sm text-outline uppercase">User ID</span>
-                    <span className="font-code-sm text-xs text-on-surface select-all truncate">{user.id}</span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="p-4 rounded-2xl bg-[#160C08] border border-[#3A2015] flex flex-col gap-1">
+                    <span className="text-[10px] font-mono text-[#B9A99B] uppercase">Full Name</span>
+                    <span className="text-sm font-semibold text-[#FFF8F0]">{user.name}</span>
                   </div>
 
-                  <div className="p-3 rounded-xl bg-surface-container-low border border-white/5 flex flex-col gap-1">
-                    <span className="text-[11px] font-code-sm text-outline uppercase">Primary Email</span>
-                    <span className="font-code-sm text-xs text-on-surface truncate">{user.email}</span>
+                  <div className="p-4 rounded-2xl bg-[#160C08] border border-[#3A2015] flex flex-col gap-1">
+                    <span className="text-[10px] font-mono text-[#B9A99B] uppercase">Email Address</span>
+                    <span className="text-sm font-mono text-[#FFF8F0] truncate">{user.email}</span>
                   </div>
 
-                  <div className="p-3 rounded-xl bg-surface-container-low border border-white/5 flex flex-col gap-1">
-                    <span className="text-[11px] font-code-sm text-outline uppercase">Auth Provider</span>
-                    <div className="flex items-center gap-1.5 font-code-sm text-xs text-on-surface">
-                      <span className="capitalize">{user.authProvider || "Standard Email"}</span>
-                      {user.authProvider === "google" && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30">
-                          Google OAuth
-                        </span>
-                      )}
-                    </div>
+                  <div className="p-4 rounded-2xl bg-[#160C08] border border-[#3A2015] flex flex-col gap-1">
+                    <span className="text-[10px] font-mono text-[#B9A99B] uppercase">Workspace Role</span>
+                    <span className="text-sm text-[#E08A3E] font-medium">{user.role || "AI Engineer"}</span>
                   </div>
 
-                  <div className="p-3 rounded-xl bg-surface-container-low border border-white/5 flex flex-col gap-1">
-                    <span className="text-[11px] font-code-sm text-outline uppercase">Account Created</span>
-                    <span className="font-code-sm text-xs text-on-surface">
-                      {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "Active Session"}
-                    </span>
-                  </div>
-
-                  <div className="p-3 rounded-xl bg-surface-container-low border border-white/5 flex flex-col gap-1 sm:col-span-2">
-                    <span className="text-[11px] font-code-sm text-outline uppercase">Last Login Timestamp</span>
-                    <span className="font-code-sm text-xs text-secondary">
-                      {user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleString() : "Current session active"}
-                    </span>
-                  </div>
-                </div>
-              )}
-            </Card>
-
-            {/* Linked Services Grid */}
-            <Card className="p-space-lg flex flex-col gap-4">
-              <div className="flex items-center justify-between border-b border-white/5 pb-3">
-                <div className="flex items-center gap-2 text-on-surface font-semibold">
-                  <span className="material-symbols-outlined text-secondary text-[20px]">link</span>
-                  <span>Connected Authentication & Integrations</span>
-                </div>
-                <span className="text-[11px] font-code-sm text-outline">Third-party linking</span>
-              </div>
-
-              {walletMsg && (
-                <div
-                  className={cn(
-                    "p-3 rounded-lg text-xs font-code-sm flex items-center gap-2",
-                    walletMsg.type === "success"
-                      ? "bg-[#14291e] border border-[#22c55e]/30 text-[#4ade80]"
-                      : "bg-error-container/50 border border-error/30 text-error"
-                  )}
-                >
-                  <span className="material-symbols-outlined text-[16px]">
-                    {walletMsg.type === "success" ? "check_circle" : "error"}
-                  </span>
-                  <span>{walletMsg.text}</span>
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 gap-3">
-                {/* Google Account */}
-                <div className="p-3.5 rounded-xl bg-surface-container-low border border-white/5 flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center shrink-0">
-                      <svg className="w-5 h-5" viewBox="0 0 24 24">
-                        <path
-                          fill="#4285F4"
-                          d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"
-                        />
-                        <path
-                          fill="#34A853"
-                          d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"
-                        />
-                        <path
-                          fill="#FBBC05"
-                          d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.14-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.98 0 12s.45 3.82 1.25 5.42l4.03-3.15z"
-                        />
-                        <path
-                          fill="#EA4335"
-                          d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
-                        />
+                  <div className="p-4 rounded-2xl bg-[#160C08] border border-[#3A2015] flex flex-col gap-1">
+                    <span className="text-[10px] font-mono text-[#B9A99B] uppercase">Authentication Provider</span>
+                    <div className="flex items-center gap-2">
+                      <svg className="w-4 h-4" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
                       </svg>
+                      <span className="text-sm text-[#4ade80] font-medium">Google Account</span>
                     </div>
-                    <div className="flex flex-col">
-                      <span className="font-semibold text-xs text-on-surface">Google Workspace Account</span>
-                      <span className="font-code-sm text-[11px] text-on-surface-variant">
-                        {user.googleId ? `Linked (${user.email})` : "Not connected via Google OAuth"}
-                      </span>
-                    </div>
-                  </div>
-                  <div>
-                    {user.googleId ? (
-                      <span className="px-2.5 py-1 rounded-md bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-code-sm">
-                        Connected
-                      </span>
-                    ) : (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => openAuthModal("signin")}
-                      >
-                        Connect Google
-                      </Button>
-                    )}
                   </div>
                 </div>
 
@@ -617,74 +502,53 @@ export const Account: React.FC = () => {
                 </div>
               </div>
             </Card>
+              )}
+            </div>
           </div>
 
-          {/* Quick Security & Summary Sidebar */}
           <div className="flex flex-col gap-6">
-            <Card className="p-space-md flex flex-col gap-4">
-              <div className="flex items-center gap-2 text-on-surface font-semibold text-sm border-b border-white/5 pb-2">
-                <span className="material-symbols-outlined text-primary text-[18px]">verified_user</span>
-                <span>Cryptographic Status</span>
-              </div>
-              <div className="flex flex-col gap-3 text-xs">
-                <div className="flex items-center justify-between">
-                  <span className="text-on-surface-variant">Attestation Network:</span>
-                  <span className="font-code-sm font-semibold text-secondary">Stellar Testnet</span>
+            <div className="p-6 rounded-3xl bg-[#21110B] border border-[#4A2819] flex flex-col gap-3">
+              <span className="text-xs font-bold text-[#FFF8F0] uppercase tracking-wider">
+                Verification Summary
+              </span>
+              <div className="flex flex-col gap-2 pt-2 text-xs">
+                <div className="flex items-center justify-between py-1.5 border-b border-[#3A2015]">
+                  <span className="text-[#B9A99B]">Connected Agents</span>
+                  <span className="font-mono text-[#FFF8F0] font-bold">{agents.length}</span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-on-surface-variant">Signing Schema:</span>
-                  <span className="font-code-sm text-on-surface">ed25519-sha256</span>
+                <div className="flex items-center justify-between py-1.5 border-b border-[#3A2015]">
+                  <span className="text-[#B9A99B]">Total Verifications</span>
+                  <span className="font-mono text-[#FFF8F0] font-bold">{verifications.length}</span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-on-surface-variant">Audit Anchor:</span>
-                  <span className="font-code-sm text-emerald-400">Live Horizon RPC</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-on-surface-variant">Security Clearance:</span>
-                  <span className="font-code-sm text-[#E08A3E] font-semibold uppercase">{user.invitationStatus}</span>
+                <div className="flex items-center justify-between py-1.5">
+                  <span className="text-[#B9A99B]">Verification Rule</span>
+                  <span className="font-mono text-[#E08A3E]">Evidence Checks</span>
                 </div>
               </div>
-            </Card>
-
-            <Card className="p-space-md flex flex-col gap-3 bg-gradient-to-br from-surface-container to-surface-container-high border-white/10">
-              <div className="flex items-center gap-2 text-primary-container font-semibold text-sm">
-                <span className="material-symbols-outlined text-[18px]">auto_stories</span>
-                <span>Developer Documentation</span>
-              </div>
-              <p className="text-xs text-on-surface-variant leading-relaxed">
-                Learn how to pass real cryptographically verified agent states into the VeraOS engine using Python, TypeScript, or REST.
-              </p>
-              <Link to="/docs">
-                <Button variant="outline" size="sm" className="w-full justify-between mt-1">
-                  <span>Explore SDK Reference</span>
-                  <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
-                </Button>
-              </Link>
-            </Card>
+            </div>
           </div>
         </div>
       )}
 
       {/* ========================================================================= */}
-      {/* TAB 2: CREDENTIALS & API KEYS */}
+      {/* TAB 2: API KEYS */}
       {/* ========================================================================= */}
-      {activeTab === "credentials" && (
+      {activeTab === "apikeys" && (
         <div className="flex flex-col gap-6">
-          {/* Main API Key Card */}
-          <Card className="p-space-lg flex flex-col gap-5 border border-primary-container/30">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-white/5 pb-4">
-              <div className="flex flex-col">
+          <div className="p-6 rounded-3xl bg-[#21110B] border border-[#4A2819] flex flex-col gap-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#3A2015] pb-4">
+              <div>
                 <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-primary-container text-[22px]">key</span>
-                  <h3 className="font-headline-sm text-base font-semibold text-on-surface">
-                    VeraOS Engine API Key
+                  <span className="material-symbols-outlined text-[#E08A3E] text-[22px]">key</span>
+                  <h3 className="font-heading text-base font-bold text-[#FFF8F0]">
+                    Programmatic Verification API Key
                   </h3>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-code-sm font-semibold">
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#142818] text-[#4ade80] border border-[#4ade80]/30 font-mono font-bold">
                     ACTIVE
                   </span>
                 </div>
-                <p className="text-xs text-on-surface-variant mt-1">
-                  Use this secret key to authenticate autonomous AI agent workflows, Python SDK instances, and verification webhooks.
+                <p className="text-xs text-[#B9A99B] mt-1">
+                  Authenticate your AI agents to submit tasks, claims, and trigger independent verification.
                 </p>
               </div>
 
@@ -693,18 +557,18 @@ export const Account: React.FC = () => {
                 size="sm"
                 onClick={() => setIsRegenModalOpen(true)}
                 icon={<span className="material-symbols-outlined text-[16px]">refresh</span>}
-                className="text-amber-400 border-amber-400/30 hover:bg-amber-400/10 hover:border-amber-400/50"
+                className="text-[#E08A3E] border-[#63361F] hover:bg-[#3A2015]"
               >
-                Regenerate Secret Key
+                Regenerate Key
               </Button>
             </div>
 
-            {/* Secret Key Display Box */}
-            <div className="p-3.5 rounded-xl bg-surface-container-lowest border border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-3 font-code-sm">
+            {/* Secret Key Display */}
+            <div className="p-4 rounded-2xl bg-[#160C08] border border-[#3A2015] flex flex-col sm:flex-row sm:items-center justify-between gap-3 font-mono">
               <div className="flex items-center gap-3 min-w-0">
-                <span className="material-symbols-outlined text-outline text-[18px]">lock</span>
-                <span className="text-sm text-on-surface select-all tracking-wider truncate">
-                  {showApiKey ? (user.apiKey || "vera_live_dev_preview_key") : "••••••••••••••••••••••••••••••••••••••••"}
+                <span className="material-symbols-outlined text-[#B9A99B] text-[18px]">lock</span>
+                <span className="text-sm text-[#FFF8F0] select-all tracking-wider truncate">
+                  {showApiKey ? (user.apiKey || "vera_live_key_99fa82de") : "••••••••••••••••••••••••••••••••••••••••"}
                 </span>
               </div>
               <div className="flex items-center gap-2 shrink-0">
@@ -717,7 +581,7 @@ export const Account: React.FC = () => {
                   {showApiKey ? "Hide" : "Reveal"}
                 </Button>
                 <Button
-                  variant="secondary"
+                  variant="primary"
                   size="sm"
                   onClick={handleCopyKey}
                   icon={<span className="material-symbols-outlined text-[16px]">{copiedKey ? "check" : "content_copy"}</span>}
@@ -727,244 +591,305 @@ export const Account: React.FC = () => {
               </div>
             </div>
 
-            {/* Code Integration Preview */}
-            <div className="flex flex-col gap-2">
-              <span className="font-code-sm text-xs text-on-surface-variant font-medium uppercase tracking-wider">
-                SDK Usage Example (Python & cURL)
+            {/* Code Integration Example */}
+            <div className="flex flex-col gap-2 pt-2">
+              <span className="font-mono text-xs text-[#B9A99B] uppercase tracking-wider">
+                Agent Integration Code Snippet (Python & TypeScript)
               </span>
-              <div className="p-3 rounded-xl bg-black/40 border border-white/5 font-code-sm text-xs text-[#FFF8F0] overflow-x-auto leading-relaxed">
-                <p className="text-outline"># Authenticate with the VeraOS Python SDK</p>
-                <p><span className="text-secondary">from</span> veraos <span className="text-secondary">import</span> VeraOSClient</p>
-                <p>client = VeraOSClient(api_key=<span className="text-[#E08A3E]">"{user.apiKey || "vera_live_..."}"</span>)</p>
-                <p>task = client.verify(claim=<span className="text-[#4ade80]">"stellar_tx_0x9a8f..."</span>)</p>
+              <div className="p-4 rounded-2xl bg-[#160C08] border border-[#3A2015] font-mono text-xs text-[#FFF8F0] overflow-x-auto leading-relaxed">
+                <p className="text-[#B9A99B]"># 1. Initialize VeraOS Client</p>
+                <p><span className="text-[#E08A3E]">from</span> veraos <span className="text-[#E08A3E]">import</span> VeraOSClient</p>
+                <p>client = VeraOSClient(api_key=<span className="text-[#E6A15A]">&quot;{user.apiKey || "vera_live_..."}&quot;</span>)</p>
+                <br />
+                <p className="text-[#B9A99B]"># 2. Submit Claim for Independent Verification</p>
+                <p>verdict = client.verify(</p>
+                <p className="pl-4">agent_id=<span className="text-[#E6A15A]">&quot;agent-financial-bot&quot;</span>,</p>
+                <p className="pl-4">task=<span className="text-[#E6A15A]">&quot;Transfer 5 USDC&quot;</span>,</p>
+                <p className="pl-4">claim=<span className="text-[#E6A15A]">&quot;Successfully transferred 5 USDC to 0x7a...&quot;</span>,</p>
+                <p>)</p>
+                <p><span className="text-[#E08A3E]">print</span>(verdict.status)  <span className="text-[#B9A99B]"># &apos;PASSED&apos; | &apos;FAILED&apos; | &apos;UNVERIFIABLE&apos;</span></p>
               </div>
             </div>
-          </Card>
-
-          {/* Password Management Card */}
-          <Card className="p-space-lg flex flex-col gap-4">
-            <div className="flex items-center justify-between border-b border-white/5 pb-3">
-              <div className="flex items-center gap-2 text-on-surface font-semibold">
-                <span className="material-symbols-outlined text-outline text-[20px]">lock_reset</span>
-                <span>Change Account Password</span>
-              </div>
-              <span className="text-[11px] font-code-sm text-outline">Stored with secure argon2/bcrypt hash</span>
-            </div>
-
-            {passwordMsg && (
-              <div
-                className={cn(
-                  "p-3 rounded-lg text-xs font-code-sm flex items-center gap-2",
-                  passwordMsg.type === "success"
-                    ? "bg-[#14291e] border border-[#22c55e]/30 text-[#4ade80]"
-                    : "bg-error-container/50 border border-error/30 text-error"
-                )}
-              >
-                <span className="material-symbols-outlined text-[16px]">
-                  {passwordMsg.type === "success" ? "check_circle" : "error"}
-                </span>
-                <span>{passwordMsg.text}</span>
-              </div>
-            )}
-
-            <form onSubmit={handleUpdatePassword} className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-on-surface-variant">Current Password</label>
-                <input
-                  type="password"
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                  className="px-3 py-2 rounded-lg bg-surface-container-high border border-white/10 text-on-surface text-sm focus:outline-none focus:border-primary-container"
-                />
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-on-surface-variant">New Password</label>
-                <input
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Min 6 characters"
-                  required
-                  className="px-3 py-2 rounded-lg bg-surface-container-high border border-white/10 text-on-surface text-sm focus:outline-none focus:border-primary-container"
-                />
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-on-surface-variant">Confirm New Password</label>
-                <input
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Confirm password"
-                  required
-                  className="px-3 py-2 rounded-lg bg-surface-container-high border border-white/10 text-on-surface text-sm focus:outline-none focus:border-primary-container"
-                />
-              </div>
-
-              <div className="md:col-span-3 flex justify-end pt-1">
-                <Button
-                  type="submit"
-                  variant="primary"
-                  size="sm"
-                  loading={isUpdatingPassword}
-                  disabled={!currentPassword || !newPassword || !confirmPassword}
-                  icon={<span className="material-symbols-outlined text-[16px]">save</span>}
-                >
-                  Update Password
-                </Button>
-              </div>
-            </form>
-          </Card>
-
-          {/* Cryptographic Session & Tokens Card */}
-          <Card className="p-space-lg flex flex-col gap-3">
-            <div className="flex items-center gap-2 text-on-surface font-semibold text-sm border-b border-white/5 pb-2">
-              <span className="material-symbols-outlined text-secondary text-[18px]">security</span>
-              <span>Active Cryptographic Session & Attestation Protocol</span>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs font-code-sm pt-1">
-              <div className="p-3 rounded-xl bg-surface-container-low border border-white/5 flex flex-col gap-1">
-                <span className="text-outline uppercase text-[10px]">Session Token Format</span>
-                <span className="text-on-surface">JWT / Ed25519 Dual Sign</span>
-              </div>
-              <div className="p-3 rounded-xl bg-surface-container-low border border-white/5 flex flex-col gap-1">
-                <span className="text-outline uppercase text-[10px]">State Consensus Protocol</span>
-                <span className="text-emerald-400">Stellar Consensus (SCP)</span>
-              </div>
-              <div className="p-3 rounded-xl bg-surface-container-low border border-white/5 flex flex-col gap-1">
-                <span className="text-outline uppercase text-[10px]">Attestation Contract</span>
-                <span className="text-[#E08A3E] truncate">CBAQ...7X8Y (Soroban Testnet)</span>
-              </div>
-            </div>
-          </Card>
+          </div>
         </div>
       )}
 
       {/* ========================================================================= */}
-      {/* TAB 3: CONNECTED AGENTS & REAL-TIME VERIFICATION */}
+      {/* TAB 3: CONNECTED AGENTS */}
       {/* ========================================================================= */}
       {activeTab === "agents" && (
         <div className="flex flex-col gap-6">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-            <div className="flex flex-col">
-              <h3 className="font-headline-sm text-base font-semibold text-on-surface">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h3 className="font-heading text-base font-bold text-[#FFF8F0]">
                 Connected Autonomous Agents ({agents.length})
               </h3>
-              <p className="text-xs text-on-surface-variant">
-                Live agents persisted to your database and authorized to submit proof-of-execution attestations.
+              <p className="text-xs text-[#B9A99B]">
+                Agents authorized to send verification claims and receive verification verdicts.
               </p>
             </div>
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={() => openConnectModal()}
-              icon={<span className="material-symbols-outlined text-[16px]">add</span>}
-            >
-              Connect New Agent
-            </Button>
+            <Link to="/agents">
+              <Button
+                variant="primary"
+                size="sm"
+                icon={<span className="material-symbols-outlined text-[16px]">add</span>}
+              >
+                Manage Agents
+              </Button>
+            </Link>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {agents.map((agent) => {
-              const isProbing = probingAgentId === agent.id;
-              const probe = probeResults[agent.id];
+          {agents.length === 0 ? (
+            <div className="p-8 rounded-3xl bg-[#21110B] border border-[#4A2819] text-center flex flex-col items-center gap-3">
+              <span className="material-symbols-outlined text-[#B9A99B] text-4xl">smart_toy</span>
+              <p className="text-sm font-semibold text-[#FFF8F0]">No agents connected</p>
+              <p className="text-xs text-[#B9A99B] max-w-sm">
+                Connect your first autonomous agent runtime to submit task claims for verification.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {agents.map((agent) => {
+                const isProbing = probingAgentId === agent.id;
+                const probe = probeResults[agent.id];
 
-              return (
-                <Card key={agent.id} className="p-space-md flex flex-col justify-between gap-4 border border-white/10 hover:border-[#E08A3E]/40 transition-colors">
-                  <div className="flex flex-col gap-2">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-9 h-9 rounded-xl bg-primary-container/20 border border-primary-container/40 flex items-center justify-center text-primary-container">
-                          <span className="material-symbols-outlined text-[20px]">smart_toy</span>
+                return (
+                  <div
+                    key={agent.id}
+                    className="p-5 rounded-3xl bg-[#21110B] border border-[#4A2819] flex flex-col justify-between gap-4"
+                  >
+                    <div className="flex flex-col gap-3">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-2xl bg-[#3A2015] border border-[#63361F] flex items-center justify-center text-[#E08A3E]">
+                            <span className="material-symbols-outlined text-[20px]">smart_toy</span>
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="font-heading font-bold text-sm text-[#FFF8F0]">
+                              {agent.name}
+                            </span>
+                            <span className="font-mono text-[11px] text-[#B9A99B]">
+                              {agent.runtime || "Autonomous Runtime"}
+                            </span>
+                          </div>
+                        </div>
+                        <Badge variant={agent.status === "CONNECTED" ? "passed" : "neutral"} dot>
+                          {agent.status}
+                        </Badge>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 text-xs font-mono bg-[#160C08] p-3 rounded-2xl border border-[#3A2015]">
+                        <div className="flex flex-col">
+                          <span className="text-[10px] text-[#B9A99B] uppercase">Agent ID</span>
+                          <span className="text-[#FFF8F0] truncate">{agent.id}</span>
                         </div>
                         <div className="flex flex-col">
-                          <span className="font-semibold text-sm text-on-surface">{agent.name}</span>
-                          <span className="text-[11px] font-code-sm text-outline truncate max-w-[180px]">{agent.runtime}</span>
+                          <span className="text-[10px] text-[#B9A99B] uppercase">Default Model</span>
+                          <span className="text-[#FFF8F0] truncate">{agent.model}</span>
+                        </div>
+                        <div className="flex flex-col col-span-2 mt-1">
+                          <span className="text-[10px] text-[#B9A99B] uppercase">Endpoint</span>
+                          <span className="text-[#B9A99B] truncate">{agent.endpoint || "In-memory"}</span>
                         </div>
                       </div>
-                      <Badge variant={agent.status === "CONNECTED" ? "passed" : "neutral"} dot>
-                        {agent.status}
-                      </Badge>
-                    </div>
 
-                    <div className="grid grid-cols-2 gap-2 text-xs font-code-sm bg-surface-container-low p-2.5 rounded-lg mt-1">
-                      <div className="flex flex-col">
-                        <span className="text-[10px] text-outline uppercase">Agent ID</span>
-                        <span className="text-on-surface truncate">{agent.id}</span>
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-[10px] text-outline uppercase">Default Model</span>
-                        <span className="text-on-surface truncate">{agent.model}</span>
-                      </div>
-                      <div className="flex flex-col col-span-2">
-                        <span className="text-[10px] text-outline uppercase">Endpoint URL</span>
-                        <span className="text-on-surface-variant truncate">{agent.endpoint || "In-memory Worker"}</span>
-                      </div>
-                    </div>
-
-                    {probe && (
-                      <div className="p-2 rounded bg-[#14291e] border border-[#22c55e]/30 text-[11px] font-code-sm text-[#4ade80] flex items-center justify-between">
-                        <div className="flex items-center gap-1.5">
-                          <span className="material-symbols-outlined text-[14px]">check_circle</span>
+                      {probe && (
+                        <div className="p-2.5 rounded-xl bg-[#142818] border border-[#4ade80]/30 text-[11px] font-mono text-[#4ade80] flex items-center justify-between">
                           <span>{probe.message}</span>
+                          <span className="font-bold">{probe.latencyMs}ms</span>
                         </div>
-                        <span className="font-bold shrink-0">{probe.latencyMs}ms</span>
-                      </div>
-                    )}
-                  </div>
+                      )}
+                    </div>
 
-                  <div className="flex items-center justify-between pt-2 border-t border-white/5">
-                    <button
-                      type="button"
-                      onClick={() => handleProbeAgent(agent.id)}
-                      disabled={isProbing}
-                      className="text-xs text-[#E08A3E] hover:text-white font-medium flex items-center gap-1 cursor-pointer disabled:opacity-50"
-                    >
-                      <span className="material-symbols-outlined text-[14px]">
-                        {isProbing ? "sync" : "network_check"}
-                      </span>
-                      <span>{isProbing ? "Probing Stellar RPC..." : "Probe Live Latency"}</span>
-                    </button>
+                    <div className="flex items-center justify-between pt-3 border-t border-[#3A2015]">
+                      <button
+                        type="button"
+                        onClick={() => handleProbeAgent(agent.id)}
+                        disabled={isProbing}
+                        className="text-xs text-[#E08A3E] hover:text-[#FFF8F0] font-mono flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                      >
+                        <span className="material-symbols-outlined text-[14px]">
+                          {isProbing ? "sync" : "network_check"}
+                        </span>
+                        <span>{isProbing ? "Probing..." : "Test Latency"}</span>
+                      </button>
 
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => disconnectAgent(agent.id)}
-                      className="text-outline hover:text-error text-xs"
-                    >
-                      Disconnect
-                    </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => disconnectAgent(agent.id)}
+                        className="text-[#f87171] hover:bg-[#2a1210] hover:text-[#f87171] text-xs"
+                      >
+                        Revoke Access
+                      </Button>
+                    </div>
                   </div>
-                </Card>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
       {/* ========================================================================= */}
-      {/* REGENERATE API KEY MODAL */}
+      {/* TAB 4: AUDIT LOG */}
       {/* ========================================================================= */}
-      {isRegenModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
-          <div className="w-full max-w-md p-6 rounded-2xl bg-[#160C08] border border-[#ff5708]/40 shadow-2xl flex flex-col gap-4">
-            <div className="w-12 h-12 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400">
-              <span className="material-symbols-outlined text-[28px]">warning</span>
-            </div>
-            <div className="flex flex-col gap-1">
-              <h3 className="font-headline-sm text-base font-bold text-white">
-                Revoke & Regenerate API Key?
+      {activeTab === "audit" && (
+        <div className="flex flex-col gap-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-heading text-base font-bold text-[#FFF8F0]">
+                Audit Log & Verification Activity
               </h3>
-              <p className="text-xs text-[#B9A99B] leading-relaxed">
-                Regenerating your secret key will immediately invalidate the current key across all autonomous agents, CI/CD pipelines, and SDK connections.
+              <p className="text-xs text-[#B9A99B]">
+                Real-time chronological record of agent claim verifications and outcomes.
               </p>
             </div>
-            <div className="flex items-center justify-end gap-2 pt-2">
+            <Link to="/verifications">
+              <Button variant="outline" size="sm">
+                View All Verifications
+              </Button>
+            </Link>
+          </div>
+
+          {verifications.length === 0 ? (
+            <div className="p-8 rounded-3xl bg-[#21110B] border border-[#4A2819] text-center flex flex-col items-center gap-3">
+              <span className="material-symbols-outlined text-[#B9A99B] text-4xl">history</span>
+              <p className="text-sm font-semibold text-[#FFF8F0]">No verification activity yet</p>
+              <p className="text-xs text-[#B9A99B] max-w-sm">
+                When agents submit task claims, the full audit trail and independent evidence logs will appear here.
+              </p>
+              <Link to="/verify/new" className="pt-2">
+                <Button variant="primary" size="sm">
+                  Run First Verification
+                </Button>
+              </Link>
+            </div>
+          ) : (
+            <div className="p-2 sm:p-4 rounded-3xl bg-[#21110B] border border-[#4A2819] flex flex-col gap-2">
+              <div className="hidden sm:grid grid-cols-12 gap-3 px-4 py-2 font-mono text-[10px] uppercase text-[#B9A99B] tracking-wider border-b border-[#3A2015]">
+                <div className="col-span-3">VERIFICATION ID</div>
+                <div className="col-span-4">TASK</div>
+                <div className="col-span-2">AGENT</div>
+                <div className="col-span-2">VERDICT</div>
+                <div className="col-span-1 text-right">ACTION</div>
+              </div>
+
+              {verifications.slice(0, 10).map((v) => (
+                <div
+                  key={v.id}
+                  className="grid grid-cols-1 sm:grid-cols-12 gap-2 sm:gap-3 p-3 sm:px-4 sm:py-3 rounded-2xl bg-[#160C08] border border-[#3A2015] hover:border-[#63361F] transition-colors items-center font-mono text-xs"
+                >
+                  <div className="sm:col-span-3 flex items-center gap-2">
+                    <span className="text-[#FFF8F0] font-bold">{v.displayId || v.id}</span>
+                    <span className="text-[10px] text-[#B9A99B] truncate">
+                      {new Date(v.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
+
+                  <div className="sm:col-span-4 font-sans text-xs text-[#FFF8F0] truncate">
+                    {v.taskPrompt}
+                  </div>
+
+                  <div className="sm:col-span-2 text-xs text-[#B9A99B] truncate">
+                    {v.workerName || v.workerId}
+                  </div>
+
+                  <div className="sm:col-span-2 flex items-center">
+                    <Badge
+                      variant={
+                        v.status === "PASSED"
+                          ? "passed"
+                          : v.status === "FAILED"
+                          ? "failed"
+                          : "unverified"
+                      }
+                      dot
+                    >
+                      {v.status}
+                    </Badge>
+                  </div>
+
+                  <div className="sm:col-span-1 flex justify-end">
+                    <Link
+                      to={`/verify/${v.id}`}
+                      className="text-[#E08A3E] hover:text-[#FFF8F0] text-xs font-semibold"
+                    >
+                      Inspect →
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* TAB 5: DANGER ZONE */}
+      {/* ========================================================================= */}
+      {activeTab === "danger" && (
+        <div className="flex flex-col gap-6">
+          <div className="p-6 rounded-3xl bg-[#21110B] border border-[#ef4444]/40 flex flex-col gap-5">
+            <div className="flex items-center gap-2 text-[#f87171] font-bold text-base border-b border-[#3A2015] pb-3">
+              <span className="material-symbols-outlined text-[22px]">warning</span>
+              <span>Danger Zone</span>
+            </div>
+
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl bg-[#160C08] border border-[#3A2015]">
+              <div className="flex flex-col">
+                <span className="text-sm font-bold text-[#FFF8F0]">Sign Out of Session</span>
+                <span className="text-xs text-[#B9A99B]">
+                  Revoke this browser session and clear active OAuth credentials.
+                </span>
+              </div>
               <Button
                 variant="outline"
+                size="sm"
+                onClick={logout}
+              >
+                Sign Out
+              </Button>
+            </div>
+
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl bg-[#2a1210] border border-[#f87171]/30">
+              <div className="flex flex-col">
+                <span className="text-sm font-bold text-[#f87171]">Delete Account & Revoke All Keys</span>
+                <span className="text-xs text-[#B9A99B]">
+                  Permanently wipe your account profile, all API keys, and connected agent authorizations. This action is irreversible.
+                </span>
+              </div>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => setIsDeleteModalOpen(true)}
+                className="bg-[#ef4444] hover:bg-[#dc2626] text-white shrink-0"
+              >
+                Delete Account
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Regenerate Key Confirmation Modal */}
+      {isRegenModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="w-full max-w-md p-6 rounded-3xl bg-[#21110B] border border-[#4A2819] shadow-2xl flex flex-col gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-[#3A2015] border border-[#63361F] flex items-center justify-center text-[#E08A3E]">
+              <span className="material-symbols-outlined text-[28px]">refresh</span>
+            </div>
+            <div className="flex flex-col gap-1">
+              <h3 className="font-heading text-lg font-bold text-[#FFF8F0]">
+                Regenerate API Key?
+              </h3>
+              <p className="text-xs text-[#B9A99B] leading-relaxed">
+                Regenerating will immediately revoke your existing key. Any autonomous agents or SDK scripts using the old key will fail until updated.
+              </p>
+            </div>
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <Button
+                variant="ghost"
                 size="sm"
                 onClick={() => setIsRegenModalOpen(false)}
                 disabled={isRegenerating}
@@ -976,9 +901,52 @@ export const Account: React.FC = () => {
                 size="sm"
                 loading={isRegenerating}
                 onClick={handleRegenerateKey}
-                className="bg-amber-600 hover:bg-amber-700 text-white"
               >
                 Yes, Regenerate Key
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Account Modal */}
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="w-full max-w-md p-6 rounded-3xl bg-[#21110B] border border-[#ef4444]/40 shadow-2xl flex flex-col gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-[#2a1210] border border-[#ef4444]/40 flex items-center justify-center text-[#f87171]">
+              <span className="material-symbols-outlined text-[28px]">delete_forever</span>
+            </div>
+            <div className="flex flex-col gap-1">
+              <h3 className="font-heading text-lg font-bold text-[#FFF8F0]">
+                Delete VeraOS Account
+              </h3>
+              <p className="text-xs text-[#B9A99B] leading-relaxed">
+                Type <strong className="text-[#f87171] font-mono">delete my account</strong> to confirm deletion. All data will be permanently wiped.
+              </p>
+            </div>
+            <input
+              type="text"
+              value={deleteConfirmationText}
+              onChange={(e) => setDeleteConfirmationText(e.target.value)}
+              placeholder="delete my account"
+              className="px-3.5 py-2.5 rounded-xl bg-[#160C08] border border-[#4A2819] text-[#FFF8F0] font-mono text-xs focus:outline-none focus:border-[#ef4444]"
+            />
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsDeleteModalOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                disabled={deleteConfirmationText.trim().toLowerCase() !== "delete my account"}
+                onClick={handleDeleteAccount}
+                className="bg-[#ef4444] hover:bg-[#dc2626] text-white"
+              >
+                Confirm Delete
               </Button>
             </div>
           </div>

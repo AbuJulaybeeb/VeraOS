@@ -3,7 +3,6 @@ import {
   CreateVerificationInput,
 } from "../types/verification";
 import {
-  delay,
   STORAGE_KEYS,
   getFromStorage,
   saveToStorage,
@@ -33,14 +32,14 @@ export const verificationApi = {
       if (res.ok) {
         const data = (await res.json()) as { verifications?: VerificationRecord[] };
         if (Array.isArray(data.verifications)) {
+          persistVerifications(data.verifications);
           return data.verifications;
         }
       }
     } catch {
-      // fallback
+      // fallback to stored verifications
     }
 
-    await delay(180);
     let list = getStoredVerifications();
 
     if (filters?.status && filters.status !== "ALL") {
@@ -71,10 +70,9 @@ export const verificationApi = {
         }
       }
     } catch {
-      // fallback
+      // fallback to stored verifications
     }
 
-    await delay(150);
     const list = getStoredVerifications();
     const found = list.find((item) => item.id === id || item.displayId === id);
     return found ? JSON.parse(JSON.stringify(found)) : null;
@@ -89,6 +87,8 @@ export const verificationApi = {
         worker: {
           id: input.workerId || "worker-alpha-09",
           name: input.workerName || "Autonomous Worker",
+          id: input.workerId || "worker-agent",
+          name: input.workerName || input.workerId || "Autonomous Worker",
           output: input.workerOutput,
         },
         options: {
@@ -101,6 +101,8 @@ export const verificationApi = {
     if (!res.ok) {
       const errData = await res.json().catch(() => ({}));
       throw new Error(errData.message || errData.error || `Verification failed (HTTP ${res.status})`);
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || `Verification request failed with status ${res.status}`);
     }
 
     const data = (await res.json()) as { record?: VerificationRecord } & VerificationRecord;
@@ -125,6 +127,7 @@ export const verificationApi = {
         supplementalTxHash: patch?.txHash,
         workerOutput: patch?.target
           ? `Remediated target: ${patch.target}\nSupplemental Transfer: ${patch.supplementalAmount || 4.5} USDC TxHash: ${patch.txHash || "0x5f9e2b1892f3900a41cd8a7b3c21a4de99f2b1892f3900a41cd8a7b3c21a4de"}`
+          ? `Remediated target: ${patch.target}\nSupplemental Transfer: ${patch.supplementalAmount || 0} USDC TxHash: ${patch.txHash || ""}`
           : undefined,
       }),
     });
@@ -138,6 +141,18 @@ export const verificationApi = {
     const list = getStoredVerifications();
     persistVerifications(list.map((r) => (r.id === record.id || r.displayId === record.displayId ? record : r)));
     return record;
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || `Resubmission failed with status ${res.status}`);
+    }
+
+    const record = (await res.json()) as VerificationRecord;
+    if (record && record.id) {
+      const list = getStoredVerifications();
+      persistVerifications(list.map((r) => (r.id === record.id || r.displayId === record.displayId ? record : r)));
+      return record;
+    }
+
+    throw new Error("Invalid response received from verification resubmission");
   },
 
   async clearLocalCache(): Promise<void> {
