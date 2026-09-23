@@ -47,7 +47,7 @@ export const ConnectAgent: React.FC = () => {
 
       // Move to step 3 or navigate to agents
       setActiveStep(3);
-      setTestResult("Handshake validated: latency 180ms â€¢ Cryptographic signature verified.");
+      setTestResult("Handshake validated: latency 180ms • Cryptographic signature verified.");
       setTimeout(() => {
         navigate("/agents");
       }, 1500);
@@ -383,3 +383,5 @@ export const ConnectAgent: React.FC = () => {
     </div>
   );
 };
+
+export default ConnectAgent;

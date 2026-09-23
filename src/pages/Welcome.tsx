@@ -137,3 +137,5 @@ export const Welcome: React.FC = () => {
     </div>
   );
 };
+
+export default Welcome;

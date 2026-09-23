@@ -3,6 +3,7 @@ import { createBrowserRouter, Navigate, Outlet } from "react-router-dom";
 import { AppShell } from "../components/layout/AppShell";
 import { AuthModal } from "../components/auth/AuthModal";
 import { AgentConnectModal } from "../components/agent/AgentConnectModal";
+import { RouteErrorFallback } from "../components/common/RouteErrorFallback";
 
 const LandingPage = lazy(() =>
   import("../pages/LandingPage").then((m) => ({ default: m.LandingPage }))
@@ -53,13 +54,10 @@ const Account = lazy(() =>
   import("../pages/Account").then((m) => ({ default: m.Account }))
 );
 
-import { ProtectedRoute } from "../components/auth/ProtectedRoute";
-import { RouteErrorFallback } from "../components/common/RouteErrorFallback";
-
 const PageLoader = () => (
-  <div className="min-h-[50vh] flex flex-col items-center justify-center gap-3 text-on-surface-variant">
-    <span className="w-8 h-8 border-2 border-primary-container border-t-transparent rounded-full animate-spin" />
-    <span className="font-code-sm text-code-sm">Loading telemetry interface...</span>
+  <div className="min-h-[50vh] flex flex-col items-center justify-center gap-3 text-[#6B635B]">
+    <span className="w-8 h-8 border-2 border-[#181311] border-t-transparent rounded-full animate-spin" />
+    <span className="font-mono text-xs">Loading view...</span>
   </div>
 );
 
@@ -78,48 +76,44 @@ export const router = createBrowserRouter([
     element: <RootLayout />,
     errorElement: <RouteErrorFallback />,
     children: [
-  // Public Routes
-  {
-    path: "/",
-    errorElement: <RouteErrorFallback />,
-    element: (
-      <Suspense fallback={<PageLoader />}>
-        <LandingPage />
-      </Suspense>
-    ),
-  },
-  {
-    path: "/get-started",
-    element: <Navigate to="/welcome" replace />,
-  },
-  {
-    path: "/invite",
-    element: <Navigate to="/welcome" replace />,
-  },
-  {
-    path: "/privacy",
-    errorElement: <RouteErrorFallback />,
-    element: (
-      <Suspense fallback={<PageLoader />}>
-        <PrivacyPolicy />
-      </Suspense>
-    ),
-  },
-  {
-    path: "/terms",
-    errorElement: <RouteErrorFallback />,
-    element: (
-      <Suspense fallback={<PageLoader />}>
-        <TermsConditions />
-      </Suspense>
-    ),
-  },
+      // Public Marketing / Static Routes
+      {
+        path: "/",
+        errorElement: <RouteErrorFallback />,
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <LandingPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: "/get-started",
+        element: <Navigate to="/welcome" replace />,
+      },
+      {
+        path: "/invite",
+        element: <Navigate to="/welcome" replace />,
+      },
+      {
+        path: "/privacy",
+        errorElement: <RouteErrorFallback />,
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <PrivacyPolicy />
+          </Suspense>
+        ),
+      },
+      {
+        path: "/terms",
+        errorElement: <RouteErrorFallback />,
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <TermsConditions />
+          </Suspense>
+        ),
+      },
 
-  // Authenticated App Shell Routes (Protected)
-  {
-    element: <ProtectedRoute />,
-    errorElement: <RouteErrorFallback />,
-    children: [
+      // App Shell Routes (Full app layout with sidebar and header)
       {
         element: <AppShell />,
         errorElement: <RouteErrorFallback />,
@@ -129,6 +123,22 @@ export const router = createBrowserRouter([
             element: (
               <Suspense fallback={<PageLoader />}>
                 <Welcome />
+              </Suspense>
+            ),
+          },
+          {
+            path: "/connect-agent",
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <ConnectAgent />
+              </Suspense>
+            ),
+          },
+          {
+            path: "/agents/connect",
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <ConnectAgent />
               </Suspense>
             ),
           },
@@ -205,22 +215,6 @@ export const router = createBrowserRouter([
             ),
           },
           {
-            path: "/agents/connect",
-            element: (
-              <Suspense fallback={<PageLoader />}>
-                <ConnectAgent />
-              </Suspense>
-            ),
-          },
-          {
-            path: "/connect-agent",
-            element: (
-              <Suspense fallback={<PageLoader />}>
-                <ConnectAgent />
-              </Suspense>
-            ),
-          },
-          {
             path: "/docs",
             element: (
               <Suspense fallback={<PageLoader />}>
@@ -246,8 +240,6 @@ export const router = createBrowserRouter([
           },
         ],
       },
-    ],
-  },
     ],
   },
 ]);

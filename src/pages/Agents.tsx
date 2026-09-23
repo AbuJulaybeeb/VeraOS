@@ -19,7 +19,7 @@ const DEFAULT_AGENTS: AgentItem[] = [
     id: "refund-bot",
     name: "Refund Bot",
     channel: "Telegram",
-    role: "Telegram Bot â€¢ Inbound Customer Service",
+    role: "Telegram Bot • Inbound Customer Service",
     status: "Healthy",
     verifiedCount: 342,
     passRate: "98.2%",
@@ -30,7 +30,7 @@ const DEFAULT_AGENTS: AgentItem[] = [
     id: "vr-2048",
     name: "ResearchAgent VR-2048",
     channel: "API",
-    role: "API â€¢ Liquidity & Protocol Settlement",
+    role: "API • Liquidity & Protocol Settlement",
     status: "Healthy",
     verifiedCount: 512,
     passRate: "99.4%",
@@ -41,7 +41,7 @@ const DEFAULT_AGENTS: AgentItem[] = [
     id: "settlement-bot",
     name: "Settlement Bot",
     channel: "Webhook",
-    role: "Webhook â€¢ Stellar USDC Disbursement",
+    role: "Webhook • Stellar USDC Disbursement",
     status: "Review settings",
     verifiedCount: 284,
     passRate: "87.5%",
@@ -52,7 +52,7 @@ const DEFAULT_AGENTS: AgentItem[] = [
     id: "datasync-worker",
     name: "DataSync Worker",
     channel: "Webhook",
-    role: "Webhook â€¢ CRM Sync & Reconciliation",
+    role: "Webhook • CRM Sync & Reconciliation",
     status: "Paused",
     verifiedCount: 146,
     passRate: "91.0%",
@@ -292,3 +292,5 @@ export const Agents: React.FC = () => {
     </div>
   );
 };
+
+export default Agents;
