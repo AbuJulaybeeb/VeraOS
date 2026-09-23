@@ -39,50 +39,6 @@ export const Dashboard: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-space-sm self-start md:self-auto">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => refetch()}
-            icon={
-              <span className="material-symbols-outlined text-[16px]">
-                refresh
-              </span>
-            }
-          >
-            Refresh
-          </Button>
-          <Button
-            variant="primary"
-            size="md"
-            onClick={() => navigate("/verify/new")}
-            icon={
-              <span className="material-symbols-outlined text-[18px]">
-                add_circle
-              </span>
-            }
-          >
-            New Verification
-          </Button>
-        </div>
-      </div>
-
-      {/* Telegram Operational Banner */}
-      <div className="p-3.5 sm:p-4 rounded-xl bg-surface-container-low border border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-[#2C1710] border border-[#4A2B1D] flex items-center justify-center text-[#E08A3E] shrink-0">
-            <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/>
-            </svg>
-          </div>
-          <span className="text-on-surface-variant leading-relaxed">
-            <strong className="text-on-surface">Connected Interface:</strong> Telegram bot is linked to this shared verification engine. Start or monitor tasks using <code className="text-secondary font-mono">/verify</code> in Telegram.
-          </span>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap self-start sm:self-auto shrink-0">
-          <Link
-            to="/invite"
-            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high border border-white/5 text-xs font-medium text-on-surface transition-colors min-h-[36px]"
         <div className="flex items-center gap-3">
           <button
             type="button"
@@ -94,12 +50,6 @@ export const Dashboard: React.FC = () => {
           </button>
           <button
             type="button"
-            onClick={() => setInviteModalOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#21110B] hover:bg-[#2C1710] border border-[#4A2B1D] text-xs font-semibold text-[#E08A3E] transition-colors whitespace-nowrap cursor-pointer shadow-sm min-h-[36px]"
-          >
-            <span className="material-symbols-outlined text-[14px]">send</span>
-            <span className="hidden sm:inline">Open Telegram (Invite Link)</span>
-            <span className="sm:hidden">Telegram Bot</span>
             onClick={() => navigate("/verify/new")}
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#181311] hover:bg-[#2A2422] text-white text-xs font-heading font-semibold shadow-sm transition-all cursor-pointer"
           >
@@ -109,53 +59,6 @@ export const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Useful Telemetry Summary Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-space-sm">
-        <div className="p-3.5 sm:p-space-md rounded-xl bg-surface-container-low border border-white/5 flex flex-col justify-between min-h-[96px]">
-          <span className="font-label-caps text-label-caps text-outline uppercase tracking-wider">
-            Total
-          </span>
-          <span className="font-headline-md text-headline-md font-bold text-on-surface">
-            {totalCount}
-          </span>
-          <span className="font-body-sm text-body-sm text-outline truncate">
-            Submitted
-          </span>
-        </div>
-
-        <div className="p-3.5 sm:p-space-md rounded-xl bg-surface-container-low border border-white/5 flex flex-col justify-between min-h-[96px]">
-          <span className="font-label-caps text-label-caps text-outline uppercase tracking-wider">
-            Passed
-          </span>
-          <span className="font-headline-md text-headline-md font-bold text-[#4ade80]">
-            {passedCount}
-          </span>
-          <span className="font-body-sm text-body-sm text-outline truncate">
-            Verified
-          </span>
-        </div>
-
-        <div className="p-3.5 sm:p-space-md rounded-xl bg-surface-container-low border border-white/5 flex flex-col justify-between min-h-[96px]">
-          <span className="font-label-caps text-label-caps text-outline uppercase tracking-wider">
-            Failed
-          </span>
-          <span className="font-headline-md text-headline-md font-bold text-error">
-            {failedCount}
-          </span>
-          <span className="font-body-sm text-body-sm text-outline truncate">
-            Deficits found
-          </span>
-        </div>
-
-        <div className="p-3.5 sm:p-space-md rounded-xl bg-surface-container-low border border-white/5 flex flex-col justify-between min-h-[96px]">
-          <span className="font-label-caps text-label-caps text-outline uppercase tracking-wider">
-            Unverified
-          </span>
-          <span className="font-headline-md text-headline-md font-bold text-secondary">
-            {unverifiedCount}
-          </span>
-          <span className="font-body-sm text-body-sm text-outline truncate">
-            Missing receipts
       {/* High-level status cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
         <div className="p-5 rounded-2xl bg-white border border-[#E8E4DC] shadow-sm flex flex-col justify-between">
@@ -249,102 +152,6 @@ export const Dashboard: React.FC = () => {
               Create your first verification to check whether an AI agent actually completed its task.
             </p>
           </div>
-        ) : (
-          <>
-            {/* Desktop table */}
-            <div className="hidden md:block overflow-x-auto">
-              <table className="w-full text-left font-body-sm text-body-sm">
-                <thead className="bg-surface-container-low/80 border-b border-white/5 font-label-caps text-label-caps text-outline uppercase tracking-wider">
-                  <tr>
-                    <th className="py-3.5 px-4 font-semibold">ID</th>
-                    <th className="py-3.5 px-4 font-semibold">Agent</th>
-                    <th className="py-3.5 px-4 font-semibold">Task</th>
-                    <th className="py-3.5 px-4 font-semibold">Status</th>
-                    <th className="py-3.5 px-4 font-semibold text-right">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5">
-                  {verifications.map((item) => (
-                    <tr
-                      key={item.id}
-                      onClick={() => navigate(`/verify/${item.id}`)}
-                      className="hover:bg-surface-container/50 transition-colors cursor-pointer group"
-                    >
-                      <td className="py-3.5 px-4 font-code-sm text-code-sm font-semibold text-primary font-mono whitespace-nowrap">
-                        {item.displayId}
-                      </td>
-                      <td className="py-3.5 px-4 whitespace-nowrap">
-                        <div className="flex items-center gap-2">
-                          <span className="material-symbols-outlined text-[16px] text-outline">smart_toy</span>
-                          <span className="font-medium text-on-surface">{item.workerName}</span>
-                        </div>
-                      </td>
-                      <td className="py-3.5 px-4 max-w-xs lg:max-w-sm truncate text-on-surface-variant">
-                        <span className="truncate block" title={item.taskPrompt}>{item.taskPrompt}</span>
-                      </td>
-                      <td className="py-3.5 px-4 whitespace-nowrap">
-                        {item.status === "PASSED" && <Badge variant="passed" dot>VERIFIED</Badge>}
-                        {item.status === "FAILED" && <Badge variant="failed" dot>FAILED</Badge>}
-                        {item.status === "UNVERIFIED" && <Badge variant="unverified" dot>UNVERIFIED</Badge>}
-                        {item.status === "RUNNING" && <Badge variant="running" dot pulse>RUNNING</Badge>}
-                      </td>
-                      <td className="py-3.5 px-4 text-right whitespace-nowrap">
-                        <Link
-                          to={`/verify/${item.id}`}
-                          onClick={(e) => e.stopPropagation()}
-                          className="inline-flex items-center gap-1 text-code-sm text-primary hover:text-primary-container px-2.5 py-1 rounded hover:bg-surface-container transition-colors"
-                        >
-                          <span>View</span>
-                          <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Mobile cards */}
-            <div className="md:hidden flex flex-col gap-2.5 p-1 sm:p-0">
-              {verifications.map((item) => {
-                const borderAccent =
-                  item.status === "PASSED"
-                    ? "border-l-emerald-500"
-                    : item.status === "FAILED"
-                    ? "border-l-rose-500"
-                    : item.status === "UNVERIFIED"
-                    ? "border-l-amber-500"
-                    : "border-l-primary";
-
-                return (
-                  <Link
-                    key={item.id}
-                    to={`/verify/${item.id}`}
-                    className={`flex flex-col gap-2 p-3.5 rounded-xl bg-surface-container-low/70 border border-white/5 border-l-4 ${borderAccent} hover:bg-surface-container transition-all active:scale-[0.99]`}
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-code-sm text-code-sm font-semibold text-primary font-mono">{item.displayId}</span>
-                      {item.status === "PASSED" && <Badge variant="passed" dot>VERIFIED</Badge>}
-                      {item.status === "FAILED" && <Badge variant="failed" dot>FAILED</Badge>}
-                      {item.status === "UNVERIFIED" && <Badge variant="unverified" dot>UNVERIFIED</Badge>}
-                      {item.status === "RUNNING" && <Badge variant="running" dot pulse>RUNNING</Badge>}
-                    </div>
-                    <p className="font-body-sm text-body-sm text-on-surface line-clamp-2 leading-relaxed">{item.taskPrompt}</p>
-                    <div className="flex items-center justify-between pt-1 border-t border-white/5 text-xs text-outline">
-                      <div className="flex items-center gap-1.5">
-                        <span className="material-symbols-outlined text-[14px]">smart_toy</span>
-                        <span className="font-medium text-on-surface-variant truncate max-w-[140px]">{item.workerName}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <span className="font-code-sm text-code-sm">
-                          {new Date(item.createdAt).toLocaleDateString()}
-                        </span>
-                        <span className="material-symbols-outlined text-[14px] text-outline">chevron_right</span>
-                      </div>
-                    </div>
-                  </Link>
-                );
-              })}
           <button
             type="button"
             onClick={() => navigate("/verify/new")}

@@ -1,4 +1,4 @@
-﻿import React, { useState } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCreateVerification } from "../hooks/useCreateVerification";
 import { useAgentContext } from "../context/AgentContext";
@@ -36,22 +36,26 @@ const PRESETS: Preset[] = [
     ],
   },
   {
-    title: "Scenario D: Autonomous DEX Swap (Web3 Trading Agent)",
+    name: "Autonomous DEX Swap (Web3 Trading Agent)",
     badge: "Trading & Slippage",
-    taskPrompt:
-      "Swap 50 USDC for XLM on Soroswap with slippage <= 1% when XLM price < $0.12.",
-    workerId: "trading-agent-alpha",
-    network: "Stellar Testnet",
-    workerOutput: `Swapped 50 USDC for 425 XLM on Soroswap at effective price $0.1176 (slippage 0.42%). TxHash: 0x9c4f1a28a4de99f2b1892f3900a41cd`,
+    agent: "Trading Bot Alpha",
+    task: "Swap 50 USDC for XLM on Soroswap with slippage <= 1% when XLM price < $0.12.",
+    output: "Swapped 50 USDC for 425 XLM on Soroswap at effective price $0.1176 (slippage 0.42%). TxHash: 0x9c4f1a28a4de99f2b1892f3900a41cd",
+    files: [
+      { name: "soroswap_trade_trace.json", size: "4.2 KB", status: "Ready" },
+      { name: "stellar_dex_receipt.json", size: "6.8 KB", status: "Ready" },
+    ],
   },
   {
-    title: "Scenario E: Payment Gateway Log Audit (Web2 Reconciliation)",
+    name: "Payment Gateway Log Audit (Web2 Reconciliation)",
     badge: "Non-Blockchain Telemetry",
-    taskPrompt:
-      "Reconcile payment logs for batch_2026_09_22: verify total volume of $12,450, failed charges <= 2, and 0 duplicate payout IDs.",
-    workerId: "payment-audit-agent",
-    network: "Web2 Telemetry / Stripe",
-    workerOutput: `Reconciled 100 charges. Total volume: $12,450.00 USD. Found 2 failed charges ($235.00 total). 0 duplicates detected. All settlement batches verified.`,
+    agent: "Payment Audit Agent",
+    task: "Reconcile payment logs for batch_2026_09_22: verify total volume of $12,450, failed charges <= 2, and 0 duplicate payout IDs.",
+    output: "Reconciled 100 charges. Total volume: $12,450.00 USD. Found 2 failed charges ($235.00 total). 0 duplicates detected. All settlement batches verified.",
+    files: [
+      { name: "payment_batch_2026_09_22.log", size: "18.3 KB", status: "Ready" },
+      { name: "reconciliation_summary.json", size: "5.1 KB", status: "Ready" },
+    ],
   },
 ];
 

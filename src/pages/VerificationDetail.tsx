@@ -39,30 +39,6 @@ export const VerificationDetail: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col w-full max-w-5xl mx-auto gap-space-lg pb-24 md:pb-0">
-
-      {/* Breadcrumb + header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-space-md">
-        <div className="flex flex-col gap-1">
-          <div className="flex items-center gap-2 text-[13px] text-outline">
-            <Link to="/dashboard" className="hover:text-on-surface transition-colors">Verifications</Link>
-            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-            <span className="text-secondary font-medium">{verification.displayId}</span>
-            <span className="px-1.5 py-0.5 rounded bg-surface-container text-outline font-mono text-[11px]">
-              {verification.network}
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <h1 className="font-headline-lg text-headline-lg font-bold text-on-surface">
-              {verification.displayId}
-            </h1>
-            <button
-              onClick={handleCopyId}
-              className="p-1.5 rounded bg-surface-container hover:bg-surface-container-high text-outline hover:text-on-surface transition-all"
-              title="Copy ID"
-            >
-              <span className="material-symbols-outlined text-[16px]">
-                {copiedId ? "check" : "content_copy"}
     <div className="max-w-4xl mx-auto w-full flex flex-col gap-6 font-sans pb-16">
       {/* Top Breadcrumb & State switcher */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -311,42 +287,6 @@ export const VerificationDetail: React.FC = () => {
             )}
           </div>
         </div>
-      </div>
-
-      {/* Remediation */}
-      {verification.status !== "PASSED" && (
-        <RemediationPanel
-          record={verification}
-          onResubmit={async (patch) => { await resubmit(patch); }}
-          isResubmitting={isResubmitting}
-        />
-      )}
-
-      {/* Mobile Sticky Bottom Action Bar */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 p-3 bg-surface/95 backdrop-blur-xl border-t border-white/10 z-30 flex items-center gap-2 shadow-2xl">
-        <Link to={`/verify/${verification.id}/evidence`} className="flex-1">
-          <Button variant="secondary" size="md" className="w-full justify-center min-h-[44px]" icon={<span className="material-symbols-outlined text-[18px]">fingerprint</span>}>
-            Evidence
-          </Button>
-        </Link>
-        {verification.status !== "PASSED" ? (
-          <Button variant="primary" size="md" onClick={scrollToRemediation} className="flex-1 justify-center min-h-[44px]" icon={<span className="material-symbols-outlined text-[18px]">build_circle</span>}>
-            Fix & Resubmit
-          </Button>
-        ) : (
-          <Button
-            variant="secondary"
-            size="md"
-            className="flex-1 justify-center min-h-[44px]"
-            onClick={() => {
-              const tx = latestAttempt?.stellarTxHash ?? "62256096f306726197208231b00e422628b0bb83e104dabed9a74da5186afbaf";
-              window.open(`https://stellar.expert/explorer/testnet/tx/${tx}`, "_blank");
-            }}
-            icon={<span className="material-symbols-outlined text-[18px]">verified</span>}
-          >
-            On Stellar
-          </Button>
-        )}
       </div>
     </div>
   );

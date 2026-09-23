@@ -6,7 +6,6 @@ import { useVerificationsList } from "../hooks/useVerification";
 import { Button } from "../components/ui/Button";
 import { Badge } from "../components/ui/Badge";
 import { cn } from "../lib/utils";
-import { TELEGRAM_PERMANENT_INVITE_URL, TELEGRAM_BOT_URL } from "../config/env";
 
 export const Account: React.FC = () => {
   const navigate = useNavigate();
@@ -37,22 +36,6 @@ export const Account: React.FC = () => {
   const [isRegenModalOpen, setIsRegenModalOpen] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [apiKeyMsg, setApiKeyMsg] = useState<string | null>(null);
-
-  // Password State
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
-  const [passwordMsg, setPasswordMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
-
-  // Wallet Linking State
-  const [isManagingWallet, setIsManagingWallet] = useState(false);
-  const [walletMsg, setWalletMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
-
-  // Telegram Invite Copy State
-  const [copiedTelegram, setCopiedTelegram] = useState(false);
-  const TELEGRAM_PERMANENT_INVITE = TELEGRAM_PERMANENT_INVITE_URL;
-  const botUsername = TELEGRAM_BOT_URL.split("/").pop() || "VeraOS_Layer_bot";
 
   // Agent Probe State
   const [probingAgentId, setProbingAgentId] = useState<string | null>(null);
@@ -422,86 +405,6 @@ export const Account: React.FC = () => {
                     </div>
                   </div>
                 </div>
-
-                {/* Stellar Web3 Wallet */}
-                <div className="p-3.5 rounded-xl bg-surface-container-low border border-white/5 flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-purple-500/20 border border-purple-500/30 flex items-center justify-center shrink-0 text-purple-400">
-                      <span className="material-symbols-outlined text-[20px]">account_balance_wallet</span>
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="font-semibold text-xs text-on-surface">Stellar Web3 Wallet (Testnet)</span>
-                      <span className="font-code-sm text-[11px] text-on-surface-variant truncate max-w-xs">
-                        {user.walletAddress || "No Stellar public key linked to this profile"}
-                      </span>
-                    </div>
-                  </div>
-                  <div>
-                    {user.walletAddress ? (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        loading={isManagingWallet}
-                        onClick={handleToggleWallet}
-                        className="text-error hover:bg-error/10 hover:text-error"
-                      >
-                        Unlink Wallet
-                      </Button>
-                    ) : (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        loading={isManagingWallet}
-                        onClick={handleToggleWallet}
-                      >
-                        Connect Wallet
-                      </Button>
-                    )}
-                  </div>
-                </div>
-
-                {/* Telegram Bot Permanent Access */}
-                <div className="p-3.5 rounded-xl bg-surface-container-low border border-[#E08A3E]/20 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-[#E08A3E]/20 border border-[#E08A3E]/40 flex items-center justify-center shrink-0 text-[#E08A3E]">
-                      <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
-                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/>
-                      </svg>
-                    </div>
-                    <div className="flex flex-col">
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-xs text-on-surface">Telegram Bot Clearance</span>
-                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#E08A3E]/20 text-[#E08A3E] border border-[#E08A3E]/30">
-                          Invite-Only
-                        </span>
-                      </div>
-                      <span className="font-code-sm text-[11px] text-on-surface-variant">
-                        Bot handle: @{botUsername} • Permanent invite authorization enabled
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleCopyTelegramInvite}
-                      icon={<span className="material-symbols-outlined text-[14px]">{copiedTelegram ? "check" : "content_copy"}</span>}
-                    >
-                      {copiedTelegram ? "Copied" : "Copy Invite Link"}
-                    </Button>
-                    <a
-                      href={TELEGRAM_PERMANENT_INVITE}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-3 py-1.5 rounded-lg bg-[#E08A3E] hover:bg-[#c96a2b] text-black font-semibold text-xs flex items-center gap-1.5 transition-colors"
-                    >
-                      <span>Open Bot</span>
-                      <span className="material-symbols-outlined text-[14px]">arrow_outward</span>
-                    </a>
-                  </div>
-                </div>
-              </div>
-            </Card>
               )}
             </div>
           </div>
