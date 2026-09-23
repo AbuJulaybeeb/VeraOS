@@ -13,12 +13,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
   const navItems = [
     {
       label: "Overview",
-      icon: "grid_view",
+      icon: "dashboard",
       path: "/dashboard",
       active: location.pathname === "/dashboard",
     },
     {
-      label: "Verifications",
+      label: "My agents",
+      icon: "smart_toy",
+      path: "/agents",
+      active: location.pathname.startsWith("/agents"),
+    },
+    {
+      label: "Verification runs",
       icon: "verified",
       path: "/verifications",
       active:
@@ -26,36 +32,30 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
         (location.pathname.startsWith("/verify") && !location.pathname.includes("/evidence")),
     },
     {
-      label: "Agents",
-      icon: "smart_toy",
-      path: "/agents",
-      active: location.pathname.startsWith("/agents"),
-    },
-    {
-      label: "Evidence",
-      icon: "fingerprint",
+      label: "Evidence library",
+      icon: "folder_open",
       path: "/evidence",
       active: location.pathname === "/evidence" || location.pathname.includes("/evidence"),
     },
   ];
 
   return (
-    <aside className="h-full w-64 bg-[#160C08] z-40 flex flex-col justify-between border-r border-[#4A2B1D] text-[#FFF8F0] font-sans">
-      <div className="flex flex-col w-full p-4">
+    <aside className="h-full w-64 bg-[#181311] z-40 flex flex-col justify-between border-r border-[#2A2320] text-[#FFF8F0] font-sans">
+      <div className="flex flex-col w-full p-5">
         {/* Brand */}
-        <div className="flex items-center justify-between pb-5 mb-5 border-b border-[#4A2B1D]">
+        <div className="flex items-center justify-between pb-6 mb-6 border-b border-[#2A2320]">
           <Link
             to="/dashboard"
             onClick={onCloseMobile}
             className="flex items-center gap-2.5 group"
           >
-            <div className="w-8 h-8 rounded-xl bg-[#C96A2B] flex items-center justify-center shadow-[0_0_16px_rgba(201,106,43,0.35)] group-hover:scale-105 transition-transform">
-              <span className="material-symbols-outlined text-white text-[18px]">
-                verified
-              </span>
+            {/* Minimalist Logo dots/mark */}
+            <div className="flex items-center gap-1.5">
+              <div className="w-2.5 h-2.5 rounded-full bg-[#D97736]" />
+              <div className="w-2.5 h-2.5 rounded-full bg-white/80" />
             </div>
-            <span className="font-heading font-bold text-lg tracking-tight text-[#FFF8F0]">
-              Vera<span className="text-[#E08A3E]">OS</span>
+            <span className="font-heading font-bold text-xl tracking-tight text-white">
+              Vera<span className="text-[#D97736]">OS</span>
             </span>
           </Link>
 
@@ -63,7 +63,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
             <button
               type="button"
               onClick={onCloseMobile}
-              className="lg:hidden p-1.5 rounded-lg text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#21110B] cursor-pointer"
+              className="lg:hidden p-1.5 rounded-lg text-[#9E948B] hover:text-white hover:bg-white/5 cursor-pointer"
               aria-label="Close sidebar"
             >
               <span className="material-symbols-outlined text-[20px]">close</span>
@@ -71,14 +71,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
           )}
         </div>
 
-        {/* Primary Action: New Verification */}
+        {/* Primary Action: Check new work */}
         <Link
           to="/verify/new"
           onClick={onCloseMobile}
-          className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-[#C96A2B] hover:bg-[#E08A3E] text-white font-heading font-semibold text-xs sm:text-sm shadow-[0_0_18px_rgba(201,106,43,0.3)] hover:shadow-[0_0_24px_rgba(201,106,43,0.45)] transition-all cursor-pointer mb-6"
+          className="w-full flex items-center justify-between py-2.5 px-4 rounded-xl bg-[#F3E8DC] hover:bg-[#EAE0D3] text-[#181311] font-heading font-semibold text-sm transition-all cursor-pointer mb-6 group shadow-sm"
         >
-          <span className="material-symbols-outlined text-[18px]">add_circle</span>
-          <span>New Verification</span>
+          <span>Check new work</span>
+          <span className="material-symbols-outlined text-[18px] group-hover:translate-x-0.5 transition-transform text-[#181311]">
+            arrow_forward
+          </span>
         </Link>
 
         {/* Core Navigation Items */}
@@ -90,13 +92,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
               onClick={onCloseMobile}
               className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all text-sm font-medium ${
                 item.active
-                  ? "bg-[#2C1710] text-[#FFF8F0] font-semibold border border-[#4A2B1D] shadow-sm text-[#E08A3E]"
-                  : "text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#21110B]"
+                  ? "bg-[#26201D] text-white font-semibold shadow-sm"
+                  : "text-[#9E948B] hover:text-white hover:bg-[#201A18]"
               }`}
             >
               <span
-                className={`material-symbols-outlined text-[20px] ${
-                  item.active ? "text-[#E08A3E]" : "text-[#B9A99B]"
+                className={`material-symbols-outlined text-[19px] ${
+                  item.active ? "text-[#D97736]" : "text-[#9E948B]"
                 }`}
               >
                 {item.icon}
@@ -107,54 +109,36 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
         </nav>
       </div>
 
-      {/* Account Profile Footer */}
-      <div className="p-4 border-t border-[#4A2B1D]">
-        {user ? (
-          <div className="flex items-center justify-between p-2.5 rounded-2xl bg-[#21110B] border border-[#4A2B1D]">
-            <Link
-              to="/account"
-              onClick={onCloseMobile}
-              className="flex items-center gap-2.5 min-w-0 flex-1 hover:opacity-85 transition-opacity"
-            >
-              {user.avatar ? (
-                <img
-                  src={user.avatar}
-                  alt={user.name}
-                  className="w-8 h-8 rounded-full object-cover shrink-0 border border-white/10"
-                />
-              ) : (
-                <div className="w-8 h-8 rounded-full bg-[#C96A2B] text-white flex items-center justify-center font-heading font-bold text-xs shrink-0">
-                  {user.name ? user.name[0].toUpperCase() : "U"}
-                </div>
-              )}
-              <div className="truncate">
-                <p className="font-heading font-semibold text-xs text-[#FFF8F0] truncate">
-                  {user.name}
-                </p>
-                <p className="font-mono text-[10px] text-[#B9A99B] truncate">
-                  {user.email}
-                </p>
-              </div>
-            </Link>
-
-            <button
-              type="button"
-              onClick={() => logout()}
-              title="Sign Out"
-              className="p-1.5 rounded-lg text-[#B9A99B] hover:text-[#f87171] hover:bg-white/5 transition-colors cursor-pointer shrink-0 ml-1"
-            >
-              <span className="material-symbols-outlined text-[18px]">logout</span>
-            </button>
-          </div>
-        ) : (
+      {/* Account / Workspace Footer */}
+      <div className="p-4 border-t border-[#2A2320]">
+        <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#201A18] border border-[#2A2320]">
           <Link
-            to="/welcome"
+            to="/account"
             onClick={onCloseMobile}
-            className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-[#21110B] hover:bg-[#2C1710] border border-[#4A2B1D] text-xs font-semibold text-[#FFF8F0] transition-colors"
+            className="flex items-center gap-2.5 min-w-0 flex-1 hover:opacity-90 transition-opacity"
           >
-            <span>Sign In</span>
+            <div className="w-8 h-8 rounded-lg bg-[#2D2421] border border-[#3D322E] text-[#D97736] flex items-center justify-center font-heading font-bold text-xs shrink-0">
+              AO
+            </div>
+            <div className="truncate">
+              <p className="font-heading font-semibold text-xs text-white truncate">
+                Acme Operations
+              </p>
+              <p className="font-mono text-[10px] text-[#9E948B] truncate">
+                {user?.email || "maya@acme.ai"}
+              </p>
+            </div>
           </Link>
-        )}
+
+          <button
+            type="button"
+            onClick={() => logout()}
+            title="Sign Out"
+            className="p-1.5 rounded-lg text-[#9E948B] hover:text-[#f87171] hover:bg-white/5 transition-colors cursor-pointer shrink-0 ml-1"
+          >
+            <span className="material-symbols-outlined text-[18px]">logout</span>
+          </button>
+        </div>
       </div>
     </aside>
   );

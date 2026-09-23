@@ -1,60 +1,186 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
-import { VerificationPipelineVisual } from "../components/landing/VerificationPipelineVisual";
+﻿import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 
 export const LandingPage: React.FC = () => {
+  const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeStage, setActiveStage] = useState<number>(0);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/verifications?search=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
+
+  const stages = [
+    {
+      step: "01",
+      title: "Requirements & Invariants",
+      tag: "SPECIFICATION",
+      description:
+        "Defines expected contract invariants, SLA boundaries, financial caps, and execution criteria before an agent takes action.",
+      badge: "Pre-execution Schema",
+    },
+    {
+      step: "02",
+      title: "Worker Claim Extraction",
+      tag: "ASSERTION PARSING",
+      description:
+        "Extracts atomic statements, parameter arguments, and claimed outputs directly from agent logs, execution payloads, and receipts.",
+      badge: "Autonomous Ingestion",
+    },
+    {
+      step: "03",
+      title: "Independent Grounding & Proof",
+      tag: "MULTI-ORACLE CONSENSUS",
+      description:
+        "Gathers third-party cryptographic proofs, RPC state queries, and independent oracle responses to evaluate each claim against ground truth.",
+      badge: "Zero-Knowledge Attested",
+    },
+  ];
+
+  const codeSnippets = [
+    `{
+  "$schema": "https://veraos.network/schemas/spec.v1.json",
+  "verification_id": "vr-2048-live",
+  "agent_id": "ResearchAgent_VR2048",
+  "protocol": "Liquid Staking Protocol",
+  "invariants": {
+    "max_slippage_bps": 50,
+    "max_gas_eth": "0.015",
+    "authorized_vault": "0x56Ce26F3d01F9b31DeA678e722",
+    "oracle_sources_min": 3
+  },
+  "execution_mode": "FAIL_SAFE_REVERT"
+}`,
+    `{
+  "claims_extracted": [
+    {
+      "claim_id": "c_01",
+      "type": "BALANCE_DELTA",
+      "target": "Uniswap_V3_Pool",
+      "reported_value": "+142.85 ETH"
+    },
+    {
+      "claim_id": "c_02",
+      "type": "FEE_EXPENDITURE",
+      "reported_gas": "0.0118 ETH"
+    },
+    {
+      "claim_id": "c_03",
+      "type": "SETTLEMENT_RECIPIENT",
+      "recipient": "0x56Ce26F3d01F9b31DeA678e722"
+    }
+  ]
+}`,
+    `{
+  "attestation": {
+    "engine": "VeraOS Arbiter v1.4",
+    "proof_type": "Groth16_ZK_SNARK",
+    "zk_hash": "0x17fa60c098ab32e18d9f1",
+    "independent_oracles_queried": 11,
+    "verification_verdict": "PASS",
+    "confidence_score": 1.0,
+    "state_commitment": "0x9812bf...e722"
+  }
+}`,
+  ];
+
+  const pipelineSteps = [
+    { num: "01", name: "Origin", active: false },
+    { num: "02", name: "Payload", active: false },
+    { num: "03", name: "Transport", active: false },
+    { num: "04", name: "Arbiter: VeraOS Core", active: true },
+    { num: "05", name: "Spec", active: false },
+    { num: "06", name: "Assertions", active: false },
+    { num: "07", name: "Proof", active: false },
+    { num: "08", name: "Verdict: PASS", active: false },
+  ];
 
   return (
-    <div className="bg-[#160C08] text-[#FFF8F0] min-h-screen selection:bg-[#C96A2B] selection:text-[#FFF8F0] overflow-x-hidden font-sans">
+    <div className="bg-[#F7F5F0] text-[#191513] min-h-screen selection:bg-[#181311] selection:text-[#F7F5F0] overflow-x-hidden font-sans">
       {/* ---------------------------------------------------- */}
-      {/* 1. PUBLIC NAVIGATION                                 */}
+      {/* 1. TOP NAVBAR (FIGMA IMAGE 1)                        */}
       {/* ---------------------------------------------------- */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-[#160C08]/90 backdrop-blur-md border-b border-[#4A2B1D]">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          {/* Logo / Wordmark */}
-          <Link to="/" className="flex items-center gap-2.5 group">
-            <div className="w-8 h-8 rounded-xl bg-[#C96A2B] flex items-center justify-center shadow-[0_0_16px_rgba(201,106,43,0.35)] group-hover:scale-105 transition-transform">
-              <span className="material-symbols-outlined text-white text-[18px]">
-                verified
+      <header className="sticky top-0 z-50 bg-[#F7F5F0]/95 backdrop-blur-md border-b border-[#E8E4DC]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+          {/* Left: Logo & Status Badge */}
+          <div className="flex items-center gap-3 sm:gap-4 shrink-0">
+            <Link to="/" className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#D97736]" />
+                <span className="w-2.5 h-2.5 rounded-full bg-[#181311]" />
+              </div>
+              <span className="font-heading font-bold text-xl tracking-tight text-[#191513]">
+                Vera<span className="text-[#D97736]">OS</span>
               </span>
-            </div>
-            <span className="font-heading font-bold text-lg tracking-tight text-[#FFF8F0]">
-              Vera<span className="text-[#E08A3E]">OS</span>
-            </span>
-          </Link>
-
-          {/* Desktop Links */}
-          <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-[#B9A99B]">
-            <a
-              href="#how-it-works"
-              className="hover:text-[#FFF8F0] transition-colors"
-            >
-              How it works
-            </a>
-            <a
-              href="#why-veraos"
-              className="hover:text-[#FFF8F0] transition-colors"
-            >
-              Why VeraOS
-            </a>
-          </nav>
-
-          {/* Primary CTA */}
-          <div className="flex items-center gap-3">
-            <Link
-              to="/welcome"
-              className="inline-flex items-center gap-1.5 px-4 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-heading font-semibold text-white bg-[#C96A2B] hover:bg-[#E08A3E] shadow-[0_0_18px_rgba(201,106,43,0.3)] active:scale-[0.98] transition-all cursor-pointer"
-            >
-              <span>Get Started</span>
-              <span className="material-symbols-outlined text-[15px]">arrow_forward</span>
             </Link>
 
-            {/* Mobile Hamburger Toggle */}
+            {/* Telegram Active Pill */}
+            <div className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#EAF5EE] border border-[#CDE5D5] text-[#1D7A46] text-xs font-medium">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#1D7A46] animate-pulse" />
+              <span>Telegram Active</span>
+            </div>
+          </div>
+
+          {/* Center Links */}
+          <nav className="hidden lg:flex items-center gap-7 text-sm font-medium text-[#6B635B]">
+            <a href="#how-it-works" className="hover:text-[#191513] transition-colors">
+              How it works
+            </a>
+            <a href="#matrix" className="hover:text-[#191513] transition-colors">
+              Explore
+            </a>
+            <a href="#audit-engine" className="hover:text-[#191513] transition-colors">
+              Build
+            </a>
+            <Link to="/docs" className="hover:text-[#191513] transition-colors">
+              Docs
+            </Link>
+          </nav>
+
+          {/* Search Bar */}
+          <form
+            onSubmit={handleSearch}
+            className="hidden md:flex items-center relative flex-1 max-w-xs"
+          >
+            <span className="material-symbols-outlined absolute left-3 text-[#9E948B] text-[18px]">
+              search
+            </span>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Verify (Tx ID, Msg, IPFS Hash)..."
+              className="w-full pl-9 pr-3 py-1.5 bg-white border border-[#E8E4DC] rounded-xl text-xs text-[#191513] placeholder-[#9E948B] focus:outline-none focus:border-[#181311] transition-colors"
+            />
+          </form>
+
+          {/* Right: Connect Agent CTA & User Mark */}
+          <div className="flex items-center gap-3 shrink-0">
+            <Link
+              to="/connect-agent"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#181311] hover:bg-[#2A2422] text-white font-heading font-semibold text-xs sm:text-sm shadow-sm transition-all"
+            >
+              <span>Connect an Agent</span>
+              <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+            </Link>
+
+            <Link
+              to="/dashboard"
+              className="w-8 h-8 rounded-full bg-[#EAE5DE] border border-[#D5CEC5] text-[#191513] flex items-center justify-center font-heading font-semibold text-xs hover:border-[#181311] transition-colors"
+              title="Dashboard"
+            >
+              VO
+            </Link>
+
+            {/* Mobile Hamburger */}
             <button
               type="button"
               onClick={() => setMobileMenuOpen((prev) => !prev)}
-              className="md:hidden w-9 h-9 rounded-xl flex items-center justify-center bg-[#21110B] border border-[#4A2B1D] text-[#B9A99B] hover:text-[#FFF8F0] cursor-pointer"
+              className="lg:hidden p-1.5 rounded-lg bg-white border border-[#E8E4DC] text-[#6B635B]"
               aria-label="Toggle navigation"
             >
               <span className="material-symbols-outlined text-[20px]">
@@ -64,417 +190,454 @@ export const LandingPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Mobile Navigation Drawer */}
+        {/* Mobile menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden border-t border-[#4A2B1D] bg-[#21110B] px-4 py-4 flex flex-col gap-3">
+          <div className="lg:hidden border-t border-[#E8E4DC] bg-[#F7F5F0] px-4 py-4 flex flex-col gap-3">
+            <form onSubmit={handleSearch} className="relative w-full mb-2">
+              <span className="material-symbols-outlined absolute left-3 top-2 text-[#9E948B] text-[18px]">
+                search
+              </span>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Verify (Tx ID, Msg, IPFS Hash)..."
+                className="w-full pl-9 pr-3 py-2 bg-white border border-[#E8E4DC] rounded-xl text-xs text-[#191513]"
+              />
+            </form>
             <a
               href="#how-it-works"
               onClick={() => setMobileMenuOpen(false)}
-              className="px-3 py-2 rounded-lg text-sm font-medium text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#2C1710] transition-colors"
+              className="px-3 py-2 rounded-lg text-sm text-[#6B635B] hover:text-[#191513] hover:bg-white"
             >
               How it works
             </a>
             <a
-              href="#why-veraos"
+              href="#matrix"
               onClick={() => setMobileMenuOpen(false)}
-              className="px-3 py-2 rounded-lg text-sm font-medium text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#2C1710] transition-colors"
+              className="px-3 py-2 rounded-lg text-sm text-[#6B635B] hover:text-[#191513] hover:bg-white"
             >
-              Why VeraOS
+              Explore
+            </a>
+            <a
+              href="#audit-engine"
+              onClick={() => setMobileMenuOpen(false)}
+              className="px-3 py-2 rounded-lg text-sm text-[#6B635B] hover:text-[#191513] hover:bg-white"
+            >
+              Build
             </a>
             <Link
-              to="/welcome"
+              to="/docs"
               onClick={() => setMobileMenuOpen(false)}
-              className="mt-2 w-full text-center px-4 py-2.5 rounded-xl bg-[#C96A2B] hover:bg-[#E08A3E] text-white font-heading font-semibold text-sm transition-colors block shadow-md"
+              className="px-3 py-2 rounded-lg text-sm text-[#6B635B] hover:text-[#191513] hover:bg-white"
             >
-              Get Started
+              Docs
             </Link>
           </div>
         )}
       </header>
 
       {/* ---------------------------------------------------- */}
-      {/* 2. SECTION 1 — HERO                                  */}
+      {/* 2. HERO SECTION                                      */}
       {/* ---------------------------------------------------- */}
-      <section className="pt-32 pb-20 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto flex flex-col items-center text-center">
-        {/* Subtle Eyebrow */}
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#2C1710] border border-[#4A2B1D] text-[#E08A3E] text-xs font-heading font-semibold tracking-wide mb-6">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#E08A3E] animate-pulse" />
-          <span>VERIFICATION LAYER FOR AI AGENTS</span>
+      <section className="pt-16 pb-12 sm:pt-20 sm:pb-16 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto text-center">
+        {/* Category Eyebrow Pill */}
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-[#E8E4DC] text-[#6B635B] text-xs font-semibold tracking-wider uppercase mb-6 shadow-sm">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#D97736]" />
+          <span>Verification Infrastructure for AI Agents</span>
         </div>
 
-        {/* Primary Headline */}
-        <h1 className="font-heading text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight text-[#FFF8F0] leading-[1.08] max-w-4xl mb-6">
-          Verify before{" "}
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#E08A3E] to-[#C96A2B]">
-            you trust.
-          </span>
+        {/* Headline */}
+        <h1 className="font-heading font-extrabold text-4xl sm:text-6xl lg:text-7xl text-[#191513] tracking-tight leading-[1.08] mb-6">
+          Make your AI agent
+          <br />
+          <span className="text-[#191513]">prove its work.</span>
         </h1>
 
-        {/* Supporting text */}
-        <p className="font-sans text-base sm:text-lg lg:text-xl text-[#B9A99B] max-w-2xl leading-relaxed mb-8">
-          VeraOS independently checks whether AI agents actually completed the tasks they claim to have completed.
+        {/* Subtitle */}
+        <p className="max-w-2xl mx-auto text-base sm:text-lg text-[#6B635B] leading-relaxed mb-8">
+          Vera checks whether an AI agent actually completed a task correctly instead of simply trusting its claims. Cryptographically attested, independently verified.
         </p>
 
         {/* CTAs */}
-        <div className="flex flex-wrap items-center justify-center gap-3.5 mb-14">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-14">
           <Link
-            to="/welcome"
-            className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl bg-[#C96A2B] hover:bg-[#E08A3E] text-white font-heading font-semibold text-sm sm:text-base transition-all shadow-[0_0_24px_rgba(201,106,43,0.35)] active:scale-[0.98]"
+            to="/connect-agent"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-[#181311] hover:bg-[#2A2422] text-white font-heading font-semibold text-sm shadow-md hover:shadow-lg transition-all"
           >
-            <span>Get Started</span>
+            <span>Connect an Agent</span>
             <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
           </Link>
-
-          <a
-            href="#how-it-works"
-            className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl bg-[#21110B] hover:bg-[#2C1710] border border-[#4A2B1D] text-[#FFF8F0] font-heading font-medium text-sm sm:text-base transition-all"
+          <Link
+            to="/verify/new"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-white hover:bg-[#F3EFEA] border border-[#D5CEC5] text-[#191513] font-heading font-semibold text-sm transition-all"
           >
-            <span>How it works</span>
-            <span className="material-symbols-outlined text-[18px]">expand_more</span>
-          </a>
+            <span>Try the Demo</span>
+          </Link>
         </div>
 
-        {/* Hero Visual: Distinctive VeraOS verification visual */}
-        <VerificationPipelineVisual />
-      </section>
-
-      {/* ---------------------------------------------------- */}
-      {/* 3. SECTION 2 — THE PROBLEM                           */}
-      {/* ---------------------------------------------------- */}
-      <section id="why-veraos" className="py-24 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto border-t border-[#4A2B1D]">
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <div className="text-xs font-mono font-semibold uppercase tracking-wider text-[#E08A3E] mb-2">
-            THE RELIABILITY GAP
-          </div>
-          <h2 className="font-heading text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-[#FFF8F0] mb-5 leading-tight">
-            AI agents can say they completed something.
-            <br />
-            <span className="text-[#B9A99B]">That does not mean they actually did.</span>
-          </h2>
-          <p className="text-sm sm:text-base text-[#B9A99B] leading-relaxed">
-            Language models generate convincing summaries regardless of whether underlying APIs executed, payments were dispatched, or database records were written. Relying on an agent&apos;s self-reported status leads to silent failure.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="p-6 sm:p-7 rounded-2xl bg-[#21110B] border border-[#4A2B1D] flex flex-col justify-between">
-            <div>
-              <div className="w-10 h-10 rounded-xl bg-[#2C1710] border border-[#4A2B1D] flex items-center justify-center text-[#E08A3E] mb-4">
-                <span className="material-symbols-outlined text-[20px]">report</span>
-              </div>
-              <h3 className="font-heading font-semibold text-lg text-[#FFF8F0] mb-2">
-                Hallucinated Success
-              </h3>
-              <p className="text-xs sm:text-sm text-[#B9A99B] leading-relaxed">
-                Agents frequently output reassuring &quot;task completed&quot; messages even when the underlying tool invocation encountered an error or timeout.
-              </p>
-            </div>
-          </div>
-
-          <div className="p-6 sm:p-7 rounded-2xl bg-[#21110B] border border-[#4A2B1D] flex flex-col justify-between">
-            <div>
-              <div className="w-10 h-10 rounded-xl bg-[#2C1710] border border-[#4A2B1D] flex items-center justify-center text-[#E08A3E] mb-4">
-                <span className="material-symbols-outlined text-[20px]">toll</span>
-              </div>
-              <h3 className="font-heading font-semibold text-lg text-[#FFF8F0] mb-2">
-                Settlement Deficits
-              </h3>
-              <p className="text-xs sm:text-sm text-[#B9A99B] leading-relaxed">
-                Financial and treasury operations suffer from mismatched amounts, incorrect destinations, or unconfirmed network transactions.
-              </p>
-            </div>
-          </div>
-
-          <div className="p-6 sm:p-7 rounded-2xl bg-[#21110B] border border-[#4A2B1D] flex flex-col justify-between">
-            <div>
-              <div className="w-10 h-10 rounded-xl bg-[#2C1710] border border-[#4A2B1D] flex items-center justify-center text-[#E08A3E] mb-4">
-                <span className="material-symbols-outlined text-[20px]">sync_problem</span>
-              </div>
-              <h3 className="font-heading font-semibold text-lg text-[#FFF8F0] mb-2">
-                Cascading Agent Errors
-              </h3>
-              <p className="text-xs sm:text-sm text-[#B9A99B] leading-relaxed">
-                In multi-agent swarms, a single faulty upstream claim corrupts all downstream agents if work is not independently proven first.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ---------------------------------------------------- */}
-      {/* 4. SECTION 3 — HOW VERAOS WORKS                     */}
-      {/* ---------------------------------------------------- */}
-      <section id="how-it-works" className="py-24 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto border-t border-[#4A2B1D]">
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <div className="text-xs font-mono font-semibold uppercase tracking-wider text-[#E08A3E] mb-2">
-            THREE STEPS
-          </div>
-          <h2 className="font-heading text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-[#FFF8F0] mb-4">
-            How VeraOS works
-          </h2>
-          <p className="text-sm sm:text-base text-[#B9A99B] leading-relaxed">
-            Independent verification creates certainty between what was asked, what was claimed, and what actually occurred.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {/* Step 01 */}
-          <div className="p-7 sm:p-8 rounded-2xl bg-[#21110B] border border-[#4A2B1D] flex flex-col justify-between">
-            <div>
-              <span className="font-mono text-3xl font-bold text-[#E08A3E] block mb-4">01</span>
-              <h3 className="font-heading font-semibold text-xl text-[#FFF8F0] mb-3">
-                Submit the task
-              </h3>
-              <p className="text-xs sm:text-sm text-[#B9A99B] leading-relaxed">
-                Tell VeraOS what the agent was supposed to accomplish. Declare explicit requirements, invariants, and expected outcomes.
-              </p>
-            </div>
-            <div className="mt-6 pt-4 border-t border-[#4A2B1D] text-xs font-mono text-[#B9A99B]">
-              Input: Task Mandate
-            </div>
-          </div>
-
-          {/* Step 02 */}
-          <div className="p-7 sm:p-8 rounded-2xl bg-[#21110B] border border-[#4A2B1D] flex flex-col justify-between">
-            <div>
-              <span className="font-mono text-3xl font-bold text-[#E08A3E] block mb-4">02</span>
-              <h3 className="font-heading font-semibold text-xl text-[#FFF8F0] mb-3">
-                Check the evidence
-              </h3>
-              <p className="text-xs sm:text-sm text-[#B9A99B] leading-relaxed">
-                VeraOS separates the agent&apos;s claims from independently verifiable evidence. It inspects ledgers, APIs, and raw witnesses.
-              </p>
-            </div>
-            <div className="mt-6 pt-4 border-t border-[#4A2B1D] text-xs font-mono text-[#B9A99B]">
-              Process: Independent Audit
-            </div>
-          </div>
-
-          {/* Step 03 */}
-          <div className="p-7 sm:p-8 rounded-2xl bg-[#21110B] border border-[#4A2B1D] flex flex-col justify-between">
-            <div>
-              <span className="font-mono text-3xl font-bold text-[#E08A3E] block mb-4">03</span>
-              <h3 className="font-heading font-semibold text-xl text-[#FFF8F0] mb-3">
-                Return a verdict
-              </h3>
-              <p className="text-xs sm:text-sm text-[#B9A99B] leading-relaxed">
-                VeraOS returns a deterministic verdict: <strong className="text-[#4ade80]">PASS</strong>, <strong className="text-[#f87171]">FAIL</strong>, or <strong className="text-[#E6A15A]">UNVERIFIABLE</strong>.
-              </p>
-            </div>
-            <div className="mt-6 pt-4 border-t border-[#4A2B1D] text-xs font-mono text-[#B9A99B]">
-              Output: PASS / FAIL / UNVERIFIABLE
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ---------------------------------------------------- */}
-      {/* 5. SECTION 4 — CLAIM VS EVIDENCE (HIGH CONTRAST)     */}
-      {/* ---------------------------------------------------- */}
-      <section className="py-24 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto border-t border-[#4A2B1D]">
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <div className="text-xs font-mono font-semibold uppercase tracking-wider text-[#E08A3E] mb-2">
-            CORE PRINCIPLE
-          </div>
-          <h2 className="font-heading text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-[#FFF8F0] mb-4">
-            Claim ≠ Evidence ≠ Verdict
-          </h2>
-          <p className="text-sm sm:text-base text-[#B9A99B] leading-relaxed">
-            The foundation of VeraOS: never confuse what an agent asserts with what can independently be proven.
-          </p>
-        </div>
-
-        {/* Visual Comparison Card Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">
-          {/* Worker Claim (Neutral treatment) */}
-          <div className="rounded-3xl bg-[#21110B] border border-[#4A2B1D] p-6 sm:p-8 flex flex-col justify-between shadow-xl">
-            <div>
-              <div className="flex items-center justify-between pb-4 mb-6 border-b border-[#4A2B1D]">
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#B9A99B]" />
-                  <span className="font-mono text-xs uppercase font-bold tracking-wider text-[#B9A99B]">
-                    WORKER CLAIM
-                  </span>
-                </div>
-                <span className="px-2.5 py-0.5 rounded text-[11px] font-mono bg-[#160C08] text-[#B9A99B] border border-[#4A2B1D]">
-                  Untrusted Statement
-                </span>
-              </div>
-
-              <div className="p-4 rounded-xl bg-[#160C08] border border-[#4A2B1D] font-mono text-sm text-[#FFF8F0] mb-6">
-                &quot;I sent 5 USDC.&quot;
-              </div>
-
-              <div className="space-y-3 text-xs sm:text-sm text-[#B9A99B]">
-                <div className="flex items-center gap-2.5">
-                  <span className="text-[#B9A99B]">○</span>
-                  <span>Agent marked task as 100% complete</span>
-                </div>
-                <div className="flex items-center gap-2.5">
-                  <span className="text-[#B9A99B]">○</span>
-                  <span>Asserted transfer amount: 5.00 USDC</span>
-                </div>
-                <div className="flex items-center gap-2.5">
-                  <span className="text-[#B9A99B]">○</span>
-                  <span>No external verification required by worker</span>
-                </div>
-              </div>
+        {/* ---------------------------------------------------- */}
+        {/* HERO VISUAL CARD (GOLDEN ROBOT ART FROM FIGMA)       */}
+        {/* ---------------------------------------------------- */}
+        <div className="relative rounded-3xl bg-[#181311] border border-[#2A2320] overflow-hidden shadow-2xl text-left max-w-4xl mx-auto">
+          {/* Top metadata status header inside visual card */}
+          <div className="p-4 sm:p-5 flex flex-wrap items-center justify-between gap-3 border-b border-white/10 bg-[#140F0D]">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#1D7A46]/20 border border-[#1D7A46]/40 text-[#4ADE80] text-xs font-medium">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#4ADE80] animate-pulse" />
+                <span>Verified v1.4</span>
+              </span>
+              <span className="font-mono text-xs text-white/60">
+                Instance #VR-2048
+              </span>
             </div>
 
-            <div className="mt-8 pt-4 border-t border-[#4A2B1D] text-xs text-[#B9A99B] font-mono">
-              Status: Self-reported only
-            </div>
-          </div>
-
-          {/* Independent Evidence (Stronger treatment) */}
-          <div className="rounded-3xl bg-[#2C1710] border-2 border-[#E08A3E]/60 p-6 sm:p-8 flex flex-col justify-between shadow-[0_15px_50px_rgba(201,106,43,0.15)]">
-            <div>
-              <div className="flex items-center justify-between pb-4 mb-6 border-b border-[#4A2B1D]">
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#E08A3E]" />
-                  <span className="font-mono text-xs uppercase font-bold tracking-wider text-[#E08A3E]">
-                    INDEPENDENT EVIDENCE
-                  </span>
-                </div>
-                <span className="px-2.5 py-0.5 rounded text-[11px] font-mono bg-[#21110B] text-[#E08A3E] border border-[#E08A3E]/30 font-semibold">
-                  Authoritative Witness
-                </span>
-              </div>
-
-              <div className="p-4 rounded-xl bg-[#21110B] border border-[#E08A3E]/40 font-mono text-sm text-[#FFF8F0] mb-6">
-                Transaction shows 0.5 USDC.
-              </div>
-
-              <div className="space-y-3 text-xs sm:text-sm text-[#B9A99B]">
-                <div className="flex items-center gap-2.5">
-                  <span className="text-red-400 font-bold">✕</span>
-                  <span className="text-red-200 font-medium">Observed amount 0.50 USDC ≠ Required 5.00 USDC</span>
-                </div>
-                <div className="flex items-center gap-2.5">
-                  <span className="text-[#4ade80] font-bold">✓</span>
-                  <span>Recipient address matched</span>
-                </div>
-                <div className="flex items-center gap-2.5">
-                  <span className="text-red-400 font-bold">✕</span>
-                  <span className="text-red-200 font-medium">Critical deficit of 4.50 USDC detected</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Prominent FAILED Verdict Footer */}
-            <div className="mt-8 p-4 rounded-xl bg-[#2a1210] border border-[#5c1e19] flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <span className="w-3 h-3 rounded-full bg-[#f87171]" />
-                <span className="font-mono font-bold text-sm text-[#f87171]">
-                  VERDICT: FAILED
-                </span>
-              </div>
-              <span className="text-xs font-mono text-red-300">
-                Action Blocked
+            <div className="flex items-center gap-3 font-mono text-xs text-white/70">
+              <span>Proof: 0x17fa...60c0</span>
+              <span className="hidden sm:inline text-white/30">â€¢</span>
+              <span className="hidden sm:inline text-[#D97736]">
+                280ms â€¢ Zero-Knowledge Attested
               </span>
             </div>
           </div>
+
+          {/* Golden Robot Art Illustration */}
+          <div className="relative h-64 sm:h-96 w-full bg-[#181311] overflow-hidden flex items-center justify-center">
+            <img
+              src="/assets/hero-robot-art.png"
+              alt="VeraOS Verification Core Robot"
+              className="w-full h-full object-cover object-center opacity-90 hover:scale-102 transition-transform duration-700"
+            />
+
+            {/* Inset Overlay Badge */}
+            <div className="absolute bottom-4 left-4 right-4 sm:left-6 sm:right-auto sm:max-w-md bg-[#181311]/90 backdrop-blur-md border border-white/15 rounded-2xl p-3.5 shadow-xl">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="font-heading font-semibold text-xs text-white">
+                  ResearchAgent VR-2048
+                </span>
+                <span className="px-2 py-0.5 rounded text-[10px] font-bold font-mono bg-[#1D7A46] text-white">
+                  100% PASS
+                </span>
+              </div>
+              <p className="text-xs text-white/70">
+                Claim: Uniswap v3 Rebalance & Vault Settlement
+              </p>
+              <div className="mt-2 flex items-center gap-3 font-mono text-[11px] text-white/50">
+                <span>7 Checks</span>
+                <span>â€¢</span>
+                <span>11 Independent Sources</span>
+                <span>â€¢</span>
+                <span className="text-[#D97736]">ZK Grounded</span>
+              </div>
+            </div>
+          </div>
+
+          {/* 8-Step Verification Pipeline Bar (Image 1 Bottom of Card) */}
+          <div className="bg-[#120D0B] border-t border-white/10 p-3 sm:p-4 overflow-x-auto">
+            <div className="flex items-center justify-between min-w-[700px] text-xs">
+              {pipelineSteps.map((step, idx) => (
+                <div
+                  key={step.num}
+                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-all ${
+                    step.active
+                      ? "bg-[#D97736]/20 border border-[#D97736] text-[#F3E8DC] font-semibold"
+                      : "text-white/50"
+                  }`}
+                >
+                  <span className="font-mono text-[10px] opacity-60">{step.num}</span>
+                  <span>{step.name}</span>
+                  {idx < pipelineSteps.length - 1 && (
+                    <span className="material-symbols-outlined text-[14px] opacity-30 ml-1.5">
+                      chevron_right
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
       {/* ---------------------------------------------------- */}
-      {/* 6. SECTION 5 — CORRECTION LOOP                       */}
+      {/* 3. AUDIT ENGINE DECONSTRUCTED (FIGMA IMAGE 1)         */}
       {/* ---------------------------------------------------- */}
-      <section className="py-24 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto border-t border-[#4A2B1D]">
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <div className="text-xs font-mono font-semibold uppercase tracking-wider text-[#E08A3E] mb-2">
-            CLOSED-LOOP REMEDIATION
+      <section id="audit-engine" className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div className="text-center max-w-3xl mx-auto mb-12">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-[#E8E4DC] text-[#D97736] text-xs font-semibold tracking-wider uppercase mb-3">
+            <span>Audit Engine Deconstructed</span>
           </div>
-          <h2 className="font-heading text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-[#FFF8F0] mb-4">
-            If a task fails: the correction loop.
+          <h2 className="font-heading font-bold text-3xl sm:text-4xl text-[#191513] tracking-tight mb-4">
+            AI agents can act. Vera makes them prove it.
           </h2>
-          <p className="text-sm sm:text-base text-[#B9A99B] leading-relaxed">
-            VeraOS does not just flag failures. It emits machine-readable correction directives so the agent can fix the problem and re-verify.
+          <p className="text-base text-[#6B635B] leading-relaxed">
+            Three independent stages evaluate claims against ground-truth evidence before generating an immutable cryptographic attestation.
           </p>
         </div>
 
-        {/* Correction Flow Stepper */}
-        <div className="grid grid-cols-1 sm:grid-cols-5 gap-3 max-w-4xl mx-auto">
-          {/* Step 1: FAIL */}
-          <div className="p-5 rounded-2xl bg-[#2a1210] border border-[#5c1e19] text-center flex flex-col items-center justify-center">
-            <span className="font-mono text-xs text-red-400 font-bold mb-1">01</span>
-            <span className="font-heading font-bold text-base text-[#f87171]">FAIL</span>
-            <span className="text-[11px] text-red-300/80 mt-1">Deficit detected</span>
+        {/* 2-Column: Stage Cards on Left, Terminal Code on Right */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+          {/* Left Column: Interactive Stage Cards */}
+          <div className="lg:col-span-6 flex flex-col gap-4">
+            {stages.map((st, i) => (
+              <div
+                key={st.step}
+                onClick={() => setActiveStage(i)}
+                className={`p-6 rounded-2xl border transition-all cursor-pointer text-left ${
+                  activeStage === i
+                    ? "bg-white border-[#181311] shadow-md ring-1 ring-[#181311]"
+                    : "bg-white/70 hover:bg-white border-[#E8E4DC] hover:border-[#D5CEC5]"
+                }`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-mono text-xs font-bold text-[#D97736]">
+                    STAGE {st.step} â€¢ {st.tag}
+                  </span>
+                  <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-[#F3EFEA] text-[#6B635B]">
+                    {st.badge}
+                  </span>
+                </div>
+                <h3 className="font-heading font-bold text-lg text-[#191513] mb-2">
+                  {st.title}
+                </h3>
+                <p className="text-sm text-[#6B635B] leading-relaxed">
+                  {st.description}
+                </p>
+              </div>
+            ))}
           </div>
 
-          {/* Step 2: CORRECT */}
-          <div className="p-5 rounded-2xl bg-[#21110B] border border-[#4A2B1D] text-center flex flex-col items-center justify-center">
-            <span className="font-mono text-xs text-[#E08A3E] font-bold mb-1">02</span>
-            <span className="font-heading font-bold text-base text-[#FFF8F0]">CORRECT</span>
-            <span className="text-[11px] text-[#B9A99B] mt-1">Issue directive</span>
-          </div>
+          {/* Right Column: MacOS Style Terminal */}
+          <div className="lg:col-span-6">
+            <div className="rounded-2xl bg-[#181311] border border-[#2A2320] shadow-2xl overflow-hidden text-left">
+              {/* Terminal Title Bar */}
+              <div className="px-4 py-3 bg-[#130E0C] border-b border-white/10 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-[#EF4444]" />
+                  <span className="w-3 h-3 rounded-full bg-[#F59E0B]" />
+                  <span className="w-3 h-3 rounded-full bg-[#10B981]" />
+                  <span className="ml-2 font-mono text-xs text-white/50">
+                    schema://requirements.spec.v1.json
+                  </span>
+                </div>
+                <span className="font-mono text-[10px] text-[#D97736]">
+                  Stage 0{activeStage + 1}
+                </span>
+              </div>
 
-          {/* Step 3: RESUBMIT */}
-          <div className="p-5 rounded-2xl bg-[#21110B] border border-[#4A2B1D] text-center flex flex-col items-center justify-center">
-            <span className="font-mono text-xs text-[#E08A3E] font-bold mb-1">03</span>
-            <span className="font-heading font-bold text-base text-[#FFF8F0]">RESUBMIT</span>
-            <span className="text-[11px] text-[#B9A99B] mt-1">Agent retries</span>
-          </div>
-
-          {/* Step 4: VERIFY */}
-          <div className="p-5 rounded-2xl bg-[#2C1710] border border-[#4A2B1D] text-center flex flex-col items-center justify-center">
-            <span className="font-mono text-xs text-[#E08A3E] font-bold mb-1">04</span>
-            <span className="font-heading font-bold text-base text-[#FFF8F0]">VERIFY</span>
-            <span className="text-[11px] text-[#B9A99B] mt-1">Re-evaluate</span>
-          </div>
-
-          {/* Step 5: PASS */}
-          <div className="p-5 rounded-2xl bg-[#142818] border border-[#1b4324] text-center flex flex-col items-center justify-center">
-            <span className="font-mono text-xs text-[#4ade80] font-bold mb-1">05</span>
-            <span className="font-heading font-bold text-base text-[#4ade80]">PASS</span>
-            <span className="text-[11px] text-emerald-300/80 mt-1">Settlement released</span>
+              {/* Terminal Code Body */}
+              <div className="p-5 font-mono text-xs text-[#F3E8DC] overflow-x-auto leading-relaxed max-h-96">
+                <pre>{codeSnippets[activeStage]}</pre>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
       {/* ---------------------------------------------------- */}
-      {/* 7. SECTION 6 — FINAL CTA                             */}
+      {/* 4. FORENSIC VERIFICATION DEMO MATRIX (IMAGE 1)       */}
       {/* ---------------------------------------------------- */}
-      <section className="py-24 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto border-t border-[#4A2B1D] text-center">
-        <div className="p-8 sm:p-14 rounded-3xl bg-[#21110B] border border-[#4A2B1D] shadow-[0_20px_60px_rgba(0,0,0,0.7)] flex flex-col items-center">
-          <h2 className="font-heading text-3xl sm:text-5xl font-bold tracking-tight text-[#FFF8F0] mb-4">
-            Ready to verify agent work?
-          </h2>
-          <p className="font-sans text-sm sm:text-base text-[#B9A99B] max-w-xl mb-8 leading-relaxed">
-            Ensure your autonomous agents actually complete what they claim to complete.
-          </p>
+      <section id="matrix" className="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div className="bg-white border border-[#E8E4DC] rounded-3xl p-6 sm:p-10 shadow-sm">
+          {/* Header Row */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 mb-8 border-b border-[#E8E4DC]">
+            <div>
+              <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-[#EAF5EE] border border-[#CDE5D5] text-[#1D7A46] text-xs font-medium mb-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#1D7A46]" />
+                <span>LIVE AUDIT RECORD</span>
+              </div>
+              <h2 className="font-heading font-bold text-2xl sm:text-3xl text-[#191513]">
+                Forensic Verification Matrix
+              </h2>
+              <p className="text-xs sm:text-sm text-[#6B635B] mt-1">
+                Real-time attestation for autonomous DeFi worker execution.
+              </p>
+            </div>
 
-          <Link
-            to="/welcome"
-            className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-[#C96A2B] hover:bg-[#E08A3E] text-white font-heading font-semibold text-base transition-all shadow-[0_0_24px_rgba(201,106,43,0.35)] active:scale-[0.98]"
-          >
-            <span>Get Started</span>
-            <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
-          </Link>
+            <div className="flex items-center gap-3">
+              <Link
+                to="/verify/new"
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#181311] hover:bg-[#2A2422] text-white font-heading font-semibold text-xs shadow-sm transition-all"
+              >
+                <span>Launch Verification Console</span>
+                <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+              </Link>
+            </div>
+          </div>
+
+          {/* Agent Spec Info Card */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 rounded-2xl bg-[#F7F5F0] border border-[#E8E4DC] mb-8">
+            <div>
+              <p className="font-mono text-[10px] text-[#6B635B] uppercase">Agent ID</p>
+              <p className="font-heading font-bold text-sm text-[#191513] mt-0.5">
+                ResearchAgent VR-2048
+              </p>
+            </div>
+            <div>
+              <p className="font-mono text-[10px] text-[#6B635B] uppercase">Claims Tested</p>
+              <p className="font-heading font-bold text-sm text-[#191513] mt-0.5">
+                7 Claims
+              </p>
+            </div>
+            <div>
+              <p className="font-mono text-[10px] text-[#6B635B] uppercase">Independent Sources</p>
+              <p className="font-heading font-bold text-sm text-[#191513] mt-0.5">
+                11 Sources
+              </p>
+            </div>
+            <div>
+              <p className="font-mono text-[10px] text-[#6B635B] uppercase">Verdict</p>
+              <p className="font-heading font-bold text-sm text-[#1D7A46] mt-0.5 flex items-center gap-1">
+                <span className="material-symbols-outlined text-[16px]">check_circle</span>
+                <span>100% PASS</span>
+              </p>
+            </div>
+          </div>
+
+          {/* Matrix Checks List */}
+          <div className="space-y-3 font-sans">
+            {[
+              {
+                id: "CHK-01",
+                label: "Liquidity pool balance delta matched Uniswap v3 sub-graph",
+                source: "Uniswap V3 RPC & Etherscan",
+                status: "PASS",
+                confidence: "100%",
+              },
+              {
+                id: "CHK-02",
+                label: "Gas expenditure strictly within SLA bounds (< 0.015 ETH)",
+                source: "Base L2 Execution Node",
+                status: "PASS",
+                confidence: "100%",
+              },
+              {
+                id: "CHK-03",
+                label: "Output token recipient matched multisig vault address",
+                source: "Safe Protocol Registry",
+                status: "PASS",
+                confidence: "100%",
+              },
+              {
+                id: "CHK-04",
+                label: "Slippage tolerance strictly maintained under 0.5% threshold",
+                source: "Chainlink Price Feed Oracle",
+                status: "PASS",
+                confidence: "100%",
+              },
+            ].map((check) => (
+              <div
+                key={check.id}
+                className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border border-[#E8E4DC] hover:border-[#D5CEC5] bg-white transition-colors gap-3"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full bg-[#EAF5EE] text-[#1D7A46] flex items-center justify-center shrink-0 mt-0.5">
+                    <span className="material-symbols-outlined text-[16px]">check</span>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-[#191513]">
+                      {check.label}
+                    </p>
+                    <p className="font-mono text-[11px] text-[#6B635B] mt-0.5">
+                      Ground truth source: {check.source}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 shrink-0 sm:self-center self-end">
+                  <span className="font-mono text-xs text-[#6B635B]">
+                    Conf: {check.confidence}
+                  </span>
+                  <span className="px-2.5 py-1 rounded-full text-xs font-bold font-mono bg-[#EAF5EE] text-[#1D7A46] border border-[#CDE5D5]">
+                    {check.status}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Matrix Footer Checksum */}
+          <div className="mt-6 pt-4 border-t border-[#E8E4DC] flex flex-wrap items-center justify-between text-xs text-[#6B635B] font-mono gap-2">
+            <span>Root State Commitment: 0x56Ce26F3d01F9b31DeA678e722c83b89091</span>
+            <span>Zero-Knowledge Proof: GROTH16_BN254</span>
+          </div>
         </div>
       </section>
 
       {/* ---------------------------------------------------- */}
-      {/* 8. FOOTER                                            */}
+      {/* 5. DARK CTA BANNER (IMAGE 1)                         */}
       {/* ---------------------------------------------------- */}
-      <footer className="border-t border-[#4A2B1D] py-10 px-4 sm:px-6 max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#B9A99B]">
-        <div className="flex items-center gap-2">
-          <span className="font-heading font-bold text-sm text-[#FFF8F0]">
-            Vera<span className="text-[#E08A3E]">OS</span>
-          </span>
-          <span>•</span>
-          <span>Verification layer for AI agents</span>
+      <section className="py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div className="rounded-3xl bg-[#181311] border border-[#2A2320] p-8 sm:p-14 text-center text-white relative overflow-hidden shadow-2xl">
+          <div className="max-w-2xl mx-auto relative z-10">
+            <h2 className="font-heading font-extrabold text-3xl sm:text-4xl text-white tracking-tight mb-4">
+              Deploy trustless AI agents with absolute certainty.
+            </h2>
+            <p className="text-sm sm:text-base text-white/70 leading-relaxed mb-8">
+              Integrate the VeraOS verification layer in less than 5 minutes with our lightweight Python & TypeScript SDKs or simple webhook triggers.
+            </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <Link
+                to="/connect-agent"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-[#F3E8DC] hover:bg-[#EAE0D3] text-[#181311] font-heading font-semibold text-sm transition-all"
+              >
+                <span>Connect an Agent</span>
+                <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+              </Link>
+              <Link
+                to="/docs"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-transparent hover:bg-white/5 border border-white/20 text-white font-heading font-semibold text-sm transition-all"
+              >
+                <span>Read the Docs</span>
+              </Link>
+            </div>
+          </div>
         </div>
+      </section>
 
-        <div className="flex items-center gap-6">
-          <Link to="/privacy" className="hover:text-[#FFF8F0] transition-colors">
-            Privacy Policy
-          </Link>
-          <Link to="/terms" className="hover:text-[#FFF8F0] transition-colors">
-            Terms of Service
-          </Link>
-          <span className="text-[#4A2B1D]">|</span>
-          <span>© {new Date().getFullYear()} VeraOS</span>
+      {/* ---------------------------------------------------- */}
+      {/* 6. RFC-0442 FOOTER (IMAGE 1)                         */}
+      {/* ---------------------------------------------------- */}
+      <footer className="border-t border-[#E8E4DC] py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#D97736]" />
+              <span className="w-2.5 h-2.5 rounded-full bg-[#181311]" />
+            </div>
+            <span className="font-heading font-bold text-base text-[#191513]">
+              VeraOS
+            </span>
+            <span className="text-xs text-[#6B635B] font-mono">
+              v1.4.spec â€¢ RFC-0442 Attestation
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-[#EAF5EE] text-[#1D7A46] text-xs font-medium border border-[#CDE5D5]">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#1D7A46]" />
+            <span>All verification engines operational</span>
+          </div>
+
+          <div className="flex items-center gap-6 text-xs text-[#6B635B]">
+            <Link to="/docs" className="hover:text-[#191513] transition-colors">
+              Docs
+            </Link>
+            <a
+              href="https://github.com"
+              target="_blank"
+              rel="noreferrer"
+              className="hover:text-[#191513] transition-colors"
+            >
+              GitHub
+            </a>
+            <a
+              href="https://t.me"
+              target="_blank"
+              rel="noreferrer"
+              className="hover:text-[#191513] transition-colors"
+            >
+              Telegram
+            </a>
+          </div>
         </div>
       </footer>
     </div>

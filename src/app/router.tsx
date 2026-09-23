@@ -89,15 +89,6 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: "/welcome",
-    errorElement: <RouteErrorFallback />,
-    element: (
-      <Suspense fallback={<PageLoader />}>
-        <Welcome />
-      </Suspense>
-    ),
-  },
-  {
     path: "/get-started",
     element: <Navigate to="/welcome" replace />,
   },
@@ -133,6 +124,14 @@ export const router = createBrowserRouter([
         element: <AppShell />,
         errorElement: <RouteErrorFallback />,
         children: [
+          {
+            path: "/welcome",
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <Welcome />
+              </Suspense>
+            ),
+          },
           {
             path: "/dashboard",
             element: (
@@ -207,6 +206,14 @@ export const router = createBrowserRouter([
           },
           {
             path: "/agents/connect",
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <ConnectAgent />
+              </Suspense>
+            ),
+          },
+          {
+            path: "/connect-agent",
             element: (
               <Suspense fallback={<PageLoader />}>
                 <ConnectAgent />

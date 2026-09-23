@@ -69,13 +69,27 @@ function saveStoredUsers(users: StoredAccount[]): void {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const DEFAULT_DEMO_USER: User = {
+  id: "usr_maya_chen_01",
+  name: "Maya Chen",
+  email: "maya@acme.ai",
+  role: "Security Engineer",
+  avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=256&q=80",
+  invitationStatus: "admin",
+  apiKey: "vera_live_sec_89bf2e91a001",
+  walletAddress: "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5",
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(() => {
     try {
+      if (localStorage.getItem("vera_logged_out") === "1") {
+        return null;
+      }
       const stored = localStorage.getItem(STORAGE_AUTH_KEY);
-      return stored ? JSON.parse(stored) : null;
+      return stored ? JSON.parse(stored) : DEFAULT_DEMO_USER;
     } catch {
-      return null;
+      return DEFAULT_DEMO_USER;
     }
   });
 
@@ -592,6 +606,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = () => {
     setUser(null);
     try {
+      localStorage.setItem("vera_logged_out", "1");
       localStorage.removeItem(STORAGE_AUTH_KEY);
       localStorage.removeItem("vera_session_token_v1");
     } catch {

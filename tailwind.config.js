@@ -8,64 +8,89 @@ export default {
   theme: {
     extend: {
       colors: {
+        // Figma Exact Color System
+        figma: {
+          canvas: "#F7F5F0",
+          card: "#FFFFFF",
+          border: "#E8E4DC",
+          "border-subtle": "#EFECE6",
+          sidebar: "#181311",
+          "sidebar-hover": "#241E1C",
+          "sidebar-active": "#26201D",
+          "sidebar-cta": "#F3E8DC",
+          primary: "#181311",
+          "primary-hover": "#2A2422",
+          accent: "#D97736",
+          "accent-hover": "#E28543",
+          "accent-light": "#FCEFDF",
+          "text-dark": "#191513",
+          "text-muted": "#706864",
+          "status-green": "#1D7A46",
+          "status-green-bg": "#EAF5EE",
+          "status-green-border": "#D1EBD9",
+          "status-amber": "#B8621B",
+          "status-amber-bg": "#FEF5EB",
+          "status-amber-border": "#FCE2C4",
+        },
+
         // VeraOS Official Color System
         vera: {
-          bg: "#160C08",        // Primary background
-          deep: "#21110B",      // Deep brown
-          cocoa: "#2C1710",     // Cocoa
-          surface: "#3A2015",   // Surface
-          elevated: "#4A2819",  // Elevated
-          warm: "#63361F",      // Warm brown
-          primary: "#C96A2B",   // Primary orange
-          bright: "#E08A3E",    // Bright orange
-          amber: "#E6A15A",     // Amber
-          cream: "#F3E5D5",     // Cream
-          white: "#FFF8F0",     // Warm white
-          muted: "#B9A99B",     // Muted text
-          border: "#4A2B1D",    // Border
+          bg: "#F7F5F0",
+          deep: "#181311",
+          cocoa: "#26201D",
+          surface: "#FFFFFF",
+          elevated: "#FFFFFF",
+          warm: "#706864",
+          primary: "#181311",
+          bright: "#D97736",
+          amber: "#B8621B",
+          cream: "#F3E8DC",
+          white: "#FFFFFF",
+          muted: "#706864",
+          border: "#E8E4DC",
         },
 
         // Theme semantic mappings
-        background: "#160C08",
-        surface: "#21110B",
-        "surface-container-lowest": "#160C08",
-        "surface-container-low": "#21110B",
-        "surface-container": "#2C1710",
-        "surface-container-high": "#3A2015",
-        "surface-container-highest": "#4A2819",
-        "on-background": "#FFF8F0",
-        "on-surface": "#FFF8F0",
-        "on-surface-variant": "#B9A99B",
-        outline: "#B9A99B",
-        "outline-variant": "#4A2B1D",
+        background: "#F7F5F0",
+        surface: "#FFFFFF",
+        "surface-container-lowest": "#F7F5F0",
+        "surface-container-low": "#FAF8F5",
+        "surface-container": "#FFFFFF",
+        "surface-container-high": "#F5F2EB",
+        "surface-container-highest": "#E8E4DC",
+        "on-background": "#191513",
+        "on-surface": "#191513",
+        "on-surface-variant": "#706864",
+        outline: "#706864",
+        "outline-variant": "#E8E4DC",
 
         // Verification Accents
         primary: {
-          DEFAULT: "#C96A2B",
-          hover: "#E08A3E",
-          active: "#B85C20",
-          container: "#C96A2B",
+          DEFAULT: "#181311",
+          hover: "#2A2422",
+          active: "#0D0A09",
+          container: "#181311",
         },
         secondary: {
-          DEFAULT: "#E08A3E",
-          hover: "#E6A15A",
-          container: "#2C1710",
+          DEFAULT: "#D97736",
+          hover: "#E28543",
+          container: "#FCEFDF",
         },
         status: {
-          verified: "#4ade80",
-          "verified-bg": "#142818",
-          "verified-border": "#1b4324",
-          failed: "#f87171",
-          "failed-bg": "#2a1210",
-          "failed-border": "#5c1e19",
-          unverifiable: "#E6A15A",
-          "unverifiable-bg": "#2b1c10",
-          "unverifiable-border": "#54331a",
+          verified: "#1D7A46",
+          "verified-bg": "#EAF5EE",
+          "verified-border": "#D1EBD9",
+          failed: "#DC2626",
+          "failed-bg": "#FEF2F2",
+          "failed-border": "#FECACA",
+          unverifiable: "#B8621B",
+          "unverifiable-bg": "#FEF5EB",
+          "unverifiable-border": "#FCE2C4",
         },
         error: {
-          DEFAULT: "#f87171",
-          container: "#2a1210",
-          "on-error-container": "#fca5a5",
+          DEFAULT: "#DC2626",
+          container: "#FEF2F2",
+          "on-error-container": "#991B1B",
         },
       },
       fontFamily: {

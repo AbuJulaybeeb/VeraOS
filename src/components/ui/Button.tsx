@@ -27,15 +27,19 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
     const variantStyles = {
       primary:
-        "bg-[#C96A2B] hover:bg-[#E08A3E] text-white font-semibold border border-[#E08A3E]/30 shadow-[0_0_16px_rgba(201,106,43,0.3)] active:scale-[0.98]",
+        "bg-[#181311] hover:bg-[#2A2422] text-white font-medium border border-black/10 shadow-sm active:scale-[0.98]",
       secondary:
-        "bg-[#2C1710] hover:bg-[#3A2015] text-[#FFF8F0] font-medium border border-[#4A2B1D] hover:border-[#63361F] active:scale-[0.98]",
+        "bg-white hover:bg-[#FAF8F5] text-[#191513] font-medium border border-[#E8E4DC] active:scale-[0.98]",
       outline:
-        "bg-transparent hover:bg-[#21110B] text-[#FFF8F0] font-medium border border-[#4A2B1D] hover:border-[#E08A3E]/50 active:scale-[0.98]",
+        "bg-transparent hover:bg-[#FAF8F5] text-[#191513] font-medium border border-[#E8E4DC] active:scale-[0.98]",
       ghost:
-        "bg-transparent hover:bg-[#21110B] text-[#B9A99B] hover:text-[#FFF8F0] font-medium",
+        "bg-transparent hover:bg-[#F0ECE1] text-[#706864] hover:text-[#191513] font-medium",
+      accent:
+        "bg-[#D97736] hover:bg-[#E28543] text-white font-medium shadow-sm active:scale-[0.98]",
+      cream:
+        "bg-[#F3E8DC] hover:bg-[#EBDDCF] text-[#181311] font-medium border border-[#E6D8CA] active:scale-[0.98]",
       danger:
-        "bg-[#2a1210] hover:bg-[#3d1a17] text-[#fca5a5] font-semibold border border-[#5c1e19]",
+        "bg-[#FEF2F2] hover:bg-[#FEE2E2] text-[#DC2626] font-medium border border-[#FECACA]",
     };
 
     const sizeStyles = {
