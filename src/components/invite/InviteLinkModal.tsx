@@ -30,7 +30,7 @@ export const InviteLinkModal: React.FC<InviteLinkModalProps> = ({
   const [otpError, setOtpError] = useState<string | null>(null);
 
   // Extract bot username from env or default
-  const botUsername = TELEGRAM_BOT_URL.split("/").pop() || "Vera_Of_bot";
+  const botUsername = TELEGRAM_BOT_URL.split("/").pop() || "VeraOS_Layer_bot";
 
   // Pre-seed or personal link
   const personalCode = defaultInviteCode || "VERA-OFFICIAL";

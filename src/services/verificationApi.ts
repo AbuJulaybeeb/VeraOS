@@ -85,6 +85,8 @@ export const verificationApi = {
       body: JSON.stringify({
         task: input.taskPrompt,
         worker: {
+          id: input.workerId || "worker-alpha-09",
+          name: input.workerName || "Autonomous Worker",
           id: input.workerId || "worker-agent",
           name: input.workerName || input.workerId || "Autonomous Worker",
           output: input.workerOutput,
@@ -97,6 +99,8 @@ export const verificationApi = {
     });
 
     if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.message || errData.error || `Verification failed (HTTP ${res.status})`);
       const err = await res.json().catch(() => ({}));
       throw new Error(err.message || `Verification request failed with status ${res.status}`);
     }
@@ -122,12 +126,21 @@ export const verificationApi = {
       body: JSON.stringify({
         supplementalTxHash: patch?.txHash,
         workerOutput: patch?.target
+          ? `Remediated target: ${patch.target}\nSupplemental Transfer: ${patch.supplementalAmount || 4.5} USDC TxHash: ${patch.txHash || "0x5f9e2b1892f3900a41cd8a7b3c21a4de99f2b1892f3900a41cd8a7b3c21a4de"}`
           ? `Remediated target: ${patch.target}\nSupplemental Transfer: ${patch.supplementalAmount || 0} USDC TxHash: ${patch.txHash || ""}`
           : undefined,
       }),
     });
 
     if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.message || errData.error || `Resubmission failed (HTTP ${res.status})`);
+    }
+
+    const record = (await res.json()) as VerificationRecord;
+    const list = getStoredVerifications();
+    persistVerifications(list.map((r) => (r.id === record.id || r.displayId === record.displayId ? record : r)));
+    return record;
       const err = await res.json().catch(() => ({}));
       throw new Error(err.message || `Resubmission failed with status ${res.status}`);
     }

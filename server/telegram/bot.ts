@@ -1,8 +1,13 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
+import dns from "node:dns";
 import { TelegramUpdateSchema } from "../types/schemas.ts";
 import type { VerificationRecord } from "../types/domain.ts";
 import { aiService } from "../ai/aiService.ts";
 import { inviteService, InviteService } from "../auth/inviteService.ts";
+
+try {
+  dns?.setDefaultResultOrder?.("ipv4first");
+} catch {}
 
 export interface InlineKeyboardButton {
   text: string;
@@ -68,6 +73,7 @@ export class VeraTelegramBot {
   private isPolling = false;
   private isStarting = false;
   private pollingAbortController: AbortController | null = null;
+  private pollingGeneration = 0;
   private botUsername: string | null = null;
   private botInfo: { id: number; username?: string; first_name?: string } | null = null;
   private lastUpdateId = 0;
@@ -106,7 +112,68 @@ export class VeraTelegramBot {
   }
 
   setBotToken(token: string) {
-    this.botToken = token;
+    if (this.botToken !== token) {
+      this.botToken = token;
+      this.botUsername = null;
+      this.botInfo = null;
+    }
+  }
+
+  getBotToken(): string {
+    return this.botToken;
+  }
+
+  getPublicWebUrl(path = ""): string {
+    const cleanPath = path ? (path.startsWith("/") ? path : `/${path}`) : "";
+    if (this.apiBaseUrl) {
+      try {
+        const parsed = new URL(this.apiBaseUrl);
+        const host = parsed.hostname.toLowerCase();
+        if (
+          host !== "localhost" &&
+          host !== "127.0.0.1" &&
+          !host.endsWith(".local") &&
+          (parsed.protocol === "http:" || parsed.protocol === "https:")
+        ) {
+          return `${this.apiBaseUrl.replace(/\/+$/, "")}${cleanPath}`;
+        }
+      } catch {}
+    }
+
+    const envPublic = process.env.PUBLIC_APP_URL || process.env.VERAOS_PUBLIC_URL;
+    if (envPublic) {
+      try {
+        const parsed = new URL(envPublic);
+        if (parsed.protocol === "http:" || parsed.protocol === "https:") {
+          return `${envPublic.replace(/\/+$/, "")}${cleanPath}`;
+        }
+      } catch {}
+    }
+
+    return "https://github.com/k-deejah/VeraOS";
+  }
+
+  private sanitizeReplyMarkup(replyMarkup?: InlineKeyboardMarkup): InlineKeyboardMarkup | undefined {
+    if (!replyMarkup || !replyMarkup.inline_keyboard) return replyMarkup;
+
+    const sanitizedKeyboard = replyMarkup.inline_keyboard.map((row) =>
+      row.map((btn) => {
+        if (!btn.url) return btn;
+        let url = btn.url;
+        try {
+          const parsed = new URL(url);
+          const host = parsed.hostname.toLowerCase();
+          if (host === "localhost" || host === "127.0.0.1" || host.endsWith(".local")) {
+            url = this.getPublicWebUrl(parsed.pathname + parsed.search);
+          }
+        } catch {
+          url = this.getPublicWebUrl();
+        }
+        return { ...btn, url };
+      })
+    );
+
+    return { inline_keyboard: sanitizedKeyboard };
   }
 
   isConfigured(): boolean {
@@ -198,7 +265,21 @@ export class VeraTelegramBot {
 
     this.isStarting = true;
     try {
-      const meRes = await this.getMe();
+      let meRes = await this.getMe();
+      let retryCount = 0;
+      const maxRetries = 3;
+
+      while ((!meRes.ok || !meRes.result) && retryCount < maxRetries) {
+        if (meRes.error?.includes("401") || meRes.error?.includes("Unauthorized") || !this.botToken) {
+          break;
+        }
+        retryCount++;
+        const backoffMs = Math.min(1500 * Math.pow(2, retryCount - 1), 6000);
+        console.warn(`[Telegram Bot] Transient connection issue during handshake (${meRes.error}). Retrying in ${backoffMs / 1000}s (attempt ${retryCount}/${maxRetries})...`);
+        await new Promise((r) => setTimeout(r, backoffMs));
+        meRes = await this.getMe();
+      }
+
       if (!meRes.ok || !meRes.result) {
         console.error(`[Telegram Bot] Error: Failed to authenticate with Telegram Bot API: ${meRes.error}`);
         return false;
@@ -216,12 +297,15 @@ export class VeraTelegramBot {
 
       this.isPolling = true;
       this.pollingAbortController = new AbortController();
+      const generation = ++this.pollingGeneration;
       console.log("[Telegram Bot] Long polling started (listening for updates...)");
 
-      const timeout = options?.timeoutSeconds ?? 25;
-      this.runPollingLoop(timeout).catch((err) => {
+      const timeout = options?.timeoutSeconds ?? 15;
+      this.runPollingLoop(timeout, generation).catch((err) => {
         console.error("[Telegram Bot] Fatal polling loop error:", err);
-        this.isPolling = false;
+        if (this.pollingGeneration === generation) {
+          this.isPolling = false;
+        }
       });
 
       return true;
@@ -231,18 +315,23 @@ export class VeraTelegramBot {
   }
 
   stopPolling(): void {
+    this.pollingGeneration++;
     if (!this.isPolling) return;
     this.isPolling = false;
+    this.isStarting = false;
     if (this.pollingAbortController) {
-      this.pollingAbortController.abort();
+      try {
+        this.pollingAbortController.abort();
+      } catch {}
       this.pollingAbortController = null;
     }
     console.log("[Telegram Bot] Long polling stopped.");
   }
 
-  private async runPollingLoop(timeoutSeconds: number): Promise<void> {
+  private async runPollingLoop(timeoutSeconds: number, generation: number): Promise<void> {
     let consecutive409Count = 0;
-    while (this.isPolling) {
+    let consecutiveNetErrors = 0;
+    while (this.isPolling && this.pollingGeneration === generation) {
       try {
         const offset = this.lastUpdateId > 0 ? this.lastUpdateId + 1 : 0;
         const allowedUpdates = encodeURIComponent(JSON.stringify(["message", "callback_query"]));
@@ -250,17 +339,20 @@ export class VeraTelegramBot {
 
         const res = await fetch(url, { signal: this.pollingAbortController?.signal });
 
+        if (this.pollingGeneration !== generation) break;
+
         if (!res.ok) {
           if (res.status === 409) {
             consecutive409Count++;
             const backoffMs = Math.min(5000 * consecutive409Count, 30000);
-            if (consecutive409Count === 1 || consecutive409Count % 5 === 0) {
+            if (consecutive409Count === 1 || consecutive409Count % 3 === 0) {
               console.warn(`[Telegram Bot] 409 Conflict: another instance is active. Backing off for ${backoffMs / 1000}s...`);
             }
-            if (consecutive409Count === 3) {
+            if (consecutive409Count === 2) {
               await this.deleteWebhook(true);
             }
             await new Promise((r) => setTimeout(r, backoffMs));
+            if (this.pollingGeneration !== generation) break;
             continue;
           }
           consecutive409Count = 0;
@@ -271,15 +363,17 @@ export class VeraTelegramBot {
           }
           console.warn(`[Telegram Bot] getUpdates returned status ${res.status}. Retrying in 3s...`);
           await new Promise((r) => setTimeout(r, 3000));
+          if (this.pollingGeneration !== generation) break;
           continue;
         }
 
         consecutive409Count = 0;
+        consecutiveNetErrors = 0;
 
         const data = (await res.json()) as { ok: boolean; result: TelegramUpdate[]; description?: string };
         if (data.ok && Array.isArray(data.result)) {
           for (const update of data.result) {
-            if (!this.isPolling) break;
+            if (!this.isPolling || this.pollingGeneration !== generation) break;
             this.lastUpdateId = Math.max(this.lastUpdateId, update.update_id);
 
             const sender = update.message?.from?.username
@@ -304,10 +398,16 @@ export class VeraTelegramBot {
           }
         }
       } catch (err) {
-        if (!this.isPolling) break;
+        if (!this.isPolling || this.pollingGeneration !== generation) break;
         if (err instanceof Error && err.name === "AbortError") break;
-        console.warn(`[Telegram Bot] Network or polling interruption (${(err as Error).message}). Retrying in 3s...`);
-        await new Promise((r) => setTimeout(r, 3000));
+        consecutiveNetErrors++;
+        const msg = (err as Error).message || "";
+        const cause = ((err as any)?.cause?.message || (err as any)?.cause?.code || "");
+        if (consecutiveNetErrors === 1 || consecutiveNetErrors % 5 === 0) {
+          console.warn(`[Telegram Bot] Network or polling interruption (${msg}${cause ? `: ${cause}` : ""}). Retrying in 2s...`);
+        }
+        await new Promise((r) => setTimeout(r, 2000));
+        if (this.pollingGeneration !== generation) break;
       }
     }
   }
@@ -387,17 +487,19 @@ export class VeraTelegramBot {
         await this.sendMessage(chatId, reply, {
           inline_keyboard: [
             [
-              { text: "🌐 Open Platform Dashboard", url: `${this.apiBaseUrl}/dashboard` },
+              { text: "🛡 VeraOS Commands", callback_data: "help" },
+              { text: "🌐 Platform GitHub", url: this.getPublicWebUrl() },
             ],
           ],
         });
         return { handled: true, reply };
       } else {
-        const reply = `⚠️ Access Restricted — Invalid Invite Code\n\n${redeemRes.message}\n\nPlease visit the VeraOS website to get your permanent invite link:\n👉 ${this.apiBaseUrl}`;
+        const reply = `⚠️ Access Restricted — Invalid Invite Code\n\n${redeemRes.message}\n\nPlease visit the VeraOS website to get your permanent invite link:\n👉 ${this.getPublicWebUrl()}`;
         await this.sendMessage(chatId, reply, {
           inline_keyboard: [
             [
-              { text: "🌐 Open VeraOS Website", url: this.apiBaseUrl },
+              { text: "🛡 VeraOS Commands", callback_data: "help" },
+              { text: "🌐 VeraOS Portal", url: this.getPublicWebUrl() },
             ],
           ],
         });
@@ -412,14 +514,18 @@ export class VeraTelegramBot {
         `⛔ Access Restricted — Invitation Required\n\n` +
         `VeraOS Telegram Bot is currently invite-only.\n\n` +
         `Anyone can explore the main VeraOS platform and try task verification freely on the web. To use this Telegram bot, please visit our website and click "Open Telegram" to get your permanent invite link.\n\n` +
-        `👉 Website: ${this.apiBaseUrl}\n\n` +
+        `👉 Website: ${this.getPublicWebUrl()}\n\n` +
         `If you have an invite code or OTP, reply with:\n` +
-        `/invite <CODE> or /start invite_<CODE>`;
+        `/invite <CODE> or /start invite_<CODE>\n\n` +
+        `Or tap below to claim official website access:`;
 
       await this.sendMessage(chatId, reply, {
         inline_keyboard: [
           [
-            { text: "🌐 Open VeraOS Website", url: this.apiBaseUrl },
+            { text: "🔑 Activate Operator Access", callback_data: "redeem_official_invite" },
+          ],
+          [
+            { text: "🌐 Open VeraOS Website", url: this.getPublicWebUrl() },
           ],
         ],
       });
@@ -1057,11 +1163,37 @@ export class VeraTelegramBot {
       await this.answerCallbackQuery(query.id);
     }
 
+    // Handle 1-tap official invite redemption
+    if (data === "redeem_official_invite") {
+      const firstName = query.from?.first_name || "Operator";
+      const username = query.from?.username || "";
+      const redeemRes = await this.inviteService.redeemCode(userId, "VERA-OFFICIAL", {
+        username,
+        first_name: firstName,
+      });
+      if (redeemRes.success && redeemRes.user) {
+        const reply = this.inviteService.getAccessGrantedMessage(redeemRes.user);
+        await this.sendMessage(chatId, reply, {
+          inline_keyboard: [
+            [
+              { text: "🛡 VeraOS Commands", callback_data: "help" },
+              { text: "🌐 Platform GitHub", url: this.getPublicWebUrl() },
+            ],
+          ],
+        });
+        return { handled: true, reply };
+      }
+    }
+
     const isAuthorized = await this.inviteService.isAuthorized(userId);
     if (!isAuthorized) {
       const reply = "⛔ Access restricted. Please visit the VeraOS website to get an invite link.";
       await this.sendMessage(chatId, reply);
       return { handled: true, reply };
+    }
+
+    if (data === "help") {
+      return this.handleHelp(chatId);
     }
 
     if (data.startsWith("view_evidence:")) {
@@ -1116,7 +1248,7 @@ export class VeraTelegramBot {
       };
 
       if (replyMarkup) {
-        payload.reply_markup = replyMarkup;
+        payload.reply_markup = this.sanitizeReplyMarkup(replyMarkup);
       }
 
       const res = await fetch(`https://api.telegram.org/bot${this.botToken}/sendMessage`, {
@@ -1128,6 +1260,18 @@ export class VeraTelegramBot {
       if (!res.ok) {
         const errJson = (await res.json().catch(() => ({}))) as { description?: string; error_code?: number };
         console.error(`[Telegram Bot] Failed to send message to chat ${chatId}: HTTP ${res.status}`, errJson.description || "");
+
+        // If rejected due to button URL format, retry immediately without reply_markup
+        if (payload.reply_markup && (errJson.description?.toLowerCase().includes("button") || errJson.description?.toLowerCase().includes("url") || res.status === 400)) {
+          console.warn(`[Telegram Bot] Retrying message to chat ${chatId} without reply_markup...`);
+          delete payload.reply_markup;
+          const retryRes = await fetch(`https://api.telegram.org/bot${this.botToken}/sendMessage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          return retryRes.ok;
+        }
       }
 
       return res.ok;
@@ -1217,4 +1361,7 @@ export class VeraTelegramBot {
   }
 }
 
-export const veraTelegramBot = new VeraTelegramBot();
+const globalBotKey = Symbol.for("vera.telegram.bot");
+export const veraTelegramBot: VeraTelegramBot =
+  (globalThis as unknown as Record<symbol, VeraTelegramBot>)[globalBotKey] ||
+  ((globalThis as unknown as Record<symbol, VeraTelegramBot>)[globalBotKey] = new VeraTelegramBot());

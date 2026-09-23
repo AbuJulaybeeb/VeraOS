@@ -63,7 +63,7 @@ export const onRequestPost = async ({
   request: Request;
   env: Env;
 }) => {
-  const token = env.TELEGRAM_BOT_TOKEN || "8398164925:AAHdxpRwoIOvBocQyEaJEGhb-FuVJ58O7Dk";
+  const token = env.TELEGRAM_BOT_TOKEN || "8989264156:AAGOcGNgV83w3rt5jIMpq-kErxdCHAK-P2c";
 
   // Validate webhook secret if configured
   if (env.TELEGRAM_WEBHOOK_SECRET) {

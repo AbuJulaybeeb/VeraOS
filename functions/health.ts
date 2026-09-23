@@ -7,7 +7,7 @@ interface Env {
 }
 
 export const onRequestGet = async ({ env }: { env: Env }) => {
-  const token = env.TELEGRAM_BOT_TOKEN || "8398164925:AAHdxpRwoIOvBocQyEaJEGhb-FuVJ58O7Dk";
+  const token = env.TELEGRAM_BOT_TOKEN || "8989264156:AAGOcGNgV83w3rt5jIMpq-kErxdCHAK-P2c";
   return new Response(
     JSON.stringify({
       status: "ok",
@@ -18,7 +18,7 @@ export const onRequestGet = async ({ env }: { env: Env }) => {
         configured: Boolean(token),
         polling: false,
         webhookEnabled: true,
-        botUsername: "@Vera_Of_bot",
+        botUsername: "@VeraOS_Layer_bot",
       },
       stellar: {
         network: env.STELLAR_NETWORK || "testnet",

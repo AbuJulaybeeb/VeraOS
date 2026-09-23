@@ -7,7 +7,7 @@
 export const TELEGRAM_BOT_URL: string =
   (typeof import.meta !== "undefined" && import.meta.env?.VITE_TELEGRAM_BOT_URL)
     ? (import.meta.env.VITE_TELEGRAM_BOT_URL as string)
-    : "https://t.me/Vera_Of_bot";
+    : "https://t.me/VeraOS_Layer_bot";
 
 // Permanent invite code and deep-link for website visitors
 export const TELEGRAM_BOT_INVITE_CODE = "VERA-OFFICIAL";

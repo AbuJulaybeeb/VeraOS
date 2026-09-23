@@ -31,7 +31,7 @@ export default {
     const auth = new AuthService(db);
     const invites = new InviteService(db);
     const gemini = new GeminiClient(env.GEMINI_API_KEY);
-    const botToken = env.TELEGRAM_BOT_TOKEN || "8398164925:AAHdxpRwoIOvBocQyEaJEGhb-FuVJ58O7Dk";
+    const botToken = env.TELEGRAM_BOT_TOKEN || "8989264156:AAGOcGNgV83w3rt5jIMpq-kErxdCHAK-P2c";
 
     // CORS Preflight
     if (request.method === "OPTIONS") {

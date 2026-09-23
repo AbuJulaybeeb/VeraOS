@@ -40,6 +40,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
   ];
 
   return (
+    <aside className="h-full lg:h-full max-h-[100dvh] w-72 max-w-[85vw] sm:w-72 bg-surface-container-lowest z-50 flex flex-col shadow-[0_1px_8px_rgba(0,0,0,0.3)] border-r border-white/5 overflow-y-auto pb-6 lg:pb-0">
     <aside className="h-full w-64 bg-[#181311] z-40 flex flex-col justify-between border-r border-[#2A2320] text-[#FFF8F0] font-sans">
       <div className="flex flex-col w-full p-5">
         {/* Brand */}
@@ -71,6 +72,31 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
           )}
         </div>
 
+        {/* Logo & Mobile Close */}
+        <div className="flex items-center justify-between w-full">
+          <Link
+            to="/"
+            onClick={onCloseMobile}
+            className="flex items-center gap-2 group w-fit"
+          >
+            <div className="w-7 h-7 rounded-xl bg-primary-container flex items-center justify-center shadow-[0_0_16px_rgba(255,87,8,0.35)] group-hover:scale-105 transition-transform shrink-0">
+              <span className="material-symbols-outlined text-on-primary-container text-[18px]">verified</span>
+            </div>
+            <span className="text-[15px] font-semibold tracking-tight text-on-surface font-headline-sm">
+              Vera<span className="text-primary-container">OS</span>
+            </span>
+          </Link>
+          {onCloseMobile && (
+            <button
+              type="button"
+              onClick={onCloseMobile}
+              className="lg:hidden p-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors min-w-[36px] min-h-[36px] flex items-center justify-center cursor-pointer"
+              aria-label="Close navigation"
+            >
+              <span className="material-symbols-outlined text-[20px]">close</span>
+            </button>
+          )}
+        </div>
         {/* Primary Action: Check new work */}
         <Link
           to="/verify/new"

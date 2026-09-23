@@ -20,7 +20,7 @@ This guide covers deploying the entire **VeraOS** ecosystem (Web Application + S
 
 - **Frontend**: Vite Single Page App built and deployed across Vercel’s global Edge Network. `vercel.json` provides client-side SPA routing (`/dashboard`, `/account`, `/verify/:id`, `/docs`, etc.).
 - **Serverless API**: Handled seamlessly by `api/entry.ts` via Vercel Serverless Functions (`/v1/*`, `/health`, `/telegram/*`).
-- **Telegram Bot (`@Vera_Of_bot`)**: Operates serverlessly via Telegram Webhooks. Every message sent to the bot triggers the Vercel function and returns an instant response.
+- **Telegram Bot (`@VeraOS_Layer_bot`)**: Operates serverlessly via Telegram Webhooks. Every message sent to the bot triggers the Vercel function and returns an instant response.
 
 ---
 
@@ -55,7 +55,7 @@ Under **Environment Variables**, add the following keys:
 | `STELLAR_NETWORK` | `testnet` | Target Stellar consensus network |
 | `STELLAR_HORIZON_URL` | `https://horizon-testnet.stellar.org` | Live Horizon RPC endpoint |
 | `STELLAR_RPC_URL` | `https://soroban-testnet.stellar.org` | Live Soroban smart contract RPC |
-| `TELEGRAM_BOT_TOKEN` | `8398164925:AAHdxpRwoIOvBocQyEaJEGhb-FuVJ58O7Dk` | Authentication token for `@Vera_Of_bot` |
+| `TELEGRAM_BOT_TOKEN` | `8989264156:AAGOcGNgV83w3rt5jIMpq-kErxdCHAK-P2c` | Authentication token for `@VeraOS_Layer_bot` |
 | `TELEGRAM_MODE` | `webhook` | Enables serverless webhook processing |
 | `GEMINI_API_KEY` | *(Your Gemini API Key)* | Natural language extraction & audit analysis |
 | `NODE_VERSION` | `20` | LTS Node runtime |
@@ -72,7 +72,7 @@ After deployment finishes, point your Telegram Bot to your new Vercel domain:
 ### Option A: Using Web Browser
 Replace `YOUR_VERCEL_DOMAIN` with your actual Vercel domain (e.g., `vera-os.vercel.app`):
 ```
-https://api.telegram.org/bot8398164925:AAHdxpRwoIOvBocQyEaJEGhb-FuVJ58O7Dk/setWebhook?url=https://YOUR_VERCEL_DOMAIN/telegram/webhook&drop_pending_updates=true
+https://api.telegram.org/bot8989264156:AAGOcGNgV83w3rt5jIMpq-kErxdCHAK-P2c/setWebhook?url=https://YOUR_VERCEL_DOMAIN/telegram/webhook&drop_pending_updates=true
 ```
 
 You should see:
@@ -86,7 +86,7 @@ You should see:
 
 ### Option B: Using cURL or Terminal
 ```bash
-curl -X POST "https://api.telegram.org/bot8398164925:AAHdxpRwoIOvBocQyEaJEGhb-FuVJ58O7Dk/setWebhook" \
+curl -X POST "https://api.telegram.org/bot8989264156:AAGOcGNgV83w3rt5jIMpq-kErxdCHAK-P2c/setWebhook" \
   -H "Content-Type: application/json" \
   -d '{"url": "https://YOUR_VERCEL_DOMAIN/telegram/webhook", "drop_pending_updates": true}'
 ```
@@ -104,7 +104,7 @@ curl -X POST "https://api.telegram.org/bot8398164925:AAHdxpRwoIOvBocQyEaJEGhb-Fu
      "runtime": "operational",
      "telegram": {
        "configured": true,
-       "botUsername": "@Vera_Of_bot"
+       "botUsername": "@VeraOS_Layer_bot"
      },
      "stellar": {
        "network": "testnet"
@@ -118,9 +118,9 @@ curl -X POST "https://api.telegram.org/bot8398164925:AAHdxpRwoIOvBocQyEaJEGhb-Fu
    - Test Google sign-in and Stellar wallet connection.
 
 3. **Verify Telegram Bot**:
-   - Open Telegram and launch `@Vera_Of_bot`.
+   - Open Telegram and launch `@VeraOS_Layer_bot`.
    - Send:
      ```
-     https://t.me/Vera_Of_bot?start=invite_VERA-OFFICIAL
+     https://t.me/VeraOS_Layer_bot?start=invite_VERA-OFFICIAL
      ```
    - Send `/verify` or test a task verification.

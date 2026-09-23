@@ -118,7 +118,7 @@ export class RequirementExtractor {
     const paymentMatch = trimmed.match(
       /\b(?:pay(?:\s+yourself)?|send|transfer)\s+(?:exactly\s+)?(\d+(?:\.\d+)?)\s+([A-Za-z0-9]+)\b/i
     );
-    if (paymentMatch) {
+    if (paymentMatch && !/\b(?:swap|exchange)\b/i.test(trimmed)) {
       const amount = parseFloat(paymentMatch[1]);
       const token = paymentMatch[2].toUpperCase();
 
@@ -143,7 +143,119 @@ export class RequirementExtractor {
       });
     }
 
-    // 6. If no specific requirements matched, extract a general requirement
+    // 6. Web3 Autonomous Trading Extraction (DEX Swaps, Pairs & Limits)
+    // Examples: "Swap 50 USDC for XLM on Soroswap", "Trade 100 USDC to XLM", "Buy XLM with 50 USDC"
+    const tradeMatch =
+      trimmed.match(/\b(?:swap|exchange)\s+(\d+(?:\.\d+)?)\s*([A-Za-z0-9]+)\s+(?:for|to)\s+([A-Za-z0-9]+)(?:\s+on\s+([A-Za-z0-9_\-]+))?/i) ||
+      trimmed.match(/\b(?:trade|buy)\s+([A-Za-z0-9]+)\s+(?:with|using)\s+(\d+(?:\.\d+)?)\s*([A-Za-z0-9]+)(?:\s+on\s+([A-Za-z0-9_\-]+))?/i);
+
+    if (tradeMatch) {
+      const isReverse = /\b(?:trade|buy)\s+[A-Za-z0-9]+\s+(?:with|using)/i.test(tradeMatch[0]);
+      const inputAmount = parseFloat(isReverse ? tradeMatch[2] : tradeMatch[1]);
+      const inputToken = (isReverse ? tradeMatch[3] : tradeMatch[2]).toUpperCase();
+      const outputToken = (isReverse ? tradeMatch[1] : tradeMatch[3]).toUpperCase();
+      const dex = tradeMatch[4] || tradeMatch[5] || undefined;
+
+      requirements.push({
+        id: `r${reqIndex++}`,
+        description: dex
+          ? `Swap ${inputAmount} ${inputToken} for ${outputToken} on ${dex}`
+          : `Swap ${inputAmount} ${inputToken} for ${outputToken}`,
+        type: "trade",
+        operator: "eq",
+        expected: {
+          action: "swap",
+          inputAmount,
+          inputToken,
+          outputToken,
+          ...(dex ? { dex } : {}),
+        },
+        status: "pending",
+      });
+    }
+
+    // 7. Slippage Tolerance Extraction
+    // Examples: "slippage <= 1%", "slippage under 0.5%", "max 1% slippage", "slippage not exceeding 1%"
+    const slippageMatch = trimmed.match(
+      /\b(?:max(?:imum)?\s+)?(?:slippage|price\s+impact)\s*(?:<=|<|under|not exceeding|below|of at most)?\s*(\d+(?:\.\d+)?)\s*%/i
+    ) || trimmed.match(/\bmax\s+(\d+(?:\.\d+)?)\s*%\s*slippage\b/i);
+
+    if (slippageMatch) {
+      const maxSlippage = parseFloat(slippageMatch[1]);
+      requirements.push({
+        id: `r${reqIndex++}`,
+        description: `Slippage must not exceed ${maxSlippage}%`,
+        type: "slippage",
+        operator: "lte",
+        expected: maxSlippage,
+        status: "pending",
+      });
+    }
+
+    // 8. Price Limit Constraint Extraction
+    // Examples: "when XLM price < $0.12", "price <= $0.12", "price under $0.12"
+    const priceLimitMatch = trimmed.match(
+      /\bprice\s*(?:<=|<|under|below|at most)\s*\$?(\d+(?:\.\d+)?)\b/i
+    );
+    if (priceLimitMatch) {
+      const limit = parseFloat(priceLimitMatch[1]);
+      requirements.push({
+        id: `r${reqIndex++}`,
+        description: `Execution price must be <= $${limit}`,
+        type: "threshold",
+        operator: "lte",
+        expected: limit,
+        status: "pending",
+      });
+    }
+
+    // 9. Web2 Log Monitoring & Payment Flow Reconciliation Extraction
+    // Examples: "reconcile payment logs for batch_2026_09_22", "audit transaction logs", "monitor payment flow"
+    const isLogAuditOrRecon = /\b(?:reconcile|audit|monitor|scan)\s+(?:payment|transaction|webhook|access|charge|order)?\s*(?:logs?|flows?|batch|settlement)\b/i.test(trimmed);
+
+    if (isLogAuditOrRecon) {
+      // Check for expected volume in fiat ($148,200, $10,000, 10000 USD)
+      const volumeMatch = trimmed.match(/\b(?:volume|total|sum)\s*(?:of\s*)?(?:[$€£])?\s*(\d+(?:,\d+)*(?:\.\d+)?)\s*(?:USD|EUR|GBP)?\b/i);
+      if (volumeMatch) {
+        const cleanVol = parseFloat(volumeMatch[1].replace(/,/g, ""));
+        requirements.push({
+          id: `r${reqIndex++}`,
+          description: `Total reconciled volume must match $${cleanVol.toLocaleString()}`,
+          type: "reconciliation",
+          operator: "eq",
+          expected: { metric: "volume", value: cleanVol, currency: "USD" },
+          status: "pending",
+        });
+      }
+
+      // Check for failed charges / error threshold
+      const failedCountMatch = trimmed.match(/\b(?:failed|error|rejected)\s*(?:charges?|payments?|requests?|transactions?)?\s*(?:<|<=|under|at most|below)?\s*(\d+)\b/i);
+      if (failedCountMatch) {
+        const maxFailures = parseInt(failedCountMatch[1], 10);
+        requirements.push({
+          id: `r${reqIndex++}`,
+          description: `Failed charges must be <= ${maxFailures}`,
+          type: "log_audit",
+          operator: "lte",
+          expected: { metric: "failed_count", max: maxFailures },
+          status: "pending",
+        });
+      }
+
+      // Check for duplicate detection
+      if (/\b(?:0|zero|no)\s+duplicates?\b/i.test(trimmed) || /\bduplicates?\s*(?:must be\s*)?(?:0|zero)\b/i.test(trimmed)) {
+        requirements.push({
+          id: `r${reqIndex++}`,
+          description: "Zero duplicate transaction or payout IDs allowed",
+          type: "log_audit",
+          operator: "eq",
+          expected: { metric: "duplicate_count", max: 0 },
+          status: "pending",
+        });
+      }
+    }
+
+    // 10. If no specific requirements matched, extract a general requirement
     if (requirements.length === 0) {
       requirements.push({
         id: `r${reqIndex++}`,

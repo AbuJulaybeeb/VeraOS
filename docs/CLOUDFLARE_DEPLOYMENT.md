@@ -15,12 +15,12 @@ This guide covers deploying the VeraOS platform (Frontend + Cloudflare Pages Fun
                                       └──> Telemetry & Invariant Kernel
 ```
 
-- **Frontend**: Single Page Application built with Vite & Tailwind CSS, hosted on Cloudflare Pages global edge CDN with instant cache invalidation.
+- **Frontend**: Single-Page App built with React 19 + Vite + TailwindCSS.
 - **Serverless Edge Functions**:
   - `functions/health.ts` -> `GET /health` operational heartbeat.
-  - `functions/telegram/webhook.ts` -> `POST /telegram/webhook` handles incoming Telegram messages from `@Vera_Of_bot`.
+  - `functions/telegram/webhook.ts` -> `POST /telegram/webhook` handles incoming Telegram messages from `@VeraOS_Layer_bot`.
   - `functions/v1/verify.ts` -> `GET /v1/verify` & `POST /v1/verify` handles programmatic verification requests.
-- **Bot**: Telegram Bot `@Vera_Of_bot` operates serverlessly via Cloudflare Webhooks (no long-running server required).
+- **Bot**: Telegram Bot `@VeraOS_Layer_bot` operates serverlessly via Cloudflare Webhooks (no long-running server required).
 
 ---
 
@@ -50,7 +50,7 @@ Under **Environment variables (advanced)**, add:
 | Variable Name | Value |
 |---|---|
 | `NODE_VERSION` | `20` |
-| `TELEGRAM_BOT_TOKEN` | `8398164925:AAHdxpRwoIOvBocQyEaJEGhb-FuVJ58O7Dk` |
+| `TELEGRAM_BOT_TOKEN` | `8989264156:AAGOcGNgV83w3rt5jIMpq-kErxdCHAK-P2c` |
 | `STELLAR_NETWORK` | `testnet` |
 | `STELLAR_RPC_URL` | `https://soroban-testnet.stellar.org` |
 | `STELLAR_HORIZON_URL` | `https://horizon-testnet.stellar.org` |
@@ -64,12 +64,12 @@ Click **Save and Deploy**. Cloudflare will build and deploy your project to `htt
 Once your Cloudflare Pages URL is live (e.g. `https://veraos-bot.pages.dev`), run the webhook configuration script:
 
 ```powershell
-node scripts/set-telegram-webhook.mjs 8398164925:AAHdxpRwoIOvBocQyEaJEGhb-FuVJ58O7Dk https://veraos-bot.pages.dev
+node scripts/set-telegram-webhook.mjs 8989264156:AAGOcGNgV83w3rt5jIMpq-kErxdCHAK-P2c https://veraos-bot.pages.dev
 ```
 
 Alternatively, open this URL in your web browser:
 ```
-https://api.telegram.org/bot8398164925:AAHdxpRwoIOvBocQyEaJEGhb-FuVJ58O7Dk/setWebhook?url=https://veraos-bot.pages.dev/telegram/webhook&drop_pending_updates=true
+https://api.telegram.org/bot8989264156:AAGOcGNgV83w3rt5jIMpq-kErxdCHAK-P2c/setWebhook?url=https://veraos-bot.pages.dev/telegram/webhook&drop_pending_updates=true
 ```
 
 You will see:
@@ -114,13 +114,13 @@ If you prefer deploying from your local terminal:
      "status": "ok",
      "version": "0.2.0",
      "runtime": "cloudflare-pages",
-     "telegram": { "configured": true, "webhookEnabled": true, "botUsername": "@Vera_Of_bot" },
+     "telegram": { "configured": true, "webhookEnabled": true, "botUsername": "@VeraOS_Layer_bot" },
      "stellar": { "network": "testnet" }
    }
    ```
 
-2. **Verify Telegram Bot**:
-   - Open Telegram and search for `@Vera_Of_bot`.
+2. **Test Telegram Bot**:
+   - Open Telegram and search for `@VeraOS_Layer_bot`.
    - Send `/start`.
    - Send `/verify Send 5 USDC to GCEYAU... | Payment complete tx 622560...`
    - Observe instant edge response!
