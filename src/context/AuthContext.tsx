@@ -365,7 +365,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       id: `usr_g_${btoa(effectiveEmail).replace(/[^a-zA-Z0-9]/g, "").slice(0, 8)}_${Date.now().toString(36)}`,
       name: targetName,
       email: effectiveEmail,
-      role: isOwner ? "Protocol Founder" : "Operator",
+      role: isOwner ? "Admin" : "Operator",
       avatar: options?.picture,
       authProvider: "google",
       googleId: options?.sub || `g_sub_${Date.now()}`,

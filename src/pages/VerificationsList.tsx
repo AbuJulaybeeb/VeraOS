@@ -4,7 +4,7 @@ import { useVerificationsList } from "../hooks/useVerification";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
 
-export const Dashboard: React.FC = () => {
+export const VerificationsList: React.FC = () => {
   const navigate = useNavigate();
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -13,11 +13,6 @@ export const Dashboard: React.FC = () => {
     statusFilter,
     searchQuery
   );
-
-  const totalCount = verifications.length;
-  const passedCount = verifications.filter((v) => v.status === "PASSED").length;
-  const failedCount = verifications.filter((v) => v.status === "FAILED").length;
-  const unverifiableCount = verifications.filter((v) => v.status === "UNVERIFIED").length;
 
   const filterTabs = [
     { label: "All", value: "ALL" },
@@ -28,14 +23,13 @@ export const Dashboard: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-6 max-w-7xl mx-auto w-full font-sans">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="font-heading text-2xl sm:text-3xl font-bold tracking-tight text-[#FFF8F0]">
-            Overview
+            Verifications
           </h1>
           <p className="text-xs sm:text-sm text-[#B9A99B] mt-1">
-            Create and monitor AI agent verifications.
+            Audit history of all evaluated agent tasks and independent checks.
           </p>
         </div>
 
@@ -59,91 +53,45 @@ export const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* High-level status cards (shown only with genuine counts) */}
-      {totalCount > 0 && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
-          <div className="p-4 rounded-2xl bg-[#21110B] border border-[#4A2B1D] flex flex-col justify-between">
-            <span className="font-mono text-xs uppercase text-[#B9A99B]">
-              Total Verifications
-            </span>
-            <span className="font-heading text-2xl sm:text-3xl font-bold text-[#FFF8F0] mt-1">
-              {totalCount}
-            </span>
-          </div>
-
-          <div className="p-4 rounded-2xl bg-[#21110B] border border-[#4A2B1D] flex flex-col justify-between">
-            <span className="font-mono text-xs uppercase text-[#4ade80]">
-              Verified (Pass)
-            </span>
-            <span className="font-heading text-2xl sm:text-3xl font-bold text-[#4ade80] mt-1">
-              {passedCount}
-            </span>
-          </div>
-
-          <div className="p-4 rounded-2xl bg-[#21110B] border border-[#4A2B1D] flex flex-col justify-between">
-            <span className="font-mono text-xs uppercase text-[#f87171]">
-              Failed Checks
-            </span>
-            <span className="font-heading text-2xl sm:text-3xl font-bold text-[#f87171] mt-1">
-              {failedCount}
-            </span>
-          </div>
-
-          <div className="p-4 rounded-2xl bg-[#21110B] border border-[#4A2B1D] flex flex-col justify-between">
-            <span className="font-mono text-xs uppercase text-[#E6A15A]">
-              Unverifiable
-            </span>
-            <span className="font-heading text-2xl sm:text-3xl font-bold text-[#E6A15A] mt-1">
-              {unverifiableCount}
-            </span>
-          </div>
-        </div>
-      )}
-
       {/* Filter and Search Controls */}
-      {totalCount > 0 && (
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-2 rounded-2xl bg-[#21110B] border border-[#4A2B1D]">
-          {/* Status Tabs */}
-          <div className="flex items-center gap-1 overflow-x-auto">
-            {filterTabs.map((tab) => (
-              <button
-                key={tab.value}
-                onClick={() => setStatusFilter(tab.value)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-heading font-medium transition-colors whitespace-nowrap cursor-pointer ${
-                  statusFilter === tab.value
-                    ? "bg-[#C96A2B] text-white font-semibold"
-                    : "text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#2C1710]"
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Search bar */}
-          <div className="relative w-full sm:w-64">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#B9A99B] text-[16px]">
-              search
-            </span>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search tasks or agents..."
-              className="w-full pl-9 pr-3 py-1.5 rounded-xl bg-[#160C08] border border-[#4A2B1D] text-xs text-[#FFF8F0] placeholder-[#B9A99B]/50 focus:outline-none focus:ring-1 focus:ring-[#E08A3E]"
-            />
-          </div>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-2 rounded-2xl bg-[#21110B] border border-[#4A2B1D]">
+        <div className="flex items-center gap-1 overflow-x-auto">
+          {filterTabs.map((tab) => (
+            <button
+              key={tab.value}
+              onClick={() => setStatusFilter(tab.value)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-heading font-medium transition-colors whitespace-nowrap cursor-pointer ${
+                statusFilter === tab.value
+                  ? "bg-[#C96A2B] text-white font-semibold"
+                  : "text-[#B9A99B] hover:text-[#FFF8F0] hover:bg-[#2C1710]"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
-      )}
 
-      {/* Main Content Area */}
+        <div className="relative w-full sm:w-64">
+          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#B9A99B] text-[16px]">
+            search
+          </span>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search by ID, agent, or task..."
+            className="w-full pl-9 pr-3 py-1.5 rounded-xl bg-[#160C08] border border-[#4A2B1D] text-xs text-[#FFF8F0] placeholder-[#B9A99B]/50 focus:outline-none focus:ring-1 focus:ring-[#E08A3E]"
+          />
+        </div>
+      </div>
+
+      {/* List / Cards */}
       {loading ? (
         <div className="p-16 rounded-3xl bg-[#21110B] border border-[#4A2B1D] flex flex-col items-center justify-center gap-3 text-[#B9A99B]">
           <span className="w-8 h-8 border-2 border-[#C96A2B] border-t-transparent rounded-full animate-spin" />
-          <span className="font-mono text-xs">Loading verifications...</span>
+          <span className="font-mono text-xs">Loading verification records...</span>
         </div>
       ) : verifications.length === 0 ? (
-        /* Strict Empty State from prompt */
         <div className="p-12 sm:p-20 rounded-3xl bg-[#21110B] border border-[#4A2B1D] flex flex-col items-center justify-center text-center gap-4">
           <div className="w-12 h-12 rounded-2xl bg-[#2C1710] border border-[#4A2B1D] flex items-center justify-center text-[#E08A3E]">
             <span className="material-symbols-outlined text-[24px]">verified</span>
@@ -166,7 +114,6 @@ export const Dashboard: React.FC = () => {
           </Button>
         </div>
       ) : (
-        /* Real Verifications Grid */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
           {verifications.map((item) => (
             <div
@@ -175,7 +122,6 @@ export const Dashboard: React.FC = () => {
               className="p-5 rounded-2xl bg-[#21110B] border border-[#4A2B1D] hover:border-[#E08A3E]/40 transition-all flex flex-col justify-between cursor-pointer group shadow-sm"
             >
               <div>
-                {/* Top Row: Display ID & Status Badge */}
                 <div className="flex items-center justify-between gap-2 mb-3">
                   <span className="font-mono text-xs font-bold text-[#E08A3E]">
                     #{item.displayId}
@@ -203,7 +149,6 @@ export const Dashboard: React.FC = () => {
                   )}
                 </div>
 
-                {/* Worker Agent */}
                 <div className="flex items-center gap-2 mb-2 text-xs text-[#B9A99B]">
                   <span className="material-symbols-outlined text-[16px] text-[#B9A99B]">
                     smart_toy
@@ -213,13 +158,11 @@ export const Dashboard: React.FC = () => {
                   </span>
                 </div>
 
-                {/* Task Prompt Snippet */}
                 <p className="text-xs text-[#B9A99B] line-clamp-3 leading-relaxed mb-4">
                   {item.taskPrompt}
                 </p>
               </div>
 
-              {/* Card Footer */}
               <div className="pt-3 border-t border-[#4A2B1D] flex items-center justify-between text-xs text-[#B9A99B]">
                 <span className="font-mono text-[11px]">
                   {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : "Recent"}

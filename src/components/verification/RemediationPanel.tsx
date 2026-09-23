@@ -13,24 +13,24 @@ export const RemediationPanel: React.FC<RemediationPanelProps> = ({
   onResubmit,
   isResubmitting,
 }) => {
-  const [dispatchStatus, setDispatchStatus] = useState<"idle" | "dispatching" | "dispatched">("idle");
-  const [selectedTarget, setSelectedTarget] = useState("Aerodrome ($214M TVL)");
-
-  const currentAttempt = record.attempts[record.attempts.length - 1];
+  const currentAttempt = record.attempts?.[record.attempts.length - 1];
   const directives = currentAttempt?.remediationDirectives || [];
   const isPassed = record.status === "PASSED";
 
+  const [targetCorrection, setTargetCorrection] = useState("");
+  const [supplementalTx, setSupplementalTx] = useState("");
+  const [dispatchError, setDispatchError] = useState<string | null>(null);
+
   const handleTriggerDispatch = async () => {
-    setDispatchStatus("dispatching");
-    setTimeout(async () => {
-      setDispatchStatus("dispatched");
-      // Trigger real resubmission update
+    setDispatchError(null);
+    try {
       await onResubmit({
-        target: selectedTarget.split(" ")[0],
-        supplementalAmount: 4.5,
-        txHash: "0x91cc4421b8fa012984fe9823901bca019",
+        target: targetCorrection.trim() || undefined,
+        txHash: supplementalTx.trim() || undefined,
       });
-    }, 1200);
+    } catch (err: any) {
+      setDispatchError(err?.message || "Failed to dispatch remediation");
+    }
   };
 
   return (
@@ -59,150 +59,28 @@ export const RemediationPanel: React.FC<RemediationPanelProps> = ({
                     : "bg-secondary-container/20 text-secondary"
                 )}
               >
-                {isPassed ? "Cycle Resolved" : "Active Cycle"}
+                {isPassed ? "Cycle Resolved" : "Action Required"}
               </span>
             </div>
             <p className="font-body-md text-body-md text-on-surface-variant mt-0.5">
-              VeraOS formulates machine-readable invariant remediation directives for{" "}
-              <span className="text-on-surface font-medium">{record.workerName}</span>.
+              Machine-readable invariant feedback for{" "}
+              <span className="text-on-surface font-medium">{record.workerName || record.workerId}</span>.
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-1 bg-surface-container-lowest px-3 py-1.5 rounded-lg font-code-sm text-code-sm text-outline border border-white/5 self-start lg:self-auto">
-          <span>Protocol:</span>
-          <span className="text-secondary font-mono">vera-remediate-v1</span>
-        </div>
-      </div>
-
-      {/* Stepper Pipeline State */}
-      <div className="my-space-md p-space-md rounded-xl bg-surface-container-lowest border border-white/5">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-space-sm relative">
-          {/* Step 1 */}
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-code-sm text-code-sm font-bold">
-                1
-              </span>
-              <span className="font-headline-sm text-headline-sm font-medium text-primary">
-                Directive Ready
-              </span>
-            </div>
-            <span className="font-code-sm text-code-sm text-secondary">
-              Packet Compiled
-            </span>
-          </div>
-
-          {/* Step 2 */}
-          <div
-            className={cn(
-              "flex flex-col gap-1 transition-opacity",
-              dispatchStatus === "idle" && !isPassed ? "opacity-50" : "opacity-100"
-            )}
-          >
-            <div className="flex items-center gap-2">
-              <span
-                className={cn(
-                  "w-6 h-6 rounded-full flex items-center justify-center font-code-sm text-code-sm font-bold",
-                  dispatchStatus !== "idle" || isPassed
-                    ? "bg-secondary text-on-secondary"
-                    : "bg-surface-container text-outline"
-                )}
-              >
-                2
-              </span>
-              <span className="font-headline-sm text-headline-sm text-on-surface">
-                Agent Ingestion
-              </span>
-            </div>
-            <span className="font-code-sm text-code-sm text-outline">
-              Self-Correction
-            </span>
-          </div>
-
-          {/* Step 3 */}
-          <div
-            className={cn(
-              "flex flex-col gap-1 transition-opacity",
-              record.currentAttempt >= 2 ? "opacity-100" : "opacity-40"
-            )}
-          >
-            <div className="flex items-center gap-2">
-              <span
-                className={cn(
-                  "w-6 h-6 rounded-full flex items-center justify-center font-code-sm text-code-sm font-bold",
-                  record.currentAttempt >= 2
-                    ? "bg-secondary text-on-secondary"
-                    : "bg-surface-container text-outline"
-                )}
-              >
-                3
-              </span>
-              <span className="font-headline-sm text-headline-sm text-on-surface">
-                Resubmission
-              </span>
-            </div>
-            <span className="font-code-sm text-code-sm text-outline">
-              Attempt {record.currentAttempt}/{record.maxAttempts}
-            </span>
-          </div>
-
-          {/* Step 4 */}
-          <div
-            className={cn(
-              "flex flex-col gap-1 transition-opacity",
-              isPassed ? "opacity-100" : "opacity-40"
-            )}
-          >
-            <div className="flex items-center gap-2">
-              <span
-                className={cn(
-                  "w-6 h-6 rounded-full flex items-center justify-center font-code-sm text-code-sm font-bold",
-                  isPassed ? "bg-[#22c55e] text-black" : "bg-surface-container text-outline"
-                )}
-              >
-                4
-              </span>
-              <span className="font-headline-sm text-headline-sm text-on-surface">
-                Re-Verification
-              </span>
-            </div>
-            <span className="font-code-sm text-code-sm text-outline">
-              {isPassed ? "Deterministic Pass" : "Pending"}
-            </span>
-          </div>
-
-          {/* Step 5 */}
-          <div
-            className={cn(
-              "flex flex-col gap-1 transition-opacity",
-              isPassed ? "opacity-100" : "opacity-40"
-            )}
-          >
-            <div className="flex items-center gap-2">
-              <span
-                className={cn(
-                  "w-6 h-6 rounded-full flex items-center justify-center font-code-sm text-code-sm font-bold",
-                  isPassed ? "bg-[#22c55e] text-black" : "bg-surface-container text-outline"
-                )}
-              >
-                5
-              </span>
-              <span className="font-headline-sm text-headline-sm text-on-surface">
-                Final Verdict
-              </span>
-            </div>
-            <span className="font-code-sm text-code-sm text-[#4ade80]">
-              {isPassed ? "Confirmed on Stellar" : "Awaiting Pass"}
-            </span>
-          </div>
+          <span>Attempt:</span>
+          <span className="text-secondary font-mono">
+            {record.currentAttempt} / {record.maxAttempts}
+          </span>
         </div>
       </div>
 
       {/* Remediation Directives List */}
-      <div className="flex flex-col gap-space-md mb-space-lg">
+      <div className="flex flex-col gap-space-md my-space-md">
         <span className="font-label-caps text-label-caps uppercase text-outline tracking-wider font-semibold">
-          Remediation Directives (Auto-Generated)
+          Remediation Directives
         </span>
 
         {directives.length > 0 ? (
@@ -228,18 +106,19 @@ export const RemediationPanel: React.FC<RemediationPanelProps> = ({
                     {dir.reason}
                   </p>
 
-                  {dir.suggestedAlternatives && (
+                  {dir.suggestedAlternatives && dir.suggestedAlternatives.length > 0 && (
                     <div className="flex items-center gap-2 mt-1 flex-wrap">
                       <span className="font-label-caps text-label-caps text-outline uppercase">
-                        Suggested Valid Substitutes:
+                        Suggestions:
                       </span>
                       {dir.suggestedAlternatives.map((alt) => (
                         <button
+                          type="button"
                           key={alt}
-                          onClick={() => setSelectedTarget(alt)}
+                          onClick={() => setTargetCorrection(alt)}
                           className={cn(
                             "px-1.5 py-0.5 rounded font-code-sm text-code-sm transition-colors border",
-                            selectedTarget === alt
+                            targetCorrection === alt
                               ? "bg-primary-container text-on-primary border-primary-container"
                               : "bg-surface-container text-secondary border-white/5 hover:border-white/20"
                           )}
@@ -259,66 +138,87 @@ export const RemediationPanel: React.FC<RemediationPanelProps> = ({
           ))
         ) : (
           <div className="p-space-md rounded-lg bg-surface-container-low text-body-sm text-on-surface-variant border border-white/5">
-            All invariant directives successfully reconciled. No pending corrective actions.
+            {isPassed
+              ? "All invariant checks passed. No pending corrective actions."
+              : (currentAttempt?.detailedReason || "Deficits detected during verification check.")}
           </div>
         )}
       </div>
 
-      {/* Dispatch & Feedback Section */}
+      {/* Interactive Remediation Form */}
+      {!isPassed && (
+        <div className="p-4 rounded-xl bg-surface-container-low border border-white/5 flex flex-col gap-3 my-space-md">
+          <span className="font-label-caps text-label-caps uppercase text-outline font-semibold">
+            Supply Remediation Values
+          </span>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs text-outline mb-1 block">Correction Target / Data</label>
+              <input
+                type="text"
+                value={targetCorrection}
+                onChange={(e) => setTargetCorrection(e.target.value)}
+                placeholder="e.g. Corrected protocol or output value"
+                className="w-full px-3 py-2 rounded-lg bg-surface-container border border-white/10 text-on-surface text-xs focus:outline-none focus:border-primary"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-outline mb-1 block">Supplemental Stellar Tx Hash (Optional)</label>
+              <input
+                type="text"
+                value={supplementalTx}
+                onChange={(e) => setSupplementalTx(e.target.value)}
+                placeholder="64-character hex transaction hash"
+                className="w-full px-3 py-2 rounded-lg bg-surface-container border border-white/10 text-on-surface text-xs font-mono focus:outline-none focus:border-primary"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Error display */}
+      {dispatchError && (
+        <div className="p-3 mb-3 rounded-lg bg-red-950/50 border border-red-800/60 text-xs text-red-300">
+          {dispatchError}
+        </div>
+      )}
+
+      {/* Dispatch Actions */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-space-md pt-space-md border-t border-white/5">
         <div className="flex items-center gap-space-sm text-outline font-body-sm text-body-sm">
           <span className="material-symbols-outlined text-[18px]">
             verified_user
           </span>
           <span>
-            Automatic worker webhook{" "}
-            <code className="text-on-surface">https://agent.acme.ai/remediate</code> will
-            receive cryptographic retry envelope.
+            {isPassed
+              ? "Verification state is final and corroborated."
+              : "Submitting remediation will trigger immediate re-evaluation of invariants."}
           </span>
         </div>
 
         <div className="flex items-center gap-space-sm w-full sm:w-auto">
           {!isPassed ? (
             <button
+              type="button"
               onClick={handleTriggerDispatch}
-              disabled={dispatchStatus === "dispatching" || isResubmitting}
-              className={cn(
-                "w-full sm:w-auto flex items-center justify-center gap-2 px-space-lg py-3 rounded-lg bg-primary-container hover:bg-secondary-container text-on-primary font-headline-sm text-headline-sm font-bold transition-all shadow-[0_0_24px_rgba(255,87,8,0.4)] disabled:opacity-50"
-              )}
+              disabled={isResubmitting}
+              className="w-full sm:w-auto flex items-center justify-center gap-2 px-space-lg py-3 rounded-lg bg-primary-container hover:bg-secondary-container text-on-primary font-headline-sm text-headline-sm font-bold transition-all shadow-[0_0_24px_rgba(255,87,8,0.4)] disabled:opacity-50"
             >
               <span className="material-symbols-outlined text-[20px]">
-                {dispatchStatus === "dispatching" ? "autorenew" : "send_time_extension"}
+                {isResubmitting ? "autorenew" : "send_time_extension"}
               </span>
               <span>
-                {dispatchStatus === "dispatching"
-                  ? "Dispatching Packet..."
-                  : "Dispatch Correction Packet"}
+                {isResubmitting ? "Resubmitting..." : "Resubmit & Re-verify"}
               </span>
             </button>
           ) : (
-            <div className="flex items-center gap-2 text-[#4ade80] font-headline-sm">
+            <div className="flex items-center gap-2 text-[#4ade80] font-headline-sm font-semibold">
               <span className="material-symbols-outlined">check_circle</span>
               <span>Remediation Complete</span>
             </div>
           )}
         </div>
       </div>
-
-      {/* Success Simulation Banner */}
-      {dispatchStatus === "dispatched" && (
-        <div className="mt-space-md p-space-md rounded-lg bg-secondary-container/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border border-secondary/30">
-          <div className="flex items-center gap-space-sm">
-            <div className="w-3 h-3 rounded-full bg-secondary animate-ping shrink-0" />
-            <span className="font-body-md text-body-md text-on-surface font-medium">
-              Correction envelope sent to {record.workerName}. Agent substituted target with{" "}
-              {selectedTarget} & executed supplemental payout. Re-verification passed!
-            </span>
-          </div>
-          <span className="font-code-sm text-code-sm text-secondary shrink-0">
-            HTTP 202 ACCEPTED
-          </span>
-        </div>
-      )}
     </div>
   );
 };

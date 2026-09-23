@@ -23,25 +23,25 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     ref
   ) => {
     const baseStyles =
-      "inline-flex items-center justify-center font-headline-sm transition-colors focus:outline-none focus:ring-2 focus:ring-primary-container/40 disabled:opacity-50 disabled:pointer-events-none select-none";
+      "inline-flex items-center justify-center font-heading transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-[#E08A3E]/40 disabled:opacity-50 disabled:pointer-events-none select-none cursor-pointer";
 
     const variantStyles = {
       primary:
-        "bg-primary-container hover:bg-[#e04c05] text-on-primary font-semibold border border-primary-container/40 shadow-sm",
+        "bg-[#C96A2B] hover:bg-[#E08A3E] text-white font-semibold border border-[#E08A3E]/30 shadow-[0_0_16px_rgba(201,106,43,0.3)] active:scale-[0.98]",
       secondary:
-        "bg-surface-container hover:bg-surface-container-high text-on-surface border border-white/5 hover:border-white/10",
+        "bg-[#2C1710] hover:bg-[#3A2015] text-[#FFF8F0] font-medium border border-[#4A2B1D] hover:border-[#63361F] active:scale-[0.98]",
       outline:
-        "bg-transparent hover:bg-surface-container text-on-surface border border-white/15 hover:border-white/25",
+        "bg-transparent hover:bg-[#21110B] text-[#FFF8F0] font-medium border border-[#4A2B1D] hover:border-[#E08A3E]/50 active:scale-[0.98]",
       ghost:
-        "bg-transparent hover:bg-surface-container text-on-surface-variant hover:text-on-surface",
+        "bg-transparent hover:bg-[#21110B] text-[#B9A99B] hover:text-[#FFF8F0] font-medium",
       danger:
-        "bg-error-container/60 hover:bg-error-container text-on-error-container border border-error/30 font-semibold",
+        "bg-[#2a1210] hover:bg-[#3d1a17] text-[#fca5a5] font-semibold border border-[#5c1e19]",
     };
 
     const sizeStyles = {
-      sm: "text-body-sm px-3 py-1.5 rounded-md gap-1.5",
-      md: "text-body-md px-4 py-2 rounded-lg gap-2",
-      lg: "text-headline-sm px-6 py-3 rounded-lg gap-2.5",
+      sm: "text-xs px-3 py-1.5 rounded-lg gap-1.5",
+      md: "text-sm px-4 py-2 rounded-xl gap-2",
+      lg: "text-sm sm:text-base px-6 py-3 rounded-xl gap-2.5",
     };
 
     return (

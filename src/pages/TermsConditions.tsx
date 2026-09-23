@@ -25,17 +25,17 @@ export const TermsConditions: React.FC = () => {
           <Link to="/" className="text-[#B9A99B] hover:text-white transition-colors">
             Home
           </Link>
-          <Link to="/dashboard" className="text-[#B9A99B] hover:text-white transition-colors">
-            Dashboard
-          </Link>
-          <Link to="/docs" className="text-[#B9A99B] hover:text-white transition-colors">
-            Docs
-          </Link>
           <Link
             to="/privacy"
             className="text-xs px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white border border-white/10 transition-colors font-medium"
           >
             Privacy Policy
+          </Link>
+          <Link
+            to="/welcome"
+            className="text-xs px-3.5 py-1.5 rounded-xl bg-[#C96A2B] hover:bg-[#E08A3E] text-white font-heading font-semibold transition-colors"
+          >
+            Get Started
           </Link>
         </div>
       </header>
@@ -55,7 +55,7 @@ export const TermsConditions: React.FC = () => {
             Effective Date: <span className="text-white font-medium">September 20, 2026</span> • Last Updated: <span className="text-white font-medium">September 20, 2026</span>
           </p>
           <p className="text-sm text-[#F3E5D5]/80 leading-relaxed bg-[#1C0F0A] p-4 rounded-xl border border-white/5">
-            Please read these Terms &amp; Conditions (“Terms”) carefully before accessing or utilizing the <strong>VeraOS</strong> platform, including our web dashboard, edge APIs, smart contract interfaces, and gated Telegram verification bots. By visiting the website, connecting an agent, authenticating via Google or Stellar wallets, or redeeming an invite link, you agree to be legally bound by these Terms.
+            Please read these Terms &amp; Conditions (“Terms”) carefully before accessing or utilizing the <strong>VeraOS</strong> platform, including our web dashboard, verification APIs, and agent execution monitors. By visiting the website, connecting an agent, or authenticating via Google OAuth, you agree to be legally bound by these Terms.
           </p>
         </div>
 

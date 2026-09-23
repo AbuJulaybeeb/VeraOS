@@ -2,11 +2,11 @@ import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { VerificationRecord } from "../../types/verification";
 
-interface MekikiVerificationCardProps {
+interface VerificationCardProps {
   item: VerificationRecord;
 }
 
-export const MekikiVerificationCard: React.FC<MekikiVerificationCardProps> = ({ item }) => {
+export const VerificationCard: React.FC<VerificationCardProps> = ({ item }) => {
   const navigate = useNavigate();
 
   // Deterministically compute conviction score from item state
@@ -101,7 +101,7 @@ export const MekikiVerificationCard: React.FC<MekikiVerificationCardProps> = ({ 
             </span>
           </div>
 
-          {/* Dual-Progress Visual Bar (Signature Mekiki Pattern) */}
+          {/* Dual-Progress Visual Bar */}
           <div className="space-y-1">
             <div className="flex h-1.5 w-full rounded-full overflow-hidden bg-surface-container">
               <div

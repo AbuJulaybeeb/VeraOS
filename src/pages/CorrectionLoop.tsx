@@ -10,9 +10,13 @@ export const CorrectionLoop: React.FC = () => {
   const { verification, loading, error, resubmit, isResubmitting } = useVerification(id);
 
   const [selectedAttemptIdx, setSelectedAttemptIdx] = useState<number>(0);
-  const [selectedProtocol, setSelectedProtocol] = useState("Aerodrome");
-  const [supplementalAmount, setSupplementalAmount] = useState("4.5");
-  const [customTxHash, setCustomTxHash] = useState("0x91cc4421b8fa012984fe9823901bca019");
+  const [selectedProtocol, setSelectedProtocol] = useState(
+    verification?.remediation?.target || "Blend"
+  );
+  const [supplementalAmount, setSupplementalAmount] = useState(
+    verification?.remediation?.supplementalAmount?.toString() || ""
+  );
+  const [customTxHash, setCustomTxHash] = useState("");
   const [resubmittingStep, setResubmittingStep] = useState<string | null>(null);
 
   if (loading) {
@@ -44,20 +48,18 @@ export const CorrectionLoop: React.FC = () => {
     verification.attempts[verification.attempts.length - 1];
 
   const handleResubmit = async () => {
-    setResubmittingStep("Resubmitting remediation patch to agent...");
-    await new Promise((r) => setTimeout(r, 600));
+    setResubmittingStep("Submitting remediation patch to verification engine...");
 
-    setResubmittingStep("Re-running independent verification checks on Stellar Horizon...");
-    await new Promise((r) => setTimeout(r, 700));
-
-    await resubmit({
-      target: selectedProtocol,
-      supplementalAmount: parseFloat(supplementalAmount) || 4.5,
-      txHash: customTxHash,
-    });
-
-    setResubmittingStep(null);
-    setSelectedAttemptIdx(verification.attempts.length); // switch to newly created attempt
+    try {
+      await resubmit({
+        target: selectedProtocol,
+        supplementalAmount: parseFloat(supplementalAmount) || 0,
+        txHash: customTxHash.trim(),
+      });
+    } finally {
+      setResubmittingStep(null);
+      setSelectedAttemptIdx(verification.attempts.length);
+    }
   };
 
   return (

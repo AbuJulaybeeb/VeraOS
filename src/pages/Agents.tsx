@@ -5,294 +5,241 @@ import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
 
 export const Agents: React.FC = () => {
-  const {
-    agents,
-    loading,
-    activeAgent,
-    openConnectModal,
-    disconnectAgent,
-    testHandshake,
-  } = useAgentContext();
+  const { agents, loading, disconnectAgent, connectAgentWithConsent } = useAgentContext();
+  const [connectModalOpen, setConnectModalOpen] = useState(false);
+  const [agentName, setAgentName] = useState("");
+  const [runtime, setRuntime] = useState("Autonomous Agent Runtime");
+  const [endpoint, setEndpoint] = useState("https://api.agent.internal/events");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [pingStatuses, setPingStatuses] = useState<Record<string, string>>({});
-  const [pingingId, setPingingId] = useState<string | null>(null);
-
-  const handlePing = async (agentId: string) => {
-    setPingingId(agentId);
-    setPingStatuses((prev) => ({ ...prev, [agentId]: "Testing..." }));
+  const handleConnectSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!agentName.trim()) return;
+    setIsSubmitting(true);
     try {
-      const res = await testHandshake(agentId);
-      setPingStatuses((prev) => ({
-        ...prev,
-        [agentId]: `${res.latencyMs}ms ✓ Stellar RPC`,
-      }));
-      setTimeout(() => {
-        setPingStatuses((prev) => {
-          const next = { ...prev };
-          delete next[agentId];
-          return next;
-        });
-      }, 4000);
-    } catch {
-      setPingStatuses((prev) => ({ ...prev, [agentId]: "Ping Failed" }));
+      await connectAgentWithConsent({
+        name: agentName.trim(),
+        runtime,
+        endpoint,
+        model: "agent-v1",
+        capabilities: ["task_execution", "settlement"],
+      });
+      setAgentName("");
+      setConnectModalOpen(false);
+    } catch (err) {
+      console.error(err);
     } finally {
-      setPingingId(null);
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="max-w-7xl mx-auto w-full flex flex-col gap-space-lg">
-      {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-space-md">
-        <div className="flex flex-col gap-1">
-          <div className="flex items-center gap-2">
-            <h1 className="font-headline-lg text-headline-lg font-bold tracking-tight text-on-surface">
-              Autonomous Agent Registry
-            </h1>
-            <span className="px-2 py-0.5 rounded-full bg-surface-container font-code-sm text-code-sm text-secondary border border-white/5">
-              {agents.length} Registered
-            </span>
-          </div>
-          <p className="font-body-md text-body-md text-on-surface-variant">
-            Connect and manage autonomous AI agents with wallet-style consent and Stellar cryptographic verification.
+    <div className="max-w-6xl mx-auto w-full flex flex-col gap-6 font-sans">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="font-heading text-2xl sm:text-3xl font-bold tracking-tight text-[#FFF8F0]">
+            Agents
+          </h1>
+          <p className="text-xs sm:text-sm text-[#B9A99B] mt-1">
+            Connected AI agents sending work to VeraOS for verification.
           </p>
         </div>
 
         <Button
           variant="primary"
-          onClick={() => openConnectModal()}
-          icon={
-            <span className="material-symbols-outlined text-[18px]">
-              smart_toy
-            </span>
-          }
-          className="shadow-[0_0_16px_rgba(201,106,43,0.35)]"
+          size="sm"
+          onClick={() => setConnectModalOpen(true)}
+          icon={<span className="material-symbols-outlined text-[16px]">add</span>}
         >
           Connect Agent
         </Button>
       </div>
 
-      {/* Agents Grid */}
+      {/* Agents Roster */}
       {loading ? (
-        <div className="p-16 flex flex-col items-center justify-center gap-3 text-on-surface-variant">
-          <span className="w-8 h-8 border-2 border-primary-container border-t-transparent rounded-full animate-spin" />
-          <span className="font-code-sm text-code-sm">Loading registered agents...</span>
+        <div className="p-16 rounded-3xl bg-[#21110B] border border-[#4A2B1D] flex flex-col items-center justify-center gap-3 text-[#B9A99B]">
+          <span className="w-8 h-8 border-2 border-[#C96A2B] border-t-transparent rounded-full animate-spin" />
+          <span className="font-mono text-xs">Loading connected agents...</span>
         </div>
       ) : agents.length === 0 ? (
-        <div className="p-16 rounded-2xl bg-surface-container-low border border-white/5 flex flex-col items-center justify-center text-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-surface-container flex items-center justify-center text-[#E08A3E]">
-            <span className="material-symbols-outlined text-[28px]">smart_toy</span>
+        /* Empty State */
+        <div className="p-12 sm:p-20 rounded-3xl bg-[#21110B] border border-[#4A2B1D] flex flex-col items-center justify-center text-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-[#2C1710] border border-[#4A2B1D] flex items-center justify-center text-[#E08A3E]">
+            <span className="material-symbols-outlined text-[24px]">smart_toy</span>
           </div>
           <div>
-            <h3 className="font-headline-sm text-headline-sm font-semibold text-on-surface">
-              NO AGENTS REGISTERED
+            <h3 className="font-heading font-bold text-lg sm:text-xl text-[#FFF8F0]">
+              No agents connected
             </h3>
-            <p className="font-body-sm text-body-sm text-on-surface-variant max-w-sm mt-1">
-              Connect your first autonomous AI agent to establish scoped permissions, cryptographic attestation, and live verification.
+            <p className="text-xs sm:text-sm text-[#B9A99B] max-w-sm mt-1.5 leading-relaxed">
+              Connect an agent when you&apos;re ready to send work to VeraOS.
             </p>
           </div>
-          <Button variant="primary" onClick={() => openConnectModal()}>
-            Connect Your First Agent
+          <Button
+            variant="primary"
+            size="md"
+            onClick={() => setConnectModalOpen(true)}
+            icon={<span className="material-symbols-outlined text-[16px]">add</span>}
+          >
+            Connect Agent
           </Button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-space-md">
-          {agents.map((agent) => {
-            const isConnected = agent.status === "CONNECTED";
-            const isCurrentlyActive = activeAgent?.id === agent.id && isConnected;
-            const currentPing = pingStatuses[agent.id];
-
-            return (
-              <div
-                key={agent.id}
-                className={`p-space-md rounded-2xl bg-surface-container-low border transition-all flex flex-col justify-between group ${
-                  isCurrentlyActive
-                    ? "border-[#E08A3E]/60 shadow-[0_0_24px_rgba(201,106,43,0.15)]"
-                    : "border-white/10 hover:border-white/20 shadow-lg"
-                }`}
-              >
-                <div>
-                  {/* Top Row: Avatar, Name, Status Badge */}
-                  <div className="flex items-start justify-between gap-4 mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-surface-container-high flex items-center justify-center text-primary group-hover:scale-105 transition-transform shadow-md">
-                        <span className="material-symbols-outlined text-[22px]">
-                          smart_toy
-                        </span>
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-headline-sm text-headline-sm font-bold text-on-surface">
-                            {agent.name}
-                          </h3>
-                          <span className="font-code-sm text-code-sm text-outline">
-                            {agent.version}
-                          </span>
-                          {isCurrentlyActive && (
-                            <span className="px-1.5 py-0.5 rounded bg-[#E08A3E]/20 text-[#E08A3E] font-code-sm text-[9px] font-bold uppercase border border-[#E08A3E]/30">
-                              PRIMARY
-                            </span>
-                          )}
-                        </div>
-                        <span className="font-code-sm text-[11px] text-on-surface-variant">
-                          {agent.runtime}
-                        </span>
-                      </div>
+        /* Genuine Connected Agents Cards */
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
+          {agents.map((agent) => (
+            <div
+              key={agent.id}
+              className="p-6 rounded-3xl bg-[#21110B] border border-[#4A2B1D] flex flex-col justify-between shadow-sm"
+            >
+              <div>
+                {/* Name & Status */}
+                <div className="flex items-start justify-between gap-3 mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-[#2C1710] border border-[#4A2B1D] flex items-center justify-center text-[#E08A3E]">
+                      <span className="material-symbols-outlined text-[20px]">smart_toy</span>
                     </div>
-
-                    <div className="flex items-center gap-2">
-                      {agent.status === "CONNECTED" && (
-                        <Badge variant="passed" dot>
-                          CONNECTED
-                        </Badge>
-                      )}
-                      {agent.status === "IDLE" && (
-                        <Badge variant="running" dot>
-                          IDLE
-                        </Badge>
-                      )}
-                      {agent.status === "NOT_CONNECTED" && (
-                        <Badge variant="neutral">NOT CONNECTED</Badge>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Agent Details Table */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-surface-container-lowest/80 p-3 rounded-xl border border-white/5 font-code-sm text-code-sm mb-4">
-                    <div className="flex flex-col">
-                      <span className="text-outline text-[10px] uppercase">
-                        Model
-                      </span>
-                      <span className="text-on-surface font-semibold truncate">
-                        {agent.model}
-                      </span>
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-outline text-[10px] uppercase">
-                        Verifications
-                      </span>
-                      <span className="text-on-surface font-semibold">
-                        {agent.totalVerifications}
-                      </span>
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-outline text-[10px] uppercase">
-                        Pass Rate
-                      </span>
-                      <span className="text-[#4ade80] font-semibold">
-                        {agent.passRate}%
-                      </span>
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-outline text-[10px] uppercase">
-                        Active
-                      </span>
-                      <span className="text-secondary font-semibold">
-                        {agent.lastActive}
+                    <div>
+                      <h3 className="font-heading font-bold text-base text-[#FFF8F0]">
+                        {agent.name}
+                      </h3>
+                      <span className="font-mono text-[11px] text-[#B9A99B]">
+                        {agent.runtime}
                       </span>
                     </div>
                   </div>
 
-                  {/* Capabilities & Scopes */}
-                  <div className="flex items-center gap-1.5 flex-wrap mb-4">
-                    <span className="font-label-caps text-label-caps text-outline uppercase mr-1">
-                      Scopes:
-                    </span>
-                    {agent.capabilities.map((cap) => (
-                      <span
-                        key={cap}
-                        className="px-2 py-0.5 rounded bg-surface-container text-outline font-code-sm text-[10px] border border-white/5"
-                      >
-                        {cap}
-                      </span>
-                    ))}
-                    <span className="px-2 py-0.5 rounded bg-[#2C1710] text-[#E08A3E] font-code-sm text-[10px] border border-[#E08A3E]/30">
-                      Stellar Testnet
-                    </span>
-                  </div>
+                  {agent.status === "CONNECTED" ? (
+                    <Badge variant="passed" dot>
+                      CONNECTED
+                    </Badge>
+                  ) : (
+                    <Badge variant="neutral">
+                      DISCONNECTED
+                    </Badge>
+                  )}
                 </div>
 
-                {/* Card Footer: Credentials & Actions */}
-                <div className="pt-3 border-t border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-code-sm">
-                  <div className="flex items-center gap-1.5 text-outline">
-                    <span className="material-symbols-outlined text-[14px]">
-                      key
-                    </span>
-                    <span className="font-mono text-[11px] truncate max-w-[160px]">
-                      {agent.apiKeySnippet}
-                    </span>
+                {/* Metadata List */}
+                <div className="grid grid-cols-2 gap-2 p-3 rounded-2xl bg-[#160C08] border border-[#4A2B1D]/60 text-xs font-mono mb-4">
+                  <div className="flex flex-col">
+                    <span className="text-[#B9A99B] text-[10px] uppercase">Last verification</span>
+                    <span className="text-[#FFF8F0] mt-0.5 truncate">{agent.lastActive || "Recently active"}</span>
                   </div>
-
-                  <div className="flex items-center gap-2">
-                    {/* If NOT_CONNECTED, show 1-click Connect Agent button */}
-                    {agent.status === "NOT_CONNECTED" && (
-                      <button
-                        type="button"
-                        onClick={() => openConnectModal(agent)}
-                        className="px-3 py-1.5 rounded-lg bg-[#C96A2B] hover:bg-[#E08A3E] text-white text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
-                      >
-                        <span className="material-symbols-outlined text-[15px]">
-                          hub
-                        </span>
-                        <span>Connect Agent</span>
-                      </button>
-                    )}
-
-                    {/* If CONNECTED, show Test Ping and Disconnect options */}
-                    {isConnected && (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => handlePing(agent.id)}
-                          disabled={pingingId === agent.id}
-                          className="px-2.5 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-xs font-medium text-on-surface flex items-center gap-1 transition-colors cursor-pointer"
-                          title="Send a verification handshake ping"
-                        >
-                          <span className="material-symbols-outlined text-[14px] text-[#E08A3E]">
-                            bolt
-                          </span>
-                          <span>{currentPing || "Test Ping"}</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => disconnectAgent(agent.id)}
-                          className="px-2 py-1.5 rounded-lg text-outline hover:text-red-400 hover:bg-red-950/20 text-xs transition-colors cursor-pointer"
-                          title="Disconnect Agent"
-                        >
-                          <span className="material-symbols-outlined text-[16px]">
-                            link_off
-                          </span>
-                        </button>
-
-                        <Link
-                          to="/verify/new"
-                          className="px-3 py-1.5 rounded-lg bg-primary-container/20 hover:bg-primary-container text-primary hover:text-white text-xs font-semibold flex items-center gap-1 transition-all"
-                        >
-                          <span>Verify</span>
-                          <span className="material-symbols-outlined text-[14px]">
-                            arrow_forward
-                          </span>
-                        </Link>
-                      </>
-                    )}
-
-                    {agent.status === "IDLE" && (
-                      <Link
-                        to="/verify/new"
-                        className="inline-flex items-center gap-1 text-primary hover:text-primary-container font-medium transition-colors"
-                      >
-                        <span>Verify Task</span>
-                        <span className="material-symbols-outlined text-[14px]">
-                          arrow_forward
-                        </span>
-                      </Link>
-                    )}
+                  <div className="flex flex-col">
+                    <span className="text-[#B9A99B] text-[10px] uppercase">Verifications</span>
+                    <span className="text-[#FFF8F0] mt-0.5">{agent.totalVerifications ?? 0}</span>
                   </div>
                 </div>
               </div>
-            );
-          })}
+
+              {/* Actions */}
+              <div className="pt-3 border-t border-[#4A2B1D] flex items-center justify-between">
+                <Link to="/verify/new">
+                  <Button variant="primary" size="sm">
+                    Verify work
+                  </Button>
+                </Link>
+
+                <button
+                  type="button"
+                  onClick={() => disconnectAgent(agent.id)}
+                  className="text-xs text-[#B9A99B] hover:text-[#f87171] transition-colors cursor-pointer"
+                >
+                  Disconnect
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Connect Agent Modal */}
+      {connectModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm"
+            onClick={() => setConnectModalOpen(false)}
+          />
+          <div className="relative w-full max-w-md rounded-3xl bg-[#21110B] border border-[#4A2B1D] p-6 sm:p-8 flex flex-col gap-5 z-10 text-left shadow-2xl">
+            <div className="flex items-center justify-between">
+              <h2 className="font-heading font-bold text-xl text-[#FFF8F0]">
+                Connect Agent
+              </h2>
+              <button
+                type="button"
+                onClick={() => setConnectModalOpen(false)}
+                className="text-[#B9A99B] hover:text-[#FFF8F0] cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[20px]">close</span>
+              </button>
+            </div>
+
+            <p className="text-xs text-[#B9A99B]">
+              Add a new AI agent to establish verification handshakes and receive completed work.
+            </p>
+
+            <form onSubmit={handleConnectSubmit} className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-[#FFF8F0]">
+                  Agent Name
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={agentName}
+                  onChange={(e) => setAgentName(e.target.value)}
+                  placeholder="e.g. Settlement Agent #01"
+                  className="px-3.5 py-2 rounded-xl bg-[#160C08] border border-[#4A2B1D] text-xs text-[#FFF8F0] placeholder-[#B9A99B]/40 focus:outline-none focus:ring-1 focus:ring-[#E08A3E]"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-[#FFF8F0]">
+                  Runtime / Framework
+                </label>
+                <input
+                  type="text"
+                  value={runtime}
+                  onChange={(e) => setRuntime(e.target.value)}
+                  placeholder="e.g. LangChain, CrewAI, Custom Bot"
+                  className="px-3.5 py-2 rounded-xl bg-[#160C08] border border-[#4A2B1D] text-xs text-[#FFF8F0] placeholder-[#B9A99B]/40 focus:outline-none focus:ring-1 focus:ring-[#E08A3E]"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-[#FFF8F0]">
+                  Endpoint (Webhook / API)
+                </label>
+                <input
+                  type="text"
+                  value={endpoint}
+                  onChange={(e) => setEndpoint(e.target.value)}
+                  placeholder="https://api.example.com/agent"
+                  className="px-3.5 py-2 rounded-xl bg-[#160C08] border border-[#4A2B1D] text-xs text-[#FFF8F0] placeholder-[#B9A99B]/40 focus:outline-none focus:ring-1 focus:ring-[#E08A3E]"
+                />
+              </div>
+
+              <div className="pt-3 border-t border-[#4A2B1D] flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setConnectModalOpen(false)}
+                  className="text-xs text-[#B9A99B] hover:text-[#FFF8F0] cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="sm"
+                  loading={isSubmitting}
+                >
+                  Connect Agent
+                </Button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>

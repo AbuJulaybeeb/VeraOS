@@ -56,6 +56,12 @@ export interface VerificationRecord {
   stellarTxHash?: string;
   ledgerNumber?: number;
   attempts: VerificationAttempt[];
+  workerOutput?: string;
+  remediation?: {
+    target?: string;
+    supplementalAmount?: number | string;
+    [key: string]: any;
+  };
 }
 
 export interface CreateVerificationInput {

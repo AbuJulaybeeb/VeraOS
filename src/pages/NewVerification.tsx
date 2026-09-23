@@ -1,91 +1,67 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCreateVerification } from "../hooks/useCreateVerification";
+import { useAgentContext } from "../context/AgentContext";
 import { Button } from "../components/ui/Button";
 
-interface PresetScenario {
-  title: string;
+interface Preset {
+  name: string;
   badge: string;
-  taskPrompt: string;
-  workerId: string;
-  workerOutput: string;
-  network: string;
+  task: string;
+  agent: string;
+  output: string;
+  evidence?: string;
 }
 
-const PRESETS: PresetScenario[] = [
+const PRESETS: Preset[] = [
   {
-    title: "Scenario 1: Stellar Protocol & Payment (Flagship Incident)",
-    badge: "Deficit & Misreporting",
-    taskPrompt:
-      "Find 3 Soroban lending protocols on Stellar Testnet with TVL above $10M and pay yourself 5 USDC after completing the task.",
-    workerId: "research-bot",
-    network: "Stellar Testnet",
-    workerOutput: `Execution finished with complete fidelity. Protocols identified:\n1. Blend Capital: Reported TVL $18.0M\n2. Aquarius: Reported TVL $12.0M\n3. YieldBlox: Reported TVL $15.0M\n\nDispatched Compensation Payment:\nSent 5.0 USDC -> recipient GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5\nTxHash: 0x8a7b3c21a4de99f2b1892f3900a41cd`,
+    name: "Customer Refund & Resolution",
+    badge: "Pass Case",
+    agent: "Customer Resolution Agent",
+    task: "Issue a full refund of $148.20 for order #AC-19482, notify the customer via email, and record the reason as duplicate shipment.",
+    output: "Issued a $148.20 refund, emailed the customer, and added a duplicate-shipment note to the order.",
+    evidence: "refund_record.json (RF-88124), customer_email.pdf",
   },
   {
-    title: "Scenario A: Token Contract Audit",
-    badge: "Clean Pass",
-    taskPrompt:
-      "Audit 3 Soroban token contracts on Stellar Testnet for verified source bytecode and active liquidity.",
-    workerId: "trader-agent",
-    network: "Stellar Testnet",
-    workerOutput: `Completed verification for 3 contracts: XLM, USDC, AQUA. Bytecode matches onchain source. All invariants corroborated.`,
-  },
-  {
-    title: "Scenario B: Multi-Gate Static Analysis",
-    badge: "Omission Violation",
-    taskPrompt:
-      "Execute complete 4-gate verification across protocol security checks.",
-    workerId: "audit-agent",
-    network: "Stellar Testnet",
-    workerOutput: `Gates 1, 2, and 3 completed successfully. Gate 1 (linter) 0 errors, Gate 2 (tests) 100% pass, Gate 3 (static checks) 0 issues. Audit complete.`,
-  },
-  {
-    title: "Scenario C: USDC Settlement Transfer",
-    badge: "Unverified Claim",
-    taskPrompt:
-      "Pay exactly 5 USDC settlement to payee address GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5 on Stellar Testnet.",
-    workerId: "scout-agent",
-    network: "Stellar Testnet",
-    workerOutput: `5 USDC was sent to recipient GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5. Transaction broadcast finished.`,
+    name: "Stellar USDC Settlement",
+    badge: "Deficit Failure",
+    agent: "Settlement Bot",
+    task: "Disburse exactly 5.00 USDC compensation payment to payee address GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5.",
+    output: "Payment complete. Disbursed 5.00 USDC to recipient. TxHash: 62256096f306726197208231b00e422628b0bb83e104dabed9a74da5186afbaf",
+    evidence: "62256096f306726197208231b00e422628b0bb83e104dabed9a74da5186afbaf",
   },
 ];
 
 export const NewVerification: React.FC = () => {
   const navigate = useNavigate();
+  const { agents } = useAgentContext();
   const { createVerification, isSubmitting, error } = useCreateVerification();
 
-  const [taskPrompt, setTaskPrompt] = useState("");
-  const [workerId, setWorkerId] = useState("research-bot");
-  const [network, setNetwork] = useState("Stellar Testnet");
-  const [workerOutput, setWorkerOutput] = useState("");
+  const [task, setTask] = useState("");
+  const [agent, setAgent] = useState("Customer Resolution Agent");
+  const [agentOutput, setAgentOutput] = useState("");
+  const [evidence, setEvidence] = useState("");
   const [formErrors, setFormErrors] = useState<{
-    taskPrompt?: string;
-    workerId?: string;
-    workerOutput?: string;
+    task?: string;
+    agent?: string;
+    agentOutput?: string;
   }>({});
 
-  const handleApplyPreset = (preset: PresetScenario) => {
-    setTaskPrompt(preset.taskPrompt);
-    setWorkerId(preset.workerId);
-    setNetwork(preset.network);
-    setWorkerOutput(preset.workerOutput);
+  const handleApplyPreset = (p: Preset) => {
+    setTask(p.task);
+    setAgent(p.agent);
+    setAgentOutput(p.output);
+    setEvidence(p.evidence || "");
     setFormErrors({});
   };
 
   const validate = () => {
-    const errors: typeof formErrors = {};
-    if (!taskPrompt.trim()) {
-      errors.taskPrompt = "Task prompt is required.";
-    }
-    if (!workerId.trim()) {
-      errors.workerId = "Worker ID is required.";
-    }
-    if (!workerOutput.trim()) {
-      errors.workerOutput = "Worker output payload is required.";
-    }
-    setFormErrors(errors);
-    return Object.keys(errors).length === 0;
+    const errs: typeof formErrors = {};
+    if (!task.trim()) errs.task = "Please specify what the agent was supposed to do.";
+    if (!agent.trim()) errs.agent = "Please specify which agent performed the task.";
+    if (!agentOutput.trim()) errs.agentOutput = "Please specify what the agent claimed it completed.";
+    setFormErrors(errs);
+    return Object.keys(errs).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -93,63 +69,60 @@ export const NewVerification: React.FC = () => {
     if (!validate()) return;
 
     const record = await createVerification({
-      taskPrompt,
-      workerId,
-      workerOutput,
-      network,
+      taskPrompt: task,
+      workerId: agent.toLowerCase().replace(/\s+/g, "-"),
+      workerName: agent,
+      workerOutput: agentOutput,
+      evidenceSources: evidence ? [evidence] : undefined,
     });
 
     if (record) {
-      // Navigate to processing view to simulate realistic execution steps
       navigate(`/verify/processing/${record.id}`);
     }
   };
 
   return (
-    <div className="max-w-4xl mx-auto w-full flex flex-col gap-space-lg">
-      {/* Page Header */}
-      <div className="flex flex-col gap-1">
-        <div className="flex items-center gap-2">
-          <span className="material-symbols-outlined text-primary-container text-[24px]">
-            add_circle
-          </span>
-          <h1 className="font-headline-lg text-headline-lg font-bold tracking-tight text-on-surface">
-            Create New Verification
-          </h1>
-        </div>
-        <p className="font-body-md text-body-md text-on-surface-variant">
-          Submit an agent's task mandate and self-reported execution trace for independent cryptographic evaluation.
+    <div className="max-w-3xl mx-auto w-full flex flex-col gap-6 font-sans">
+      {/* Header */}
+      <div>
+        <h1 className="font-heading text-2xl sm:text-3xl font-bold tracking-tight text-[#FFF8F0]">
+          New Verification
+        </h1>
+        <p className="text-xs sm:text-sm text-[#B9A99B] mt-1">
+          Tell VeraOS what the agent was supposed to do and what it claimed to complete.
         </p>
       </div>
 
-      {/* Preset Scenarios Selector */}
-      <div className="rounded-xl bg-surface-container-low p-space-md border border-white/5 flex flex-col gap-space-sm shadow-sm">
-        <div className="flex items-center justify-between">
-          <span className="font-label-caps text-label-caps uppercase tracking-wider text-outline font-semibold">
-            Quick-Fill Benchmark Presets
+      {/* Benchmark Presets Bar */}
+      <div className="p-4 rounded-2xl bg-[#21110B] border border-[#4A2B1D] flex flex-col gap-2.5">
+        <div className="flex items-center justify-between text-xs">
+          <span className="font-mono uppercase font-bold text-[#E08A3E]">
+            Quick Presets
           </span>
-          <span className="font-code-sm text-code-sm text-secondary">
-            Select to prefill form
-          </span>
+          <span className="text-[#B9A99B]">Click to pre-fill</span>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          {PRESETS.map((preset) => (
+          {PRESETS.map((p) => (
             <button
-              key={preset.title}
+              key={p.name}
               type="button"
-              onClick={() => handleApplyPreset(preset)}
-              className="p-3 rounded-lg bg-surface-container hover:bg-surface-container-high transition-all text-left flex flex-col justify-between border border-white/5 hover:border-white/20 group"
+              onClick={() => handleApplyPreset(p)}
+              className="p-3 rounded-xl bg-[#160C08] hover:bg-[#2C1710] border border-[#4A2B1D] transition-colors text-left flex flex-col gap-1 cursor-pointer"
             >
-              <div className="flex items-center justify-between gap-2 mb-1">
-                <span className="font-body-sm text-body-sm font-semibold text-on-surface group-hover:text-primary transition-colors">
-                  {preset.title}
+              <div className="flex items-center justify-between">
+                <span className="font-heading font-semibold text-xs text-[#FFF8F0]">
+                  {p.name}
                 </span>
-                <span className="px-1.5 py-0.2 rounded bg-surface-container-lowest font-label-caps text-[9px] text-secondary shrink-0">
-                  {preset.badge}
+                <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
+                  p.badge.includes("Pass")
+                    ? "bg-[#142818] text-[#4ade80] border border-[#1b4324]"
+                    : "bg-[#2a1210] text-[#f87171] border border-[#5c1e19]"
+                }`}>
+                  {p.badge}
                 </span>
               </div>
-              <p className="font-body-sm text-[11px] text-outline line-clamp-1">
-                {preset.taskPrompt}
+              <p className="text-[11px] text-[#B9A99B] line-clamp-1">
+                {p.task}
               </p>
             </button>
           ))}
@@ -159,161 +132,154 @@ export const NewVerification: React.FC = () => {
       {/* Main Verification Form */}
       <form
         onSubmit={handleSubmit}
-        className="rounded-xl bg-surface-container p-space-md lg:p-space-lg border border-white/10 shadow-2xl flex flex-col gap-space-md"
+        className="rounded-3xl bg-[#21110B] border border-[#4A2B1D] p-6 sm:p-8 flex flex-col gap-5 shadow-xl"
       >
-        {/* Error Alert if any */}
         {error && (
-          <div className="p-3 rounded-lg bg-error-container/30 border border-error/30 text-error font-body-sm flex items-center gap-2">
-            <span className="material-symbols-outlined text-[18px]">
-              error_outline
-            </span>
+          <div className="p-3.5 rounded-xl bg-[#2a1210] border border-[#5c1e19] text-xs text-[#fca5a5] flex items-center gap-2">
+            <span className="material-symbols-outlined text-[18px]">error_outline</span>
             <span>{error}</span>
           </div>
         )}
 
-        {/* Task Prompt Field */}
+        {/* Field 1: Task */}
         <div className="flex flex-col gap-1.5">
-          <label
-            htmlFor="taskPrompt"
-            className="font-headline-sm text-headline-sm font-medium text-on-surface flex items-center justify-between"
-          >
-            <span>Task Mandate & Invariants</span>
-            <span className="font-label-caps text-label-caps text-outline uppercase">
-              Formal Requirement
-            </span>
+          <label htmlFor="task" className="font-heading font-semibold text-sm text-[#FFF8F0]">
+            Task
           </label>
+          <span className="text-xs text-[#B9A99B]">
+            What was the agent supposed to do?
+          </span>
           <textarea
-            id="taskPrompt"
+            id="task"
             rows={3}
-            value={taskPrompt}
+            value={task}
             onChange={(e) => {
-              setTaskPrompt(e.target.value);
-              if (formErrors.taskPrompt) setFormErrors({ ...formErrors, taskPrompt: undefined });
+              setTask(e.target.value);
+              if (formErrors.task) setFormErrors({ ...formErrors, task: undefined });
             }}
-            placeholder="e.g. Find exactly 3 Soroban lending protocols on Stellar with TVL above $10M and pay 5 USDC."
-            className={`w-full p-3 rounded-lg bg-surface-container-lowest border font-body-md text-body-md text-on-surface placeholder:text-outline focus:outline-none focus:ring-1 focus:ring-primary-container ${
-              formErrors.taskPrompt ? "border-error" : "border-white/10"
+            placeholder="e.g. Issue a full refund of $148.20 for order #AC-19482, notify the customer, and record the reason as duplicate shipment."
+            className={`w-full p-3.5 rounded-xl bg-[#160C08] border text-xs sm:text-sm text-[#FFF8F0] placeholder-[#B9A99B]/40 focus:outline-none focus:ring-1 focus:ring-[#E08A3E] ${
+              formErrors.task ? "border-[#f87171]" : "border-[#4A2B1D]"
             }`}
           />
-          {formErrors.taskPrompt && (
-            <span className="font-body-sm text-[12px] text-error">
-              {formErrors.taskPrompt}
-            </span>
+          {formErrors.task && (
+            <span className="text-xs text-[#f87171]">{formErrors.task}</span>
           )}
-          <span className="font-body-sm text-[11px] text-outline">
-            The formal objective assigned to the worker agent, including numerical constraints and settlement rules.
-          </span>
         </div>
 
-        {/* Worker ID & Network Row */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-space-md">
-          <div className="flex flex-col gap-1.5">
-            <label
-              htmlFor="workerId"
-              className="font-headline-sm text-headline-sm font-medium text-on-surface"
-            >
-              Worker / Agent ID
-            </label>
-            <input
-              id="workerId"
-              type="text"
-              value={workerId}
-              onChange={(e) => {
-                setWorkerId(e.target.value);
-                if (formErrors.workerId) setFormErrors({ ...formErrors, workerId: undefined });
-              }}
-              placeholder="e.g. research-bot, trader-agent"
-              className={`w-full p-2.5 rounded-lg bg-surface-container-lowest border font-code-sm text-code-sm text-on-surface placeholder:text-outline focus:outline-none focus:ring-1 focus:ring-primary-container ${
-                formErrors.workerId ? "border-error" : "border-white/10"
-              }`}
-            />
-            {formErrors.workerId && (
-              <span className="font-body-sm text-[12px] text-error">
-                {formErrors.workerId}
-              </span>
-            )}
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <label
-              htmlFor="network"
-              className="font-headline-sm text-headline-sm font-medium text-on-surface"
-            >
-              Target Settlement Network
-            </label>
-            <select
-              id="network"
-              value={network}
-              onChange={(e) => setNetwork(e.target.value)}
-              className="w-full p-2.5 rounded-lg bg-surface-container-lowest border border-white/10 font-code-sm text-code-sm text-on-surface focus:outline-none focus:ring-1 focus:ring-primary-container"
-            >
-              <option value="Stellar Testnet">Stellar Testnet (Horizon & Soroban RPC)</option>
-              <option value="Stellar Mainnet">Stellar Mainnet</option>
-              <option value="Local Standalone Soroban">Local Standalone Soroban RPC</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Worker Output / Claim Trace Field */}
+        {/* Field 2: Agent */}
         <div className="flex flex-col gap-1.5">
-          <label
-            htmlFor="workerOutput"
-            className="font-headline-sm text-headline-sm font-medium text-on-surface flex items-center justify-between"
-          >
-            <span>Worker Self-Reported Output (Claim)</span>
-            <span className="font-label-caps text-label-caps text-outline uppercase">
-              Unverified Claim
-            </span>
+          <label htmlFor="agent" className="font-heading font-semibold text-sm text-[#FFF8F0]">
+            Agent
           </label>
-          <textarea
-            id="workerOutput"
-            rows={6}
-            value={workerOutput}
+          <span className="text-xs text-[#B9A99B]">
+            Which agent performed the task?
+          </span>
+          <input
+            id="agent"
+            type="text"
+            value={agent}
             onChange={(e) => {
-              setWorkerOutput(e.target.value);
-              if (formErrors.workerOutput) setFormErrors({ ...formErrors, workerOutput: undefined });
+              setAgent(e.target.value);
+              if (formErrors.agent) setFormErrors({ ...formErrors, agent: undefined });
             }}
-            placeholder="Paste the raw output or JSON execution trace emitted by the worker agent..."
-            className={`w-full p-3 rounded-lg bg-surface-container-lowest border font-code-sm text-code-sm text-on-surface placeholder:text-outline focus:outline-none focus:ring-1 focus:ring-primary-container ${
-              formErrors.workerOutput ? "border-error" : "border-white/10"
+            placeholder="e.g. Customer Resolution Agent, Settlement Bot, Research Agent"
+            className={`w-full px-3.5 py-2.5 rounded-xl bg-[#160C08] border text-xs sm:text-sm text-[#FFF8F0] placeholder-[#B9A99B]/40 focus:outline-none focus:ring-1 focus:ring-[#E08A3E] ${
+              formErrors.agent ? "border-[#f87171]" : "border-[#4A2B1D]"
             }`}
           />
-          {formErrors.workerOutput && (
-            <span className="font-body-sm text-[12px] text-error">
-              {formErrors.workerOutput}
-            </span>
+          {agents.length > 0 && (
+            <div className="flex items-center gap-1.5 flex-wrap pt-1">
+              <span className="text-[10px] text-[#B9A99B] uppercase font-mono">Connected:</span>
+              {agents.map((a) => (
+                <button
+                  key={a.id}
+                  type="button"
+                  onClick={() => {
+                    setAgent(a.name);
+                    if (formErrors.agent) setFormErrors({ ...formErrors, agent: undefined });
+                  }}
+                  className={`px-2 py-0.5 rounded-lg text-xs font-mono transition-colors cursor-pointer border ${
+                    agent === a.name
+                      ? "bg-[#C96A2B] text-white border-[#E08A3E]"
+                      : "bg-[#160C08] text-[#B9A99B] border-[#4A2B1D] hover:text-[#FFF8F0]"
+                  }`}
+                >
+                  {a.name}
+                </button>
+              ))}
+            </div>
           )}
-          <span className="font-body-sm text-[11px] text-outline">
-            VeraOS does not trust this text. The kernel extracts claims and checks them against independent RPC and Oracle witnesses.
-          </span>
+          {formErrors.agent && (
+            <span className="text-xs text-[#f87171]">{formErrors.agent}</span>
+          )}
         </div>
 
-        {/* Submission Action Row */}
-        <div className="pt-space-md border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-space-sm">
-          <span className="font-code-sm text-code-sm text-outline">
-            Deterministic Quorum: Stellar Horizon + Deterministic Kernel
+        {/* Field 3: Agent Output */}
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="agentOutput" className="font-heading font-semibold text-sm text-[#FFF8F0]">
+            Agent output
+          </label>
+          <span className="text-xs text-[#B9A99B]">
+            What did the agent say it completed?
           </span>
-          <div className="flex items-center gap-space-sm w-full sm:w-auto">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => navigate("/dashboard")}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              variant="primary"
-              loading={isSubmitting}
-              icon={
-                <span className="material-symbols-outlined text-[18px]">
-                  verified
-                </span>
-              }
-            >
-              Create Verification
-            </Button>
-          </div>
+          <textarea
+            id="agentOutput"
+            rows={4}
+            value={agentOutput}
+            onChange={(e) => {
+              setAgentOutput(e.target.value);
+              if (formErrors.agentOutput) setFormErrors({ ...formErrors, agentOutput: undefined });
+            }}
+            placeholder="e.g. Issued a $148.20 refund, emailed the customer, and added a duplicate-shipment note to the order."
+            className={`w-full p-3.5 rounded-xl bg-[#160C08] border text-xs sm:text-sm text-[#FFF8F0] placeholder-[#B9A99B]/40 focus:outline-none focus:ring-1 focus:ring-[#E08A3E] ${
+              formErrors.agentOutput ? "border-[#f87171]" : "border-[#4A2B1D]"
+            }`}
+          />
+          {formErrors.agentOutput && (
+            <span className="text-xs text-[#f87171]">{formErrors.agentOutput}</span>
+          )}
+        </div>
+
+        {/* Field 4: Optional Evidence */}
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="evidence" className="font-heading font-semibold text-sm text-[#FFF8F0]">
+            Supporting evidence <span className="text-[#B9A99B] font-normal text-xs">(optional)</span>
+          </label>
+          <span className="text-xs text-[#B9A99B]">
+            Add transaction hash, document link, or file reference if available.
+          </span>
+          <input
+            id="evidence"
+            type="text"
+            value={evidence}
+            onChange={(e) => setEvidence(e.target.value)}
+            placeholder="e.g. refund_record.json, 62256096f306726197208231b00e422628b0bb83e104dabed9a74da5186afbaf"
+            className="w-full px-3.5 py-2.5 rounded-xl bg-[#160C08] border border-[#4A2B1D] font-mono text-xs text-[#FFF8F0] placeholder-[#B9A99B]/40 focus:outline-none focus:ring-1 focus:ring-[#E08A3E]"
+          />
+        </div>
+
+        {/* Form Action Row */}
+        <div className="pt-4 border-t border-[#4A2B1D] flex flex-col sm:flex-row items-center justify-between gap-4">
+          <button
+            type="button"
+            onClick={() => navigate("/dashboard")}
+            className="text-xs text-[#B9A99B] hover:text-[#FFF8F0] cursor-pointer"
+          >
+            Cancel
+          </button>
+
+          {/* Primary CTA: Verify work */}
+          <Button
+            type="submit"
+            variant="primary"
+            size="lg"
+            loading={isSubmitting}
+            icon={<span className="material-symbols-outlined text-[18px]">verified</span>}
+            className="w-full sm:w-auto px-8"
+          >
+            Verify work
+          </Button>
         </div>
       </form>
     </div>

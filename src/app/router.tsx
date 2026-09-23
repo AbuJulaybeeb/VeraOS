@@ -10,6 +10,9 @@ const LandingPage = lazy(() =>
 const Dashboard = lazy(() =>
   import("../pages/Dashboard").then((m) => ({ default: m.Dashboard }))
 );
+const VerificationsList = lazy(() =>
+  import("../pages/VerificationsList").then((m) => ({ default: m.VerificationsList }))
+);
 const NewVerification = lazy(() =>
   import("../pages/NewVerification").then((m) => ({ default: m.NewVerification }))
 );
@@ -34,9 +37,6 @@ const ConnectAgent = lazy(() =>
 const Docs = lazy(() =>
   import("../pages/Docs").then((m) => ({ default: m.Docs }))
 );
-const InvitePortal = lazy(() =>
-  import("../pages/InvitePortal").then((m) => ({ default: m.InvitePortal }))
-);
 const PrivacyPolicy = lazy(() =>
   import("../pages/PrivacyPolicy").then((m) => ({ default: m.PrivacyPolicy }))
 );
@@ -46,10 +46,14 @@ const TermsConditions = lazy(() =>
 const NotFound = lazy(() =>
   import("../pages/NotFound").then((m) => ({ default: m.NotFound }))
 );
+const Welcome = lazy(() =>
+  import("../pages/Welcome").then((m) => ({ default: m.Welcome }))
+);
 const Account = lazy(() =>
   import("../pages/Account").then((m) => ({ default: m.Account }))
 );
 
+import { ProtectedRoute } from "../components/auth/ProtectedRoute";
 import { RouteErrorFallback } from "../components/common/RouteErrorFallback";
 
 const PageLoader = () => (
@@ -74,7 +78,7 @@ export const router = createBrowserRouter([
     element: <RootLayout />,
     errorElement: <RouteErrorFallback />,
     children: [
-  // Landing Page
+  // Public Routes
   {
     path: "/",
     errorElement: <RouteErrorFallback />,
@@ -84,30 +88,23 @@ export const router = createBrowserRouter([
       </Suspense>
     ),
   },
-
-  // Documentation Site
   {
-    path: "/docs",
+    path: "/welcome",
     errorElement: <RouteErrorFallback />,
     element: (
       <Suspense fallback={<PageLoader />}>
-        <Docs />
+        <Welcome />
       </Suspense>
     ),
   },
-
-  // Enterprise Invitation Portal
+  {
+    path: "/get-started",
+    element: <Navigate to="/welcome" replace />,
+  },
   {
     path: "/invite",
-    errorElement: <RouteErrorFallback />,
-    element: (
-      <Suspense fallback={<PageLoader />}>
-        <InvitePortal />
-      </Suspense>
-    ),
+    element: <Navigate to="/welcome" replace />,
   },
-
-  // Legal: Privacy Policy
   {
     path: "/privacy",
     errorElement: <RouteErrorFallback />,
@@ -117,8 +114,6 @@ export const router = createBrowserRouter([
       </Suspense>
     ),
   },
-
-  // Legal: Terms & Conditions
   {
     path: "/terms",
     errorElement: <RouteErrorFallback />,
@@ -129,94 +124,120 @@ export const router = createBrowserRouter([
     ),
   },
 
-  // Authenticated App Shell Routes
+  // Authenticated App Shell Routes (Protected)
   {
-    element: <AppShell />,
+    element: <ProtectedRoute />,
     errorElement: <RouteErrorFallback />,
     children: [
       {
-        path: "/dashboard",
-        element: (
-          <Suspense fallback={<PageLoader />}>
-            <Dashboard />
-          </Suspense>
-        ),
-      },
-      {
-        path: "/verifications",
-        element: <Navigate to="/dashboard" replace />,
-      },
-      {
-        path: "/verify/new",
-        element: (
-          <Suspense fallback={<PageLoader />}>
-            <NewVerification />
-          </Suspense>
-        ),
-      },
-      {
-        path: "/verify/processing/:id",
-        element: (
-          <Suspense fallback={<PageLoader />}>
-            <VerificationProcessing />
-          </Suspense>
-        ),
-      },
-      {
-        path: "/verify/:id",
-        element: (
-          <Suspense fallback={<PageLoader />}>
-            <VerificationDetail />
-          </Suspense>
-        ),
-      },
-      {
-        path: "/verify/:id/evidence",
-        element: (
-          <Suspense fallback={<PageLoader />}>
-            <EvidenceExplorer />
-          </Suspense>
-        ),
-      },
-      {
-        path: "/verify/:id/correction",
-        element: (
-          <Suspense fallback={<PageLoader />}>
-            <CorrectionLoop />
-          </Suspense>
-        ),
-      },
-      {
-        path: "/agents",
-        element: (
-          <Suspense fallback={<PageLoader />}>
-            <Agents />
-          </Suspense>
-        ),
-      },
-      {
-        path: "/agents/connect",
-        element: (
-          <Suspense fallback={<PageLoader />}>
-            <ConnectAgent />
-          </Suspense>
-        ),
-      },
-      {
-        path: "/account",
-        element: (
-          <Suspense fallback={<PageLoader />}>
-            <Account />
-          </Suspense>
-        ),
-      },
-      {
-        path: "*",
-        element: (
-          <Suspense fallback={<PageLoader />}>
-            <NotFound />
-          </Suspense>
-        ),
+        element: <AppShell />,
+        errorElement: <RouteErrorFallback />,
+        children: [
+          {
+            path: "/dashboard",
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <Dashboard />
+              </Suspense>
+            ),
+          },
+          {
+            path: "/verifications",
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <VerificationsList />
+              </Suspense>
+            ),
+          },
+          {
+            path: "/evidence",
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <EvidenceExplorer />
+              </Suspense>
+            ),
+          },
+          {
+            path: "/verify/new",
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <NewVerification />
+              </Suspense>
+            ),
+          },
+          {
+            path: "/verify/processing/:id",
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <VerificationProcessing />
+              </Suspense>
+            ),
+          },
+          {
+            path: "/verify/:id",
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <VerificationDetail />
+              </Suspense>
+            ),
+          },
+          {
+            path: "/verify/:id/evidence",
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <EvidenceExplorer />
+              </Suspense>
+            ),
+          },
+          {
+            path: "/verify/:id/correction",
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <CorrectionLoop />
+              </Suspense>
+            ),
+          },
+          {
+            path: "/agents",
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <Agents />
+              </Suspense>
+            ),
+          },
+          {
+            path: "/agents/connect",
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <ConnectAgent />
+              </Suspense>
+            ),
+          },
+          {
+            path: "/docs",
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <Docs />
+              </Suspense>
+            ),
+          },
+          {
+            path: "/account",
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <Account />
+              </Suspense>
+            ),
+          },
+          {
+            path: "*",
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <NotFound />
+              </Suspense>
+            ),
+          },
+        ],
       },
     ],
   },
