@@ -1,6 +1,7 @@
-﻿import React, { useState } from "react";
+import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAgentContext } from "../context/AgentContext";
+import { TELEGRAM_BOT_URL, TELEGRAM_BOT_HANDLE } from "../config/env";
 
 export const ConnectAgent: React.FC = () => {
   const navigate = useNavigate();
@@ -197,7 +198,7 @@ export const ConnectAgent: React.FC = () => {
               <span className="font-heading font-bold text-lg text-[#191513]">Telegram</span>
             </div>
             <p className="text-xs text-[#6B635B] leading-relaxed">
-              Connect an existing Telegram bot worker to monitor and verify bot actions automatically.
+              Connect via official bot <span className="font-mono text-[#D97736]">@VeraOS_Layer_bot</span> to monitor and verify bot actions automatically.
             </p>
           </div>
           <div className="mt-4 font-mono text-[11px] text-[#2AABEE]">
@@ -224,16 +225,29 @@ export const ConnectAgent: React.FC = () => {
 
         {/* Endpoint / Webhook URL */}
         <div>
-          <label className="block text-xs font-semibold text-[#191513] uppercase tracking-wider mb-1.5">
-            {selectedType === "telegram" ? "Telegram Bot Username / Token" : "Webhook URL or API Endpoint"}
-          </label>
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="block text-xs font-semibold text-[#191513] uppercase tracking-wider">
+              {selectedType === "telegram" ? "Telegram Bot Username / Token" : "Webhook URL or API Endpoint"}
+            </label>
+            {selectedType === "telegram" && (
+              <a
+                href={TELEGRAM_BOT_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-[#1D7A46] font-medium hover:underline flex items-center gap-1"
+              >
+                <span>Launch {TELEGRAM_BOT_HANDLE}</span>
+                <span className="material-symbols-outlined text-[13px]">open_in_new</span>
+              </a>
+            )}
+          </div>
           <input
             type="text"
             value={endpoint}
             onChange={(e) => setEndpoint(e.target.value)}
             placeholder={
               selectedType === "telegram"
-                ? "@YourVeraBot"
+                ? "@VeraOS_Layer_bot"
                 : "https://api.acme.ai/agent/verify"
             }
             className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF8F5] border border-[#E8E4DC] text-sm text-[#191513] focus:outline-none focus:border-[#181311] transition-colors"

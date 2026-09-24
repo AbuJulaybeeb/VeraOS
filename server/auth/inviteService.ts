@@ -146,7 +146,7 @@ export class InviteService {
   /**
    * Enterprise message returned to uninvited/restricted users
    */
-  getRestrictedAccessMessage(botUsername = "Vera_Of_bot"): string {
+  getRestrictedAccessMessage(botUsername = "VeraOS_Layer_bot"): string {
     return (
       `⛔ *Access Restricted — Invitation Required*\n\n` +
       `VeraOS is an enterprise-grade autonomous agent verification platform and is currently accessible by *invitation only*.\n\n` +

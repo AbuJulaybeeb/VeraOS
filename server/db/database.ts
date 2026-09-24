@@ -602,7 +602,7 @@ export class VeraDatabase {
       otp,
       code: otp,
       expiresInSeconds,
-      telegramDeepLink: `https://t.me/Vera_Of_bot?start=invite_${otp}`,
+      telegramDeepLink: `https://t.me/VeraOS_Layer_bot?start=invite_${otp}`,
     };
   }
 

@@ -63,7 +63,7 @@ export default {
           telegram: {
             configured: Boolean(botToken),
             webhookEnabled: true,
-            botUsername: "@Vera_Of_bot",
+            botUsername: "@VeraOS_Layer_bot",
           },
           stellar: {
             network: env.STELLAR_NETWORK || "testnet",
@@ -97,7 +97,7 @@ export default {
           JSON.stringify({
             valid: true,
             code: invite.code,
-            telegramDeepLink: `https://t.me/Vera_Of_bot?start=invite_${invite.code}`,
+            telegramDeepLink: `https://t.me/VeraOS_Layer_bot?start=invite_${invite.code}`,
           }),
           { status: 200, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } }
         );
@@ -131,7 +131,7 @@ export default {
             success: true,
             code: invite.code,
             maxUses: invite.max_uses,
-            telegramInviteLink: `https://t.me/Vera_Of_bot?start=invite_${invite.code}`,
+            telegramInviteLink: `https://t.me/VeraOS_Layer_bot?start=invite_${invite.code}`,
             webInviteLink: `${origin}/invite?code=${invite.code}`,
           }),
           { status: 200, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } }
@@ -484,7 +484,7 @@ export default {
 
           const isAuth = await invites.isAuthorized(fromId);
           if (!isAuth) {
-            await sendMessage(botToken, chatId, invites.getRestrictedAccessMessage("Vera_Of_bot"));
+            await sendMessage(botToken, chatId, invites.getRestrictedAccessMessage("VeraOS_Layer_bot"));
           } else if (data.startsWith("status:")) {
             const vid = data.split(":")[1];
             const rec = await db.getVerification(vid);
@@ -564,7 +564,7 @@ export default {
           // Access Control Gate: Is user authorized?
           const isAuthorized = await invites.isAuthorized(telegramId);
           if (!isAuthorized) {
-            await sendMessage(botToken, chatId, invites.getRestrictedAccessMessage("Vera_Of_bot"));
+            await sendMessage(botToken, chatId, invites.getRestrictedAccessMessage("VeraOS_Layer_bot"));
             await db.logAudit(telegramId, "ACCESS_DENIED_UNINVITED", `Text: ${text.slice(0, 50)}`);
             return new Response(JSON.stringify({ ok: true }), {
               status: 200,
@@ -953,7 +953,7 @@ export default {
     <div class="status">● Cloudflare Edge Worker Online</div>
     <h1>VeraOS Audit Engine</h1>
     <p>The backend verification engine, Cloudflare D1 persistence, and Telegram bot service are active on Cloudflare edge.</p>
-    <a href="https://t.me/Vera_Of_bot" class="btn" target="_blank">Open Telegram Bot (@Vera_Of_bot)</a>
+    <a href="https://t.me/VeraOS_Layer_bot" class="btn" target="_blank">Open Telegram Bot (@VeraOS_Layer_bot)</a>
     <a href="/v1/health" class="btn btn-alt">Check API Health</a>
   </div>
 </body>

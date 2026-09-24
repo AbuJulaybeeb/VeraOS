@@ -150,7 +150,7 @@ export async function handleApiRequest(
         sendJson(res, 200, {
           ok: true,
           service: "VeraOS Telegram Webhook Gateway",
-          bot: "@Vera_Of_bot",
+          bot: "@VeraOS_Layer_bot",
           status: "ready",
           configured: veraTelegramBot.isConfigured(),
         });
@@ -279,7 +279,7 @@ export async function handleApiRequest(
           success: true,
           code: invite.code,
           maxUses: invite.max_uses,
-          telegramInviteLink: `https://t.me/Vera_Of_bot?start=invite_${invite.code}`,
+          telegramInviteLink: `https://t.me/VeraOS_Layer_bot?start=invite_${invite.code}`,
         });
         return true;
       } catch (err: any) {

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { TELEGRAM_BOT_URL, GITHUB_REPO_URL } from "../config/env";
 
 export const LandingPage: React.FC = () => {
   const navigate = useNavigate();
@@ -109,10 +110,16 @@ export const LandingPage: React.FC = () => {
             </Link>
 
             {/* Telegram Active Pill */}
-            <div className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#EAF5EE] border border-[#CDE5D5] text-[#1D7A46] text-xs font-medium">
+            <a
+              href={TELEGRAM_BOT_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#EAF5EE] hover:bg-[#DCF0E2] border border-[#CDE5D5] text-[#1D7A46] text-xs font-medium transition-colors"
+              title="Open @VeraOS_Layer_bot on Telegram"
+            >
               <span className="w-1.5 h-1.5 rounded-full bg-[#1D7A46] animate-pulse" />
-              <span>Telegram Active</span>
-            </div>
+              <span>@VeraOS_Layer_bot</span>
+            </a>
           </div>
 
           {/* Center Links */}
@@ -223,6 +230,16 @@ export const LandingPage: React.FC = () => {
             >
               Docs
             </Link>
+            <a
+              href={TELEGRAM_BOT_URL}
+              target="_blank"
+              rel="noreferrer"
+              onClick={() => setMobileMenuOpen(false)}
+              className="px-3 py-2 rounded-lg text-sm text-[#1D7A46] font-medium hover:bg-white flex items-center gap-2"
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-[#1D7A46]" />
+              <span>Telegram Bot (@VeraOS_Layer_bot)</span>
+            </a>
           </div>
         )}
       </header>
@@ -588,7 +605,7 @@ export const LandingPage: React.FC = () => {
               VeraOS
             </span>
             <span className="text-xs text-[#6B635B] font-mono">
-              v1.4.spec â€¢ RFC-0442 Attestation
+              v1.4.spec • RFC-0442 Attestation
             </span>
           </div>
 
@@ -602,7 +619,7 @@ export const LandingPage: React.FC = () => {
               Docs
             </Link>
             <a
-              href="https://github.com"
+              href={GITHUB_REPO_URL}
               target="_blank"
               rel="noreferrer"
               className="hover:text-[#191513] transition-colors"
@@ -610,12 +627,12 @@ export const LandingPage: React.FC = () => {
               GitHub
             </a>
             <a
-              href="https://t.me"
+              href={TELEGRAM_BOT_URL}
               target="_blank"
               rel="noreferrer"
               className="hover:text-[#191513] transition-colors"
             >
-              Telegram
+              Telegram (@VeraOS_Layer_bot)
             </a>
           </div>
         </div>
