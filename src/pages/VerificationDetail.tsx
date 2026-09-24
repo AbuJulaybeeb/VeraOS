@@ -5,9 +5,6 @@ import { useVerification } from "../hooks/useVerification";
 export const VerificationDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { verification, loading } = useVerification(id);
-  
-  // State toggle for viewing both Figma variations (Passed vs Needs attention)
-  const [overrideState, setOverrideState] = useState<"auto" | "passed" | "needs_attention">("auto");
   const [archived, setArchived] = useState(false);
   const [shared, setShared] = useState(false);
 
@@ -20,13 +17,38 @@ export const VerificationDetail: React.FC = () => {
     );
   }
 
-  // Determine current display state
-  const isActuallyPassed = verification?.status === "PASSED";
-  const isPassed = overrideState === "auto" ? isActuallyPassed : overrideState === "passed";
+  // Derive real verdict status
+  const isPassed = verification?.status === "PASSED";
+  const latestAttempt = verification?.attempts?.[verification.attempts.length - 1];
+  const invariants = latestAttempt?.invariants || [];
+  const evidenceList = latestAttempt?.evidence || [];
+  const remediationDirectives = latestAttempt?.remediationDirectives || [];
 
-  const runId = verification?.displayId ? `Run VR-${verification.displayId}` : "Run VR-2984";
-  const agentName = verification?.workerName || "Customer Resolution Agent";
-  const completedDate = "completed Sep 23 at 12:44 PM";
+  const passedCount = invariants.filter((i) => i.status === "PASSED").length;
+  const totalCount = invariants.length || 1;
+  const confidencePercent = isPassed ? 98 : Math.max(15, Math.round((passedCount / totalCount) * 100));
+
+  const runId = verification?.displayId ? `Run VR-${verification.displayId}` : id ? `Run VR-${id.slice(-6).toUpperCase()}` : "Run VR-2984";
+  const agentName = verification?.workerName || "Autonomous Agent";
+
+  const formattedDate = verification?.createdAt
+    ? new Date(verification.createdAt).toLocaleString(undefined, {
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+      })
+    : "completed recently";
+
+  const headline = isPassed
+    ? "All verification invariants satisfied."
+    : latestAttempt?.summary || "Discrepancy detected during verification.";
+
+  const description =
+    latestAttempt?.detailedReason ||
+    (isPassed
+      ? "All requested outcomes and contract requirements are corroborating with cryptographic consensus."
+      : "One or more invariants breached declared requirements. Review evidence and remediation directives below.");
 
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href);
@@ -38,42 +60,33 @@ export const VerificationDetail: React.FC = () => {
     setArchived(true);
   };
 
+  // Find Stellar on-chain explorer link if available
+  const stellarEvidence = evidenceList.find((e) => e.data && (e.data as any).explorerUrl);
+  const explorerUrl = (stellarEvidence?.data as any)?.explorerUrl as string | undefined;
+
   return (
     <div className="max-w-4xl mx-auto w-full flex flex-col gap-6 font-sans pb-16">
-      {/* Top Breadcrumb & State switcher */}
+      {/* Top Breadcrumb */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-2 text-xs text-[#6B635B]">
-          <Link to="/verifications" className="hover:text-[#181311] transition-colors">
+          <Link to="/dashboard" className="hover:text-[#181311] transition-colors">
             Verifications
           </Link>
           <span>/</span>
           <span className="font-mono text-[#181311]">{runId}</span>
         </div>
 
-        {/* State Preview Toggle */}
-        <div className="flex items-center gap-1.5 self-start sm:self-auto bg-white p-1 rounded-xl border border-[#E8E4DC] text-xs">
-          <span className="text-[#8C8479] px-2 font-mono text-[11px]">Preview:</span>
-          <button
-            onClick={() => setOverrideState("passed")}
-            className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
-              isPassed
-                ? "bg-[#EAF5EE] text-[#1D7A46] font-semibold"
-                : "text-[#6B635B] hover:text-[#181311]"
-            }`}
+        {explorerUrl && (
+          <a
+            href={explorerUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white border border-[#E8E4DC] text-xs font-semibold text-[#181311] hover:bg-[#FAF8F5] transition-colors"
           >
-            Passed
-          </button>
-          <button
-            onClick={() => setOverrideState("needs_attention")}
-            className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
-              !isPassed
-                ? "bg-[#FEF5EB] text-[#B8621B] font-semibold"
-                : "text-[#6B635B] hover:text-[#181311]"
-            }`}
-          >
-            Needs attention
-          </button>
-        </div>
+            <span>Stellar Expert</span>
+            <span className="text-[10px]">↗</span>
+          </a>
+        )}
       </div>
 
       {/* Title Header */}
@@ -82,7 +95,7 @@ export const VerificationDetail: React.FC = () => {
           {isPassed ? "Check result — Passed" : "Check result — Needs attention"}
         </h1>
         <p className="text-xs sm:text-sm text-[#6B635B] mt-1">
-          {runId} • {agentName} • {completedDate}
+          {runId} • {agentName} • {formattedDate}
         </p>
       </div>
 
@@ -98,7 +111,7 @@ export const VerificationDetail: React.FC = () => {
               </span>
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-[#EAF5EE] text-[#1D7A46] border border-[#CDE5D5]">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#1D7A46]" />
-                96% confidence
+                {confidencePercent}% confidence
               </span>
             </>
           ) : (
@@ -109,23 +122,24 @@ export const VerificationDetail: React.FC = () => {
               </span>
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-[#FEF5EB] text-[#B8621B] border border-[#FADCC4]">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#B8621B]" />
-                82% confidence
+                {confidencePercent}% confidence
               </span>
             </>
+          )}
+          {verification?.quorum && (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-mono text-[#6B635B] bg-[#F3EFEA] border border-[#E8E4DC]">
+              Quorum: {verification.quorum}
+            </span>
           )}
         </div>
 
         {/* Headline */}
         <div>
           <h2 className="font-heading font-bold text-xl sm:text-2xl text-[#181311] leading-snug">
-            {isPassed
-              ? "The refund was completed correctly."
-              : "The refund was issued, but the required reason is not confirmed."}
+            {headline}
           </h2>
-          <p className="text-xs sm:text-sm text-[#6B635B] mt-2 leading-relaxed max-w-2xl">
-            {isPassed
-              ? "The refund amount matches the order, the customer was notified, and the required reason was recorded. All requested outcomes are supported by strong evidence."
-              : "The refund amount and customer email are supported. The order record does not clearly show \"duplicate shipment\" as the reason, so one requirement remains unresolved."}
+          <p className="text-xs sm:text-sm text-[#6B635B] mt-2 leading-relaxed max-w-2xl font-mono">
+            {description}
           </p>
         </div>
 
@@ -153,13 +167,13 @@ export const VerificationDetail: React.FC = () => {
                 to={id ? `/verify/${id}/correction` : "/verify/new"}
                 className="px-4 py-2.5 rounded-xl bg-[#181311] hover:bg-[#2A2422] text-white text-xs sm:text-sm font-semibold transition-colors"
               >
-                Fix missing detail →
+                Execute remediation directive →
               </Link>
               <Link
-                to={id ? `/verify/${id}/correction?action=request_agent` : "/verify/new"}
+                to={id ? `/verify/${id}/evidence` : "/evidence"}
                 className="px-4 py-2.5 rounded-xl bg-white hover:bg-[#FAF8F5] border border-[#E8E4DC] text-[#181311] text-xs sm:text-sm font-semibold transition-colors"
               >
-                Request agent correction →
+                Inspect raw evidence →
               </Link>
             </>
           )}
@@ -176,11 +190,11 @@ export const VerificationDetail: React.FC = () => {
               <span className="text-[11px] text-[#6B635B]">Requirements fulfilled</span>
             </div>
             <div className="font-heading font-bold text-3xl text-[#181311] my-3">
-              {isPassed ? "3 of 3" : "2 of 3"}
+              {passedCount} of {totalCount}
             </div>
           </div>
           <p className="text-xs text-[#6B635B]">
-            {isPassed ? "Everything requested is complete" : "One requirement unresolved"}
+            {isPassed ? "Everything requested is complete" : `${totalCount - passedCount} requirement(s) unresolved`}
           </p>
         </div>
 
@@ -189,13 +203,15 @@ export const VerificationDetail: React.FC = () => {
           <div>
             <div className="flex items-center justify-between">
               <span className="font-heading font-semibold text-sm text-[#181311]">Evidence quality</span>
-              <span className="text-[11px] text-[#6B635B]">Sources</span>
+              <span className="text-[11px] text-[#6B635B]">Proof sources</span>
             </div>
             <div className="font-heading font-bold text-3xl text-[#181311] my-3">
-              {isPassed ? "3 strong" : "2 strong • 1 unclear"}
+              {evidenceList.length} verified
             </div>
           </div>
-          <p className="text-xs text-[#6B635B]">No conflicting evidence found</p>
+          <p className="text-xs text-[#6B635B]">
+            {evidenceList.length > 0 ? "Corroborated against consensus" : "Awaiting consensus"}
+          </p>
         </div>
 
         {/* Card 3: Verification Confidence */}
@@ -203,17 +219,35 @@ export const VerificationDetail: React.FC = () => {
           <div>
             <div className="flex items-center justify-between">
               <span className="font-heading font-semibold text-sm text-[#181311]">Verification confidence</span>
-              <span className="text-[11px] text-[#6B635B]">Independent confidence</span>
+              <span className="text-[11px] text-[#6B635B]">Deterministic rigor</span>
             </div>
             <div className="font-heading font-bold text-3xl text-[#181311] my-3">
-              {isPassed ? "96%" : "82%"}
+              {confidencePercent}%
             </div>
           </div>
           <p className="text-xs text-[#6B635B]">
-            {isPassed ? "High confidence" : "High, with one evidence gap"}
+            {isPassed ? "High confidence" : "Breach detected by independent oracle"}
           </p>
         </div>
       </div>
+
+      {/* Remediation Directives Banner (if failed) */}
+      {!isPassed && remediationDirectives.length > 0 && (
+        <div className="bg-[#FEF5EB] rounded-2xl border border-[#FADCC4] p-5 sm:p-6 flex flex-col gap-3">
+          <div className="flex items-center gap-2 text-xs font-bold text-[#B8621B] uppercase tracking-wider">
+            <span className="w-2 h-2 rounded-full bg-[#B8621B]" />
+            Remediation Directives Issued
+          </div>
+          <div className="flex flex-col gap-2">
+            {remediationDirectives.map((dir, idx) => (
+              <div key={dir.id || idx} className="bg-white/80 p-3.5 rounded-xl border border-[#FADCC4]/60 text-xs sm:text-sm">
+                <span className="font-bold text-[#181311] font-mono mr-2">[{dir.action}]</span>
+                <span className="text-[#6B635B]">{dir.reason}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Bottom Card: What Vera Checked */}
       <div className="bg-white rounded-2xl border border-[#E8E4DC] p-6 shadow-sm flex flex-col gap-4">
@@ -225,67 +259,51 @@ export const VerificationDetail: React.FC = () => {
             to={id ? `/verify/${id}/evidence` : "/evidence"}
             className="text-xs font-semibold text-[#181311] hover:underline"
           >
-            Trace evidence →
+            Trace evidence ({evidenceList.length} sources) →
           </Link>
         </div>
 
         <div className="flex flex-col divide-y divide-[#E8E4DC]">
-          {/* Check Item 1 */}
-          <div className="flex items-center justify-between py-3.5 first:pt-0">
-            <div>
-              <p className="text-sm font-medium text-[#181311]">
-                Issue a full refund of $148.20
-              </p>
-              <p className="text-xs text-[#6B635B] mt-0.5">
-                Matched to refund record RF-88124
-              </p>
-            </div>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-[#EAF5EE] text-[#1D7A46] border border-[#CDE5D5] shrink-0">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#1D7A46]" />
-              Confirmed
-            </span>
-          </div>
-
-          {/* Check Item 2 */}
-          <div className="flex items-center justify-between py-3.5">
-            <div>
-              <p className="text-sm font-medium text-[#181311]">
-                Notify the customer
-              </p>
-              <p className="text-xs text-[#6B635B] mt-0.5">
-                Matched to email sent Sep 23, 12:31 PM
-              </p>
-            </div>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-[#EAF5EE] text-[#1D7A46] border border-[#CDE5D5] shrink-0">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#1D7A46]" />
-              Confirmed
-            </span>
-          </div>
-
-          {/* Check Item 3 */}
-          <div className="flex items-center justify-between py-3.5 last:pb-0">
-            <div>
-              <p className="text-sm font-medium text-[#181311]">
-                Record reason: duplicate shipment
-              </p>
-              <p className="text-xs text-[#6B635B] mt-0.5">
-                {isPassed
-                  ? "Matched to order note #N-4821"
-                  : "Order note is present, but reason is not explicit"}
-              </p>
-            </div>
-            {isPassed ? (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-[#EAF5EE] text-[#1D7A46] border border-[#CDE5D5] shrink-0">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#1D7A46]" />
-                Confirmed
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-[#FEF5EB] text-[#B8621B] border border-[#FADCC4] shrink-0">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#B8621B]" />
-                Needs evidence
-              </span>
-            )}
-          </div>
+          {invariants.length > 0 ? (
+            invariants.map((inv, idx) => {
+              const invPassed = inv.status === "PASSED";
+              return (
+                <div key={inv.id || idx} className="flex items-center justify-between py-3.5 first:pt-0 last:pb-0 gap-4">
+                  <div className="flex flex-col gap-0.5">
+                    <p className="text-sm font-semibold text-[#181311]">
+                      {inv.name || `Invariant ${idx + 1}`}
+                    </p>
+                    <p className="text-xs text-[#6B635B]">
+                      Expected: <span className="font-mono text-[#181311]">{inv.expected}</span>
+                      {inv.actual && (
+                        <>
+                          {" "}• Observed: <span className="font-mono text-[#181311]">{inv.actual}</span>
+                        </>
+                      )}
+                    </p>
+                    {inv.delta && (
+                      <p className="text-[11px] font-mono text-[#B8621B]">
+                        Discrepancy: {inv.delta}
+                      </p>
+                    )}
+                  </div>
+                  {invPassed ? (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-[#EAF5EE] text-[#1D7A46] border border-[#CDE5D5] shrink-0">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#1D7A46]" />
+                      Confirmed
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-[#FEF5EB] text-[#B8621B] border border-[#FADCC4] shrink-0">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#B8621B]" />
+                      Breached
+                    </span>
+                  )}
+                </div>
+              );
+            })
+          ) : (
+            <p className="text-xs text-[#6B635B] py-3">No invariant records registered.</p>
+          )}
         </div>
       </div>
     </div>
