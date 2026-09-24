@@ -2,8 +2,6 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { TELEGRAM_BOT_URL, GITHUB_REPO_URL } from "../config/env";
 import { useAuth } from "../context/AuthContext";
-import { useVerificationsList } from "../hooks/useVerification";
-import { RequirementInvariant } from "../types/requirement";
 
 export const LandingPage: React.FC = () => {
   const navigate = useNavigate();
@@ -12,10 +10,6 @@ export const LandingPage: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeStage, setActiveStage] = useState<number>(0);
-
-  const { verifications } = useVerificationsList();
-  const latestVerification = verifications.length > 0 ? verifications[0] : null;
-  const isPassed = latestVerification ? latestVerification.status === "PASSED" : true;
 
   useEffect(() => {
     if ((location.state as any)?.openAuth) {

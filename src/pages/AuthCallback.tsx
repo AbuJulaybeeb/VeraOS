@@ -48,7 +48,7 @@ export const AuthCallback: React.FC = () => {
         } else {
           // If no session yet, listen once for auth state change
           const { data: authSub } = supabase.auth.onAuthStateChange(
-            async (event: any, session: any) => {
+            async (event, session) => {
               if (session?.user && mounted) {
                 await supabaseAuthService.syncUserProfile(session.user);
                 await refetchUser();
