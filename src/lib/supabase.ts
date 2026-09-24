@@ -123,11 +123,35 @@ if (!isSupabaseConfigured && typeof window !== "undefined") {
 const effectiveUrl = supabaseUrl || "https://placeholder-project.supabase.co";
 const effectiveKey = supabaseAnonKey || "placeholder-anon-key";
 
+// Polyfill WebSocket in environments (e.g. Node 20 or SSR without native WebSocket)
+// so @supabase/realtime-js does not throw during createClient
+class WebSocketStub {
+  static readonly CONNECTING = 0;
+  static readonly OPEN = 1;
+  static readonly CLOSING = 2;
+  static readonly CLOSED = 3;
+  readonly readyState = 3;
+  addEventListener() {}
+  removeEventListener() {}
+  dispatchEvent() {
+    return false;
+  }
+  send() {}
+  close() {}
+}
+
+if (typeof globalThis !== "undefined" && typeof (globalThis as any).WebSocket === "undefined") {
+  (globalThis as any).WebSocket = WebSocketStub;
+}
+
 export const supabase = createClient(effectiveUrl, effectiveKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
     storage: typeof window !== "undefined" ? window.localStorage : undefined,
+  },
+  realtime: {
+    transport: typeof WebSocket !== "undefined" ? WebSocket : (WebSocketStub as any),
   },
 });
