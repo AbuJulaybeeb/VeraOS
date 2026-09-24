@@ -183,54 +183,54 @@ ALTER TABLE public.verdicts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.corrections ENABLE ROW LEVEL SECURITY;
 
 -- Profiles Policies
-CREATE POLICY Users can view their own profile
+CREATE POLICY "Users can view their own profile"
   ON public.profiles FOR SELECT
   USING (auth.uid() = id);
 
-CREATE POLICY Users can insert their own profile
+CREATE POLICY "Users can insert their own profile"
   ON public.profiles FOR INSERT
   WITH CHECK (auth.uid() = id);
 
-CREATE POLICY Users can update their own profile
+CREATE POLICY "Users can update their own profile"
   ON public.profiles FOR UPDATE
   USING (auth.uid() = id);
 
 -- Agents Policies
-CREATE POLICY Users can view their own agents
+CREATE POLICY "Users can view their own agents"
   ON public.agents FOR SELECT
   USING (auth.uid() = user_id);
 
-CREATE POLICY Users can insert their own agents
+CREATE POLICY "Users can insert their own agents"
   ON public.agents FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
-CREATE POLICY Users can update their own agents
+CREATE POLICY "Users can update their own agents"
   ON public.agents FOR UPDATE
   USING (auth.uid() = user_id);
 
-CREATE POLICY Users can delete their own agents
+CREATE POLICY "Users can delete their own agents"
   ON public.agents FOR DELETE
   USING (auth.uid() = user_id);
 
 -- Verification Runs Policies
-CREATE POLICY Users can view their own verification runs
+CREATE POLICY "Users can view their own verification runs"
   ON public.verification_runs FOR SELECT
   USING (auth.uid() = user_id);
 
-CREATE POLICY Users can create their own verification runs
+CREATE POLICY "Users can create their own verification runs"
   ON public.verification_runs FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
-CREATE POLICY Users can update their own verification runs
+CREATE POLICY "Users can update their own verification runs"
   ON public.verification_runs FOR UPDATE
   USING (auth.uid() = user_id);
 
-CREATE POLICY Users can delete their own verification runs
+CREATE POLICY "Users can delete their own verification runs"
   ON public.verification_runs FOR DELETE
   USING (auth.uid() = user_id);
 
 -- Requirements Policies
-CREATE POLICY Users can view requirements for their runs
+CREATE POLICY "Users can view requirements for their runs"
   ON public.requirements FOR SELECT
   USING (
     EXISTS (
@@ -240,7 +240,7 @@ CREATE POLICY Users can view requirements for their runs
     )
   );
 
-CREATE POLICY Users can insert requirements for their runs
+CREATE POLICY "Users can insert requirements for their runs"
   ON public.requirements FOR INSERT
   WITH CHECK (
     EXISTS (
@@ -250,7 +250,7 @@ CREATE POLICY Users can insert requirements for their runs
     )
   );
 
-CREATE POLICY Users can update requirements for their runs
+CREATE POLICY "Users can update requirements for their runs"
   ON public.requirements FOR UPDATE
   USING (
     EXISTS (
@@ -261,7 +261,7 @@ CREATE POLICY Users can update requirements for their runs
   );
 
 -- Claims Policies
-CREATE POLICY Users can view claims for their runs
+CREATE POLICY "Users can view claims for their runs"
   ON public.claims FOR SELECT
   USING (
     EXISTS (
@@ -271,7 +271,7 @@ CREATE POLICY Users can view claims for their runs
     )
   );
 
-CREATE POLICY Users can insert claims for their runs
+CREATE POLICY "Users can insert claims for their runs"
   ON public.claims FOR INSERT
   WITH CHECK (
     EXISTS (
@@ -282,7 +282,7 @@ CREATE POLICY Users can insert claims for their runs
   );
 
 -- Evidence Policies
-CREATE POLICY Users can view evidence for their runs
+CREATE POLICY "Users can view evidence for their runs"
   ON public.evidence FOR SELECT
   USING (
     EXISTS (
@@ -292,7 +292,7 @@ CREATE POLICY Users can view evidence for their runs
     )
   );
 
-CREATE POLICY Users can insert evidence for their runs
+CREATE POLICY "Users can insert evidence for their runs"
   ON public.evidence FOR INSERT
   WITH CHECK (
     EXISTS (
@@ -303,7 +303,7 @@ CREATE POLICY Users can insert evidence for their runs
   );
 
 -- Verdicts Policies
-CREATE POLICY Users can view verdicts for their runs
+CREATE POLICY "Users can view verdicts for their runs"
   ON public.verdicts FOR SELECT
   USING (
     EXISTS (
@@ -313,7 +313,7 @@ CREATE POLICY Users can view verdicts for their runs
     )
   );
 
-CREATE POLICY Users can insert verdicts for their runs
+CREATE POLICY "Users can insert verdicts for their runs"
   ON public.verdicts FOR INSERT
   WITH CHECK (
     EXISTS (
@@ -324,7 +324,7 @@ CREATE POLICY Users can insert verdicts for their runs
   );
 
 -- Corrections Policies
-CREATE POLICY Users can view corrections for their runs
+CREATE POLICY "Users can view corrections for their runs"
   ON public.corrections FOR SELECT
   USING (
     EXISTS (
@@ -334,7 +334,7 @@ CREATE POLICY Users can view corrections for their runs
     )
   );
 
-CREATE POLICY Users can insert corrections for their runs
+CREATE POLICY "Users can insert corrections for their runs"
   ON public.corrections FOR INSERT
   WITH CHECK (
     EXISTS (
@@ -344,7 +344,7 @@ CREATE POLICY Users can insert corrections for their runs
     )
   );
 
-CREATE POLICY Users can update corrections for their runs
+CREATE POLICY "Users can update corrections for their runs"
   ON public.corrections FOR UPDATE
   USING (
     EXISTS (
@@ -370,7 +370,7 @@ BEGIN
     COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.raw_user_meta_data->>'name', split_part(NEW.email, '@', 1)),
     COALESCE(NEW.raw_user_meta_data->>'avatar_url', NEW.raw_user_meta_data->>'picture', NULL),
     'operator',
-    'vera_live_' || encode(gen_random_bytes(12), 'hex')
+    'vera_live_' || md5(random()::text || clock_timestamp()::text)
   )
   ON CONFLICT (id) DO UPDATE SET
     email = EXCLUDED.email,
