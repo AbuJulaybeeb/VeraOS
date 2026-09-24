@@ -210,8 +210,9 @@ export class RequirementExtractor {
     }
 
     // 9. Web2 Log Monitoring & Payment Flow Reconciliation Extraction
-    // Examples: "reconcile payment logs for batch_2026_09_22", "audit transaction logs", "monitor payment flow"
-    const isLogAuditOrRecon = /\b(?:reconcile|audit|monitor|scan)\s+(?:payment|transaction|webhook|access|charge|order)?\s*(?:logs?|flows?|batch|settlement)\b/i.test(trimmed);
+    // Examples: "reconcile payment logs for batch_2026_09_22", "audit payment gateway logs", "monitor payment flow"
+    const isLogAuditOrRecon =
+      /\b(?:reconcile|audit|monitor|scan)\b.*\b(?:logs?|flows?|batch|settlement|charges?|payments?)\b/i.test(trimmed);
 
     if (isLogAuditOrRecon) {
       // Check for expected volume in fiat ($148,200, $10,000, 10000 USD)
