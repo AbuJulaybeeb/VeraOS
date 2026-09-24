@@ -117,3 +117,47 @@ test("Schemas: TelegramUpdateSchema validates valid updates and rejects malforme
   const invalidRes = TelegramUpdateSchema.safeParse(malformedUpdate);
   assert.equal(invalidRes.success, false);
 });
+
+test("Schemas: VerificationRequestSchema supports hybrid format { task, worker: { id, name }, workerOutput }", () => {
+  const hybrid = {
+    task: "Audit payment gateway logs for 98 charges",
+    worker: {
+      id: "log-bot-42",
+      name: "Financial Audit Worker",
+    },
+    workerOutput: "Audited 100 payment logs. Total volume: $12,450.00. Succeeded: 98, Failed: 2.",
+  };
+
+  const result = VerificationRequestSchema.safeParse(hybrid);
+  assert.equal(result.success, true);
+  if (result.success) {
+    const normalized = normalizeVerificationRequest(result.data);
+    assert.equal(normalized.task, hybrid.task);
+    assert.equal(normalized.worker.id, "log-bot-42");
+    assert.equal(normalized.worker.name, "Financial Audit Worker");
+    assert.equal(normalized.worker.output, hybrid.workerOutput);
+  }
+});
+
+test("Schemas: VerificationRequestSchema supports flat format with options and webhookUrl", () => {
+  const flat = {
+    task: "Swap 50 USDC for 425 XLM on Soroswap",
+    workerId: "trading-agent-07",
+    workerName: "Arbitrage Execution Bot",
+    workerOutput: "Swapped 50 USDC for 425 XLM on Soroswap. Tx: 46129d6b...",
+    options: {
+      webhookUrl: "https://agent-runner.internal/api/vera/callback",
+      maxAttempts: 3,
+    },
+  };
+
+  const result = VerificationRequestSchema.safeParse(flat);
+  assert.equal(result.success, true);
+  if (result.success) {
+    const normalized = normalizeVerificationRequest(result.data);
+    assert.equal(normalized.worker.id, "trading-agent-07");
+    assert.equal(normalized.worker.name, "Arbitrage Execution Bot");
+    assert.equal(normalized.options?.webhookUrl, "https://agent-runner.internal/api/vera/callback");
+  }
+});
+

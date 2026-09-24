@@ -634,6 +634,26 @@ export async function handleApiRequest(
         record, // complete record for frontend consumption
       };
 
+      // Dispatch asynchronous webhook callback if requested by caller
+      if (normalizedRequest.options?.webhookUrl) {
+        const webhookUrl = normalizedRequest.options.webhookUrl;
+        Promise.resolve().then(async () => {
+          try {
+            await fetch(webhookUrl, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "User-Agent": "VeraOS-Webhook-Dispatcher/0.2.0",
+              },
+              body: JSON.stringify(responsePayload),
+              signal: AbortSignal.timeout(5000),
+            });
+          } catch (webhookErr) {
+            console.error(`[Webhook] Failed to dispatch verification callback to ${webhookUrl}:`, webhookErr);
+          }
+        });
+      }
+
       sendJson(res, 201, responsePayload);
       return true;
     }

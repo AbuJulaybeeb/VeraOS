@@ -114,6 +114,7 @@ export interface VerificationRequest {
   options?: {
     evidenceSources?: string[];
     maxAttempts?: number;
+    webhookUrl?: string;
   };
 }
 

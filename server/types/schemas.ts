@@ -20,10 +20,12 @@ export const VerificationRequestSchema = z
       .object({
         id: z.string().optional(),
         name: z.string().optional(),
-        output: z.string().min(1, "Worker output cannot be empty"),
+        output: z.string().min(1, "Worker output cannot be empty").optional(),
         workerId: z.string().optional(),
       })
       .optional(),
+    workerId: z.string().optional(),
+    workerName: z.string().optional(),
     workerOutput: z
       .union([
         z.string().min(1),
@@ -39,6 +41,7 @@ export const VerificationRequestSchema = z
       .object({
         evidenceSources: z.array(z.string()).optional(),
         maxAttempts: z.number().int().positive().optional(),
+        webhookUrl: z.string().url("Invalid webhook URL").optional(),
         deterministicOverride: z
           .object({
             actualPaymentAmount: z.number().optional(),
@@ -99,14 +102,20 @@ export function normalizeVerificationRequest(data: VerificationRequestInput) {
   const workerId =
     data.worker?.workerId ||
     data.worker?.id ||
+    data.workerId ||
     (typeof data.workerOutput === "object" ? data.workerOutput?.workerId : undefined) ||
     "worker-agent";
+
+  const workerName =
+    data.worker?.name ||
+    data.workerName ||
+    "Agent Worker";
 
   return {
     task: task.trim(),
     worker: {
       id: workerId,
-      name: data.worker?.name || "Agent Worker",
+      name: workerName,
       output: output.trim(),
     },
     telegramUserId: data.telegramUserId,
