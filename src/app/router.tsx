@@ -4,9 +4,13 @@ import { AppShell } from "../components/layout/AppShell";
 import { AuthModal } from "../components/auth/AuthModal";
 import { AgentConnectModal } from "../components/agent/AgentConnectModal";
 import { RouteErrorFallback } from "../components/common/RouteErrorFallback";
+import { ProtectedRoute } from "../components/auth/ProtectedRoute";
 
 const LandingPage = lazy(() =>
   import("../pages/LandingPage").then((m) => ({ default: m.LandingPage }))
+);
+const AuthCallback = lazy(() =>
+  import("../pages/AuthCallback").then((m) => ({ default: m.AuthCallback }))
 );
 const Dashboard = lazy(() =>
   import("../pages/Dashboard").then((m) => ({ default: m.Dashboard }))
@@ -87,6 +91,15 @@ export const router = createBrowserRouter([
         ),
       },
       {
+        path: "/auth/callback",
+        errorElement: <RouteErrorFallback />,
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <AuthCallback />
+          </Suspense>
+        ),
+      },
+      {
         path: "/get-started",
         element: <Navigate to="/welcome" replace />,
       },
@@ -113,9 +126,13 @@ export const router = createBrowserRouter([
         ),
       },
 
-      // App Shell Routes (Full app layout with sidebar and header)
+      // Protected App Shell Routes (Requires Active Authentication)
       {
-        element: <AppShell />,
+        element: (
+          <ProtectedRoute>
+            <AppShell />
+          </ProtectedRoute>
+        ),
         errorElement: <RouteErrorFallback />,
         children: [
           {
@@ -215,18 +232,26 @@ export const router = createBrowserRouter([
             ),
           },
           {
-            path: "/docs",
-            element: (
-              <Suspense fallback={<PageLoader />}>
-                <Docs />
-              </Suspense>
-            ),
-          },
-          {
             path: "/account",
             element: (
               <Suspense fallback={<PageLoader />}>
                 <Account />
+              </Suspense>
+            ),
+          },
+        ],
+      },
+
+      // Unprotected Documentation & Fallback Routes in AppShell
+      {
+        element: <AppShell />,
+        errorElement: <RouteErrorFallback />,
+        children: [
+          {
+            path: "/docs",
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <Docs />
               </Suspense>
             ),
           },

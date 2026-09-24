@@ -1,12 +1,21 @@
-import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { TELEGRAM_BOT_URL, GITHUB_REPO_URL } from "../config/env";
+import { useAuth } from "../context/AuthContext";
 
 export const LandingPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { openAuthModal } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeStage, setActiveStage] = useState<number>(0);
+
+  useEffect(() => {
+    if ((location.state as any)?.openAuth) {
+      openAuthModal("signin");
+    }
+  }, [location.state, openAuthModal]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
