@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { supabase, isSupabaseConfigured } from "../lib/supabase";
+import { supabaseAuthService } from "../services/supabaseAuth";
 
 export interface User {
   id: string;
@@ -22,6 +24,7 @@ interface StoredAccount extends User {
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
+  loading: boolean;
   isAuthModalOpen: boolean;
   authModalMode: "signin" | "signup";
   openAuthModal: (mode?: "signin" | "signup") => void;
@@ -81,20 +84,115 @@ const DEFAULT_DEMO_USER: User = {
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [loading, setLoading] = useState<boolean>(() => {
+    return isSupabaseConfigured;
+  });
+
   const [user, setUser] = useState<User | null>(() => {
     try {
       if (localStorage.getItem("vera_logged_out") === "1") {
         return null;
       }
       const stored = localStorage.getItem(STORAGE_AUTH_KEY);
-      return stored ? JSON.parse(stored) : DEFAULT_DEMO_USER;
+      return stored ? JSON.parse(stored) : (isSupabaseConfigured ? null : DEFAULT_DEMO_USER);
     } catch {
-      return DEFAULT_DEMO_USER;
+      return isSupabaseConfigured ? null : DEFAULT_DEMO_USER;
     }
   });
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authModalMode, setAuthModalMode] = useState<"signin" | "signup">("signup");
+
+  // Supabase real session listener and sync
+  useEffect(() => {
+    if (!isSupabaseConfigured) {
+      setLoading(false);
+      return;
+    }
+
+    let isMounted = true;
+
+    // 1. Initial session check
+    supabase.auth
+      .getSession()
+      .then(async ({ data: { session } }) => {
+        if (!isMounted) return;
+        if (session?.user) {
+          try {
+            const profile = await supabaseAuthService.syncUserProfile(session.user);
+            if (!isMounted) return;
+            const activeUser: User = {
+              id: session.user.id,
+              name:
+                profile?.full_name ||
+                session.user.user_metadata?.full_name ||
+                session.user.email?.split("@")[0] ||
+                "Operator",
+              email: session.user.email || "",
+              role: profile?.role || "operator",
+              avatar: profile?.avatar_url || session.user.user_metadata?.avatar_url,
+              walletAddress: profile?.stellar_wallet || undefined,
+              authProvider: "google",
+              googleId: session.user.id,
+              invitationStatus: "invited",
+              createdAt: profile?.created_at || session.user.created_at,
+              apiKey: profile?.api_key || `vera_live_${session.user.id.slice(0, 8)}`,
+            };
+            setUser(activeUser);
+            localStorage.removeItem("vera_logged_out");
+          } catch (e) {
+            console.error("Error synchronizing session user:", e);
+          }
+        } else {
+          if (localStorage.getItem("vera_logged_out") === "1") {
+            setUser(null);
+          }
+        }
+        setLoading(false);
+      })
+      .catch(() => {
+        if (isMounted) setLoading(false);
+      });
+
+    // 2. Auth state subscription
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!isMounted) return;
+      if (session?.user) {
+        const profile = await supabaseAuthService.syncUserProfile(session.user);
+        if (!isMounted) return;
+        const activeUser: User = {
+          id: session.user.id,
+          name:
+            profile?.full_name ||
+            session.user.user_metadata?.full_name ||
+            session.user.email?.split("@")[0] ||
+            "Operator",
+          email: session.user.email || "",
+          role: profile?.role || "operator",
+          avatar: profile?.avatar_url || session.user.user_metadata?.avatar_url,
+          walletAddress: profile?.stellar_wallet || undefined,
+          authProvider: "google",
+          googleId: session.user.id,
+          invitationStatus: "invited",
+          createdAt: profile?.created_at || session.user.created_at,
+          apiKey: profile?.api_key || `vera_live_${session.user.id.slice(0, 8)}`,
+        };
+        setUser(activeUser);
+        localStorage.removeItem("vera_logged_out");
+      } else if (event === "SIGNED_OUT") {
+        setUser(null);
+        localStorage.setItem("vera_logged_out", "1");
+      }
+      setLoading(false);
+    });
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
 
   useEffect(() => {
     try {
@@ -326,6 +424,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     picture?: string;
     sub?: string;
   }): Promise<boolean> => {
+    // Real Supabase Google OAuth
+    if (isSupabaseConfigured) {
+      const { error } = await supabaseAuthService.signInWithGoogle();
+      if (error) {
+        console.error("[AuthContext] Supabase Google OAuth error:", error);
+        throw error;
+      }
+      return true;
+    }
+
     const targetEmail = (options?.email || "").trim().toLowerCase();
     const targetName = options?.name || (targetEmail ? targetEmail.split("@")[0] : "Google Operator");
 
@@ -521,6 +629,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const updateProfile = async (data: { name?: string; role?: string }): Promise<boolean> => {
     if (!user) throw new Error("Not logged in");
+    if (isSupabaseConfigured) {
+      await supabaseAuthService.updateProfile(user.id, {
+        full_name: data.name,
+        role: data.role,
+      });
+    }
     try {
       const res = await fetch("/v1/auth/profile", {
         method: "PUT",
@@ -604,6 +718,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
+    if (isSupabaseConfigured) {
+      supabaseAuthService.signOut().catch((err) => console.warn("Supabase signOut error:", err));
+    }
     setUser(null);
     try {
       localStorage.setItem("vera_logged_out", "1");
@@ -619,6 +736,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       value={{
         user,
         isAuthenticated: !!user,
+        loading,
         isAuthModalOpen,
         authModalMode,
         openAuthModal,

@@ -1,9 +1,22 @@
 import { Agent } from "../types/agent";
+import { isSupabaseConfigured } from "../lib/supabase";
+import { supabaseAgentsService } from "./supabaseAgents";
 import {
   STORAGE_KEYS,
   getFromStorage,
   saveToStorage,
 } from "./api";
+
+function getCurrentUserId(): string | null {
+  try {
+    const raw = localStorage.getItem("vera_auth_user_v1");
+    if (raw) {
+      const user = JSON.parse(raw);
+      if (user?.id) return user.id;
+    }
+  } catch {}
+  return null;
+}
 
 const defaultTestAgents: Agent[] = [
   {
@@ -64,9 +77,22 @@ function formatAgentRecord(raw: any): Agent {
 
 export const agentsApi = {
   async list(userId?: string): Promise<Agent[]> {
+    const uid = userId || getCurrentUserId();
+    if (isSupabaseConfigured && uid) {
+      try {
+        const dbAgents = await supabaseAgentsService.listAgents(uid);
+        if (dbAgents && dbAgents.length > 0) {
+          persistAgents(dbAgents);
+          return dbAgents;
+        }
+      } catch (err) {
+        console.warn("[agentsApi] Error fetching agents from Supabase:", err);
+      }
+    }
+
     if (typeof window !== "undefined") {
       try {
-        const url = userId ? `/v1/agents?userId=${encodeURIComponent(userId)}` : "/v1/agents";
+        const url = uid ? `/v1/agents?userId=${encodeURIComponent(uid)}` : "/v1/agents";
         const res = await fetch(url);
         if (res.ok) {
           const data = (await res.json()) as any[];
@@ -112,6 +138,21 @@ export const agentsApi = {
     stellarAccount?: string;
     userId?: string;
   }): Promise<Agent> {
+    const uid = data.userId || getCurrentUserId();
+    if (isSupabaseConfigured && uid) {
+      try {
+        const dbAgent = await supabaseAgentsService.connectAgent(uid, data);
+        if (dbAgent) {
+          const list = getStoredAgents();
+          const updated = [dbAgent, ...list.filter((a) => a.id !== dbAgent.id)];
+          persistAgents(updated);
+          return dbAgent;
+        }
+      } catch (err) {
+        console.warn("[agentsApi] Error connecting agent in Supabase:", err);
+      }
+    }
+
     const list = getStoredAgents();
     const id =
       data.id ||
@@ -173,6 +214,15 @@ export const agentsApi = {
   },
 
   async disconnect(id: string): Promise<Agent | null> {
+    const uid = getCurrentUserId();
+    if (isSupabaseConfigured && uid) {
+      try {
+        await supabaseAgentsService.disconnectAgent(uid, id);
+      } catch (err) {
+        console.warn("[agentsApi] Error disconnecting agent in Supabase:", err);
+      }
+    }
+
     const list = getStoredAgents();
     const target = list.find((a) => a.id === id);
     if (!target) return null;
