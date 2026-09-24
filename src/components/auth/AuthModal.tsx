@@ -18,60 +18,62 @@ export const AuthModal: React.FC = () => {
     setErrorMsg(null);
     setIsSubmitting(true);
 
-    const win = typeof window !== "undefined" ? (window as any) : {};
-    const clientId = ((import.meta as any).env?.VITE_GOOGLE_CLIENT_ID || "").trim();
-
-    if (clientId && win.google?.accounts?.oauth2) {
-      try {
-        const client = win.google.accounts.oauth2.initTokenClient({
-          client_id: clientId,
-          scope: "email profile openid",
-          prompt: "select_account",
-          callback: async (resp: any) => {
-            if (resp.error) {
-              setErrorMsg(resp.error_description || "Google authentication was cancelled.");
-              setIsSubmitting(false);
-              return;
-            }
-            try {
-              await loginWithGoogle({ accessToken: resp.access_token });
-              closeAuthModal();
-              navigate("/dashboard");
-            } catch (err: any) {
-              setErrorMsg(err?.message || "Google authentication failed.");
-            } finally {
-              setIsSubmitting(false);
-            }
-          },
-          error_callback: (err: any) => {
-            console.warn("[AuthModal] GSI error callback:", err);
-            setIsSubmitting(false);
-            setShowManualInput(true);
-          },
-        });
-        client.requestAccessToken();
-        return;
-      } catch (err) {
-        console.warn("[AuthModal] GSI error:", err);
-      }
-    }
-
-    const emailToUse = customEmail || googleEmail;
-    if (emailToUse && emailToUse.includes("@")) {
-      try {
-        await loginWithGoogle({ email: emailToUse.trim().toLowerCase() });
+    try {
+      if (customEmail) {
+        await loginWithGoogle({ email: customEmail.trim().toLowerCase() });
         closeAuthModal();
         navigate("/dashboard");
-      } catch (err: any) {
-        setErrorMsg(err?.message || "Google authentication failed.");
-      } finally {
-        setIsSubmitting(false);
+        return;
       }
-      return;
-    }
 
-    setIsSubmitting(false);
-    setShowManualInput(true);
+      const win = typeof window !== "undefined" ? (window as any) : {};
+      const clientId = ((import.meta as any).env?.VITE_GOOGLE_CLIENT_ID || "").trim();
+
+      if (clientId && win.google?.accounts?.oauth2) {
+        try {
+          const client = win.google.accounts.oauth2.initTokenClient({
+            client_id: clientId,
+            scope: "email profile openid",
+            prompt: "select_account",
+            callback: async (resp: any) => {
+              if (resp.error) {
+                setErrorMsg(resp.error_description || "Google authentication was cancelled.");
+                setIsSubmitting(false);
+                return;
+              }
+              try {
+                await loginWithGoogle({ accessToken: resp.access_token });
+                closeAuthModal();
+                navigate("/dashboard");
+              } catch (err: any) {
+                setErrorMsg(err?.message || "Google authentication failed.");
+              } finally {
+                setIsSubmitting(false);
+              }
+            },
+            error_callback: (err: any) => {
+              console.warn("[AuthModal] GSI error callback:", err);
+              setIsSubmitting(false);
+              setShowManualInput(true);
+            },
+          });
+          client.requestAccessToken();
+          return;
+        } catch (err) {
+          console.warn("[AuthModal] GSI error:", err);
+        }
+      }
+
+      // Trigger Supabase Google OAuth (or fallback)
+      await loginWithGoogle();
+      closeAuthModal();
+      navigate("/dashboard");
+    } catch (err: any) {
+      setErrorMsg(err?.message || "Google authentication failed.");
+      setShowManualInput(true);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (

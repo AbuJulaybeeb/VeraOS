@@ -2,11 +2,24 @@ import {
   VerificationRecord,
   CreateVerificationInput,
 } from "../types/verification";
+import { isSupabaseConfigured } from "../lib/supabase";
+import { supabaseVerificationsService } from "./supabaseVerifications";
 import {
   STORAGE_KEYS,
   getFromStorage,
   saveToStorage,
 } from "./api";
+
+function getCurrentUserId(): string | null {
+  try {
+    const raw = localStorage.getItem("vera_auth_user_v1");
+    if (raw) {
+      const user = JSON.parse(raw);
+      if (user?.id) return user.id;
+    }
+  } catch {}
+  return null;
+}
 
 function getStoredVerifications(): VerificationRecord[] {
   return getFromStorage<VerificationRecord[]>(
@@ -24,6 +37,19 @@ export const verificationApi = {
     status?: string;
     search?: string;
   }): Promise<VerificationRecord[]> {
+    const uid = getCurrentUserId();
+    if (isSupabaseConfigured && uid) {
+      try {
+        const records = await supabaseVerificationsService.listVerifications(uid, filters);
+        if (records && records.length > 0) {
+          persistVerifications(records);
+          return records;
+        }
+      } catch (err) {
+        console.warn("[verificationApi] Supabase list error:", err);
+      }
+    }
+
     try {
       const params = new URLSearchParams();
       if (filters?.status && filters.status !== "ALL") params.set("status", filters.status);
@@ -61,6 +87,16 @@ export const verificationApi = {
   },
 
   async get(id: string): Promise<VerificationRecord | null> {
+    const uid = getCurrentUserId();
+    if (isSupabaseConfigured && uid) {
+      try {
+        const record = await supabaseVerificationsService.getVerification(id, uid);
+        if (record) return record;
+      } catch (err) {
+        console.warn("[verificationApi] Supabase get error:", err);
+      }
+    }
+
     try {
       const res = await fetch(`/v1/verify/${encodeURIComponent(id)}`);
       if (res.ok) {
@@ -79,33 +115,52 @@ export const verificationApi = {
   },
 
   async create(input: CreateVerificationInput): Promise<VerificationRecord> {
-    const res = await fetch("/v1/verify", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        task: input.taskPrompt,
-        worker: {
-          id: input.workerId || "worker-alpha-09",
-          name: input.workerName || "Autonomous Worker",
-          output: input.workerOutput,
-        },
-        options: {
-          maxAttempts: input.maxAttempts || 3,
-          evidenceSources: input.evidenceSources,
-        },
-      }),
-    });
-
-    if (!res.ok) {
-      const errData = await res.json().catch(() => ({}));
-      throw new Error(errData.message || errData.error || `Verification failed (HTTP ${res.status})`);
+    const uid = getCurrentUserId();
+    if (isSupabaseConfigured && uid) {
+      try {
+        const record = await supabaseVerificationsService.createVerification(uid, input);
+        const list = getStoredVerifications();
+        persistVerifications([record, ...list.filter((x) => x.id !== record.id)]);
+        return record;
+      } catch (err) {
+        console.warn("[verificationApi] Supabase create error:", err);
+      }
     }
 
-    const data = (await res.json()) as { record?: VerificationRecord } & VerificationRecord;
-    const record = data.record || data;
+    try {
+      const res = await fetch("/v1/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          task: input.taskPrompt,
+          worker: {
+            id: input.workerId || "worker-alpha-09",
+            name: input.workerName || "Autonomous Worker",
+            output: input.workerOutput,
+          },
+          options: {
+            maxAttempts: input.maxAttempts || 3,
+            evidenceSources: input.evidenceSources,
+          },
+        }),
+      });
+
+      if (res.ok) {
+        const data = (await res.json()) as { record?: VerificationRecord } & VerificationRecord;
+        const record = data.record || data;
+        const list = getStoredVerifications();
+        persistVerifications([record, ...list.filter((x) => x.id !== record.id)]);
+        return record;
+      }
+    } catch {
+      // Fallback below
+    }
+
+    // Deterministic fallback execution
+    const fallbackRecord = await supabaseVerificationsService.createVerification(uid || "anon", input);
     const list = getStoredVerifications();
-    persistVerifications([record, ...list.filter((x) => x.id !== record.id)]);
-    return record;
+    persistVerifications([fallbackRecord, ...list.filter((x) => x.id !== fallbackRecord.id)]);
+    return fallbackRecord;
   },
 
   async resubmit(
@@ -116,26 +171,44 @@ export const verificationApi = {
       txHash?: string;
     }
   ): Promise<VerificationRecord> {
-    const res = await fetch(`/v1/verify/${encodeURIComponent(id)}/resubmit`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        supplementalTxHash: patch?.txHash,
-        workerOutput: patch?.target
-          ? `Remediated target: ${patch.target}\nSupplemental Transfer: ${patch.supplementalAmount || 4.5} USDC TxHash: ${patch.txHash || "0x5f9e2b1892f3900a41cd8a7b3c21a4de99f2b1892f3900a41cd8a7b3c21a4de"}`
-          : undefined,
-      }),
-    });
-
-    if (!res.ok) {
-      const errData = await res.json().catch(() => ({}));
-      throw new Error(errData.message || errData.error || `Resubmission failed (HTTP ${res.status})`);
+    const uid = getCurrentUserId();
+    if (isSupabaseConfigured && uid) {
+      try {
+        const record = await supabaseVerificationsService.resubmitVerification(uid, id, patch);
+        const list = getStoredVerifications();
+        persistVerifications(list.map((r) => (r.id === record.id || r.displayId === record.displayId ? record : r)));
+        return record;
+      } catch (err) {
+        console.warn("[verificationApi] Supabase resubmit error:", err);
+      }
     }
 
-    const record = (await res.json()) as VerificationRecord;
+    try {
+      const res = await fetch(`/v1/verify/${encodeURIComponent(id)}/resubmit`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          supplementalTxHash: patch?.txHash,
+          workerOutput: patch?.target
+            ? `Remediated target: ${patch.target}\nSupplemental Transfer: ${patch.supplementalAmount || 4.5} USDC TxHash: ${patch.txHash || "0x5f9e2b1892f3900a41cd8a7b3c21a4de99f2b1892f3900a41cd8a7b3c21a4de"}`
+            : undefined,
+        }),
+      });
+
+      if (res.ok) {
+        const record = (await res.json()) as VerificationRecord;
+        const list = getStoredVerifications();
+        persistVerifications(list.map((r) => (r.id === record.id || r.displayId === record.displayId ? record : r)));
+        return record;
+      }
+    } catch {
+      // Fallback
+    }
+
+    const fallbackRecord = await supabaseVerificationsService.resubmitVerification(uid || "anon", id, patch);
     const list = getStoredVerifications();
-    persistVerifications(list.map((r) => (r.id === record.id || r.displayId === record.displayId ? record : r)));
-    return record;
+    persistVerifications(list.map((r) => (r.id === fallbackRecord.id || r.displayId === fallbackRecord.displayId ? fallbackRecord : r)));
+    return fallbackRecord;
   },
 
   async clearLocalCache(): Promise<void> {
