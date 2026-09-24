@@ -6,28 +6,39 @@ export const VerificationProcessing: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { verification } = useVerification(id);
-  const [secondsElapsed, setSecondsElapsed] = useState(34);
-  const [progress, setProgress] = useState(64);
+  const [secondsElapsed, setSecondsElapsed] = useState(0);
+  const [progress, setProgress] = useState(25);
 
+  const isResolved =
+    Boolean(verification && verification.status && verification.status !== "PENDING" && verification.status !== "RUNNING");
+
+  // Timer for elapsed seconds
   useEffect(() => {
     const timer = setInterval(() => {
       setSecondsElapsed((prev) => prev + 1);
     }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Smooth progress increment and auto-redirect
+  useEffect(() => {
+    if (isResolved) {
+      setProgress(100);
+      const redirectTimer = setTimeout(() => {
+        if (id) navigate(`/verify/${id}`);
+      }, 700);
+      return () => clearTimeout(redirectTimer);
+    }
 
     const progressTimer = setInterval(() => {
       setProgress((prev) => {
-        if (prev < 95) {
-          return prev + 1;
-        }
+        if (prev < 90) return prev + 5;
         return prev;
       });
-    }, 400);
+    }, 300);
 
-    return () => {
-      clearInterval(timer);
-      clearInterval(progressTimer);
-    };
-  }, []);
+    return () => clearInterval(progressTimer);
+  }, [isResolved, id, navigate]);
 
   const formatElapsed = (sec: number) => {
     const mins = Math.floor(sec / 60);
@@ -35,9 +46,15 @@ export const VerificationProcessing: React.FC = () => {
     return `${mins.toString().padStart(2, "0")}:${remaining.toString().padStart(2, "0")} elapsed`;
   };
 
-  const runId = verification?.displayId ? `Run VR-${verification.displayId}` : "Run VR-2984";
-  const agentName = verification?.workerName || "Customer Resolution Agent";
-  const headline = verification?.taskPrompt || "Checking the refund against the original request";
+  const runId = verification?.displayId ? `Run VR-${verification.displayId}` : id ? `Run VR-${id.slice(-6).toUpperCase()}` : "Run Verification";
+  const agentName = verification?.workerName || "Autonomous Agent";
+  const headline = verification?.taskPrompt || "Reviewing agent execution against invariants";
+
+  // Derive stage completion based on real attempt data
+  const latestAttempt = verification?.attempts?.[verification.attempts.length - 1];
+  const invariants = latestAttempt?.invariants || [];
+  const hasEvidence = Boolean(latestAttempt?.evidence && latestAttempt.evidence.length > 0);
+  const hasRequirements = Boolean(invariants.length > 0);
 
   return (
     <div className="max-w-2xl mx-auto w-full flex flex-col gap-6 font-sans pb-12">
@@ -54,7 +71,7 @@ export const VerificationProcessing: React.FC = () => {
           Verification in progress
         </h1>
         <p className="text-xs sm:text-sm text-[#6B635B] mt-1">
-          Vera is reviewing the completed work. You can safely leave this page.
+          Vera is reviewing the completed work deterministically. You can safely leave this page.
         </p>
       </div>
 
@@ -63,7 +80,7 @@ export const VerificationProcessing: React.FC = () => {
         <div className="flex items-center justify-between">
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-[#EFF6FF] text-[#1D4ED8] border border-[#BFDBFE]">
             <span className="w-1.5 h-1.5 rounded-full bg-[#1D4ED8] animate-pulse" />
-            Reviewing evidence
+            {isResolved ? "Verdict finalized" : "Reviewing evidence"}
           </span>
           <span className="font-mono text-xs text-[#6B635B]">
             {formatElapsed(secondsElapsed)}
@@ -107,37 +124,59 @@ export const VerificationProcessing: React.FC = () => {
         </h3>
 
         <div className="flex flex-col gap-3">
-          <div className="flex items-center gap-3">
-            <div className="w-5 h-5 rounded-full bg-[#EAF5EE] text-[#1D7A46] border border-[#CDE5D5] flex items-center justify-center text-xs font-bold shrink-0">
-              ✓
-            </div>
-            <span className="text-sm font-medium text-[#181311]">
-              Refund amount matches the order total
-            </span>
-          </div>
+          {invariants.length > 0 ? (
+            invariants.slice(0, 3).map((inv, idx) => (
+              <div key={inv.id || idx} className="flex items-center gap-3">
+                {inv.status === "PASSED" ? (
+                  <div className="w-5 h-5 rounded-full bg-[#EAF5EE] text-[#1D7A46] border border-[#CDE5D5] flex items-center justify-center text-xs font-bold shrink-0">
+                    ✓
+                  </div>
+                ) : (
+                  <div className="w-5 h-5 rounded-full bg-[#FEF5EB] text-[#B8621B] border border-[#FADCC4] flex items-center justify-center text-xs font-bold shrink-0">
+                    !
+                  </div>
+                )}
+                <span className="text-sm font-medium text-[#181311]">
+                  {inv.name || `Invariant: ${inv.description}`}
+                </span>
+              </div>
+            ))
+          ) : (
+            <>
+              <div className="flex items-center gap-3">
+                <div className="w-5 h-5 rounded-full bg-[#EAF5EE] text-[#1D7A46] border border-[#CDE5D5] flex items-center justify-center text-xs font-bold shrink-0">
+                  ✓
+                </div>
+                <span className="text-sm font-medium text-[#181311]">
+                  Deconstructed task into deterministic invariants
+                </span>
+              </div>
 
-          <div className="flex items-center gap-3">
-            <div className="w-5 h-5 rounded-full bg-[#EAF5EE] text-[#1D7A46] border border-[#CDE5D5] flex items-center justify-center text-xs font-bold shrink-0">
-              ✓
-            </div>
-            <span className="text-sm font-medium text-[#181311]">
-              Customer notification is present
-            </span>
-          </div>
+              <div className="flex items-center gap-3">
+                <div className="w-5 h-5 rounded-full bg-[#EAF5EE] text-[#1D7A46] border border-[#CDE5D5] flex items-center justify-center text-xs font-bold shrink-0">
+                  ✓
+                </div>
+                <span className="text-sm font-medium text-[#181311]">
+                  Extracted agent execution signatures & output claims
+                </span>
+              </div>
 
-          <div className="flex items-center gap-3">
-            <div className="w-5 h-5 rounded-full bg-[#FEF5EB] border border-[#FADCC4] flex items-center justify-center shrink-0">
-              <span className="w-2.5 h-2.5 border-2 border-[#B8621B] border-t-transparent rounded-full animate-spin" />
-            </div>
-            <span className="text-sm font-medium text-[#6B635B]">
-              Confirming the recorded refund reason
-            </span>
-          </div>
+              <div className="flex items-center gap-3">
+                <div className="w-5 h-5 rounded-full bg-[#FEF5EB] border border-[#FADCC4] flex items-center justify-center shrink-0">
+                  <span className="w-2.5 h-2.5 border-2 border-[#B8621B] border-t-transparent rounded-full animate-spin" />
+                </div>
+                <span className="text-sm font-medium text-[#6B635B]">
+                  Corroborating ledger evidence & independent price feeds
+                </span>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
       {/* Card 3: Four Stages list */}
       <div className="bg-white rounded-2xl border border-[#E8E4DC] p-6 shadow-sm flex flex-col divide-y divide-[#E8E4DC]">
+        {/* Stage 1 */}
         <div className="flex items-center justify-between py-3.5 first:pt-0">
           <span className="text-sm font-semibold text-[#181311]">Request understood</span>
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-[#EAF5EE] text-[#1D7A46] border border-[#CDE5D5]">
@@ -146,28 +185,47 @@ export const VerificationProcessing: React.FC = () => {
           </span>
         </div>
 
+        {/* Stage 2 */}
         <div className="flex items-center justify-between py-3.5">
           <span className="text-sm font-semibold text-[#181311]">Work matched</span>
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-[#EAF5EE] text-[#1D7A46] border border-[#CDE5D5]">
             <span className="w-1.5 h-1.5 rounded-full bg-[#1D7A46]" />
-            Complete
+            {hasRequirements ? "Complete" : "In progress"}
           </span>
         </div>
 
+        {/* Stage 3 */}
         <div className="flex items-center justify-between py-3.5">
           <span className="text-sm font-semibold text-[#181311]">Evidence traced</span>
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-[#EFF6FF] text-[#1D4ED8] border border-[#BFDBFE]">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#1D4ED8] animate-pulse" />
-            In progress
-          </span>
+          {hasEvidence || isResolved ? (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-[#EAF5EE] text-[#1D7A46] border border-[#CDE5D5]">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#1D7A46]" />
+              Complete
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-[#EFF6FF] text-[#1D4ED8] border border-[#BFDBFE]">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#1D4ED8] animate-pulse" />
+              In progress
+            </span>
+          )}
         </div>
 
+        {/* Stage 4 */}
         <div className="flex items-center justify-between py-3.5 last:pb-0">
-          <span className="text-sm font-semibold text-[#8C8479]">Verdict prepared</span>
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-[#F3EFEA] text-[#6B635B] border border-[#E8E4DC]">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#8C8479]" />
-            Waiting
+          <span className={`text-sm font-semibold ${isResolved ? "text-[#181311]" : "text-[#8C8479]"}`}>
+            Verdict prepared
           </span>
+          {isResolved ? (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-[#EAF5EE] text-[#1D7A46] border border-[#CDE5D5]">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#1D7A46]" />
+              Complete
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-[#F3EFEA] text-[#6B635B] border border-[#E8E4DC]">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#8C8479]" />
+              Waiting
+            </span>
+          )}
         </div>
       </div>
     </div>

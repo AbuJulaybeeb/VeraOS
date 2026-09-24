@@ -8,30 +8,47 @@ export function useVerification(id?: string) {
   const [error, setError] = useState<string | null>(null);
   const [isResubmitting, setIsResubmitting] = useState<boolean>(false);
 
-  const fetchRecord = useCallback(async () => {
+  const fetchRecord = useCallback(async (isSilent = false) => {
     if (!id) {
       setData(null);
       setLoading(false);
-      return;
+      return null;
     }
-    setLoading(true);
+    if (!isSilent) setLoading(true);
     setError(null);
     try {
       const record = await verificationApi.get(id);
       if (!record) {
-        setError(`Verification ${id} could not be found.`);
+        if (!isSilent) setError(`Verification ${id} could not be found.`);
       } else {
         setData(record);
       }
+      return record;
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load verification");
+      if (!isSilent) setError(err instanceof Error ? err.message : "Failed to load verification");
+      return null;
     } finally {
-      setLoading(false);
+      if (!isSilent) setLoading(false);
     }
   }, [id]);
 
   useEffect(() => {
-    fetchRecord();
+    let isMounted = true;
+    fetchRecord(false);
+
+    // Live polling until verification verdict is finalized
+    const interval = setInterval(async () => {
+      if (!isMounted) return;
+      const rec = await fetchRecord(true);
+      if (rec && rec.status && rec.status !== "PENDING" && rec.status !== "RUNNING") {
+        clearInterval(interval);
+      }
+    }, 1200);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, [fetchRecord]);
 
   const resubmit = useCallback(
