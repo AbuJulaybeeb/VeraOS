@@ -1,12 +1,17 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { TELEGRAM_BOT_URL, GITHUB_REPO_URL } from "../config/env";
+import { useVerificationsList } from "../hooks/useVerification";
 
 export const LandingPage: React.FC = () => {
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeStage, setActiveStage] = useState<number>(0);
+
+  const { verifications } = useVerificationsList();
+  const latestVerification = verifications.length > 0 ? verifications[0] : null;
+  const isPassed = latestVerification ? latestVerification.status === "PASSED" : true;
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -289,65 +294,116 @@ export const LandingPage: React.FC = () => {
         <div className="relative rounded-[28px] sm:rounded-3xl bg-[#160C08] border border-[#2A2320] p-3 sm:p-5 lg:p-6 shadow-2xl text-left max-w-5xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4 lg:gap-6 items-stretch">
             {/* Left Column: Bronze Robot Portrait */}
-            <div className="md:col-span-5 rounded-2xl overflow-hidden bg-[#181311] min-h-[300px] md:min-h-[440px] flex items-center justify-center border border-white/5">
+            <div className="md:col-span-5 rounded-2xl overflow-hidden bg-[#181311] min-h-[300px] md:min-h-[440px] flex items-center justify-center border border-white/5 relative">
               <img
                 src="/assets/hero-robot-art.png"
                 alt="VeraOS Verification Core Robot"
                 className="w-full h-full object-cover object-center"
               />
+              <div className="absolute bottom-3 left-3 bg-[#181311]/80 backdrop-blur-md px-2.5 py-1 rounded-lg border border-white/10 text-[10px] text-[#FAF8F5] font-mono flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#1D7A46] animate-pulse" />
+                <span>ACTIVE VERIFIER: {latestVerification?.displayId || "V-8915"}</span>
+              </div>
             </div>
 
             {/* Right Column: Clean White Product Review Card */}
             <div className="md:col-span-7 rounded-2xl bg-white p-6 sm:p-8 lg:p-10 flex flex-col justify-between text-left border border-[#E8E4DC] shadow-sm">
               <div>
-                {/* Passed Status Badge */}
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#EAF5EE] text-[#1D7A46] text-xs font-semibold w-fit mb-4">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#1D7A46]" />
-                  <span>Passed</span>
+                {/* Status Badge */}
+                <div
+                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold w-fit mb-4 ${
+                    isPassed
+                      ? "bg-[#EAF5EE] text-[#1D7A46]"
+                      : "bg-[#FDF2F2] text-[#991B1B]"
+                  }`}
+                >
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full ${
+                      isPassed ? "bg-[#1D7A46]" : "bg-[#991B1B]"
+                    }`}
+                  />
+                  <span>
+                    {latestVerification
+                      ? latestVerification.status === "PASSED"
+                        ? "Verified On-Chain"
+                        : latestVerification.status === "FAILED"
+                        ? "Verification Failed"
+                        : latestVerification.status
+                      : "Verified On-Chain"}
+                  </span>
                 </div>
 
                 {/* Primary Verdict Headline */}
-                <h2 className="font-heading font-extrabold text-2xl sm:text-3xl lg:text-[34px] text-[#191513] tracking-tight leading-[1.2] mb-3">
-                  The customer refund was completed correctly.
+                <h2 className="font-heading font-extrabold text-2xl sm:text-3xl lg:text-[30px] text-[#191513] tracking-tight leading-[1.2] mb-3 line-clamp-2">
+                  {latestVerification
+                    ? latestVerification.taskPrompt
+                    : "Transfer 5 USDC on Stellar Testnet confirmed on ledger."}
                 </h2>
 
                 {/* Explanation Subtitle */}
                 <p className="text-xs sm:text-sm text-[#6B635B] leading-relaxed mb-6">
-                  Vera matched the request to the refund record, customer notification, and policy approval.
+                  {latestVerification
+                    ? latestVerification.attempts?.[0]?.summary ||
+                      `Attested across ${latestVerification.network || "Stellar"} with independent ledger corroboration.`
+                    : "Vera matched the agent claim to the Stellar Horizon ledger receipt, destination account, and USDC asset balance."}
                 </p>
 
                 {/* Verification Confidence Bar */}
                 <div className="mb-6">
-                  <div className="text-[11px] font-semibold text-[#6B635B] tracking-wide mb-1.5">
-                    Verification confidence
+                  <div className="text-[11px] font-semibold text-[#6B635B] tracking-wide mb-1.5 flex justify-between">
+                    <span>Verification confidence</span>
+                    <span className="font-mono text-[10px] text-[#6B635B]">
+                      {latestVerification?.quorum || "Stellar Horizon + Deterministic Kernel"}
+                    </span>
                   </div>
-                  <div className="text-xs sm:text-sm font-bold text-[#1D7A46] mb-2.5">
-                    96% high confidence
+                  <div
+                    className={`text-xs sm:text-sm font-bold mb-2.5 ${
+                      isPassed ? "text-[#1D7A46]" : "text-[#991B1B]"
+                    }`}
+                  >
+                    {isPassed ? "100% deterministic confidence" : "0% invariant violation"}
                   </div>
                   <div className="w-full h-1.5 bg-[#E8E4DC] rounded-full overflow-hidden">
-                    <div className="h-full bg-[#1D7A46] rounded-full w-[96%]" />
+                    <div
+                      className={`h-full rounded-full transition-all duration-500 ${
+                        isPassed ? "bg-[#1D7A46] w-full" : "bg-[#991B1B] w-[35%]"
+                      }`}
+                    />
                   </div>
                 </div>
 
                 {/* Evidence Reviewed Container */}
                 <div className="p-4 sm:p-5 rounded-xl border border-[#E8E4DC] bg-[#FAF8F5]/60 mb-6">
-                  <div className="font-bold text-xs sm:text-sm text-[#191513] mb-1">
-                    Evidence reviewed
+                  <div className="font-bold text-xs sm:text-sm text-[#191513] mb-1 flex items-center justify-between">
+                    <span>Evidence reviewed</span>
+                    <span className="text-[11px] font-mono text-[#D97736]">
+                      {latestVerification?.workerName || "Autonomous Worker"}
+                    </span>
                   </div>
                   <div className="text-xs text-[#6B635B] leading-relaxed">
-                    3 strong sources · 0 conflicts · all requirements addressed
+                    {latestVerification
+                      ? `${latestVerification.attempts?.[0]?.evidence?.length || 3} independent sources · ${
+                          latestVerification.status === "PASSED" ? "0 conflicts" : "violations detected"
+                        } · ${latestVerification.network || "Stellar Testnet"}`
+                      : "3 strong sources · 0 conflicts · all requirements addressed"}
                   </div>
                 </div>
               </div>
 
               {/* Bottom Action CTA */}
-              <div>
+              <div className="flex flex-wrap items-center gap-3">
                 <Link
-                  to="/verify/VR-2984"
+                  to={latestVerification ? `/verify/${latestVerification.id}` : "/verifications"}
                   className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[#181311] hover:bg-[#2A2422] text-white text-xs sm:text-sm font-semibold transition-all cursor-pointer w-fit shadow-sm hover:shadow"
                 >
                   <span>Open verification report</span>
                   <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+                </Link>
+                <Link
+                  to="/verifications"
+                  className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-[#FAF8F5] hover:bg-[#EAE5DE] text-[#191513] border border-[#E8E4DC] text-xs sm:text-sm font-medium transition-all"
+                >
+                  <span>View All ({verifications.length})</span>
                 </Link>
               </div>
             </div>
@@ -465,97 +521,154 @@ export const LandingPage: React.FC = () => {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 rounded-2xl bg-[#F7F5F0] border border-[#E8E4DC] mb-8">
             <div>
               <p className="font-mono text-[10px] text-[#6B635B] uppercase">Agent ID</p>
-              <p className="font-heading font-bold text-sm text-[#191513] mt-0.5">
-                ResearchAgent VR-2048
+              <p className="font-heading font-bold text-sm text-[#191513] mt-0.5 truncate">
+                {latestVerification ? latestVerification.workerName || latestVerification.workerId : "ResearchAgent VR-2048"}
               </p>
             </div>
             <div>
               <p className="font-mono text-[10px] text-[#6B635B] uppercase">Claims Tested</p>
               <p className="font-heading font-bold text-sm text-[#191513] mt-0.5">
-                7 Claims
+                {latestVerification ? `${latestVerification.attempts?.[0]?.workerClaims?.length || 2} Claims` : "7 Claims"}
               </p>
             </div>
             <div>
               <p className="font-mono text-[10px] text-[#6B635B] uppercase">Independent Sources</p>
               <p className="font-heading font-bold text-sm text-[#191513] mt-0.5">
-                11 Sources
+                {latestVerification ? `${latestVerification.attempts?.[0]?.evidence?.length || 3} Sources` : "11 Sources"}
               </p>
             </div>
             <div>
               <p className="font-mono text-[10px] text-[#6B635B] uppercase">Verdict</p>
-              <p className="font-heading font-bold text-sm text-[#1D7A46] mt-0.5 flex items-center gap-1">
-                <span className="material-symbols-outlined text-[16px]">check_circle</span>
-                <span>100% PASS</span>
+              <p
+                className={`font-heading font-bold text-sm mt-0.5 flex items-center gap-1 ${
+                  isPassed ? "text-[#1D7A46]" : "text-[#991B1B]"
+                }`}
+              >
+                <span className="material-symbols-outlined text-[16px]">
+                  {isPassed ? "check_circle" : "cancel"}
+                </span>
+                <span>{isPassed ? "100% PASS" : "FAILED"}</span>
               </p>
             </div>
           </div>
 
           {/* Matrix Checks List */}
           <div className="space-y-3 font-sans">
-            {[
-              {
-                id: "CHK-01",
-                label: "Liquidity pool balance delta matched Uniswap v3 sub-graph",
-                source: "Uniswap V3 RPC & Etherscan",
-                status: "PASS",
-                confidence: "100%",
-              },
-              {
-                id: "CHK-02",
-                label: "Gas expenditure strictly within SLA bounds (< 0.015 ETH)",
-                source: "Base L2 Execution Node",
-                status: "PASS",
-                confidence: "100%",
-              },
-              {
-                id: "CHK-03",
-                label: "Output token recipient matched multisig vault address",
-                source: "Safe Protocol Registry",
-                status: "PASS",
-                confidence: "100%",
-              },
-              {
-                id: "CHK-04",
-                label: "Slippage tolerance strictly maintained under 0.5% threshold",
-                source: "Chainlink Price Feed Oracle",
-                status: "PASS",
-                confidence: "100%",
-              },
-            ].map((check) => (
-              <div
-                key={check.id}
-                className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border border-[#E8E4DC] hover:border-[#D5CEC5] bg-white transition-colors gap-3"
-              >
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-full bg-[#EAF5EE] text-[#1D7A46] flex items-center justify-center shrink-0 mt-0.5">
-                    <span className="material-symbols-outlined text-[16px]">check</span>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-[#191513]">
-                      {check.label}
-                    </p>
-                    <p className="font-mono text-[11px] text-[#6B635B] mt-0.5">
-                      Ground truth source: {check.source}
-                    </p>
-                  </div>
-                </div>
+            {latestVerification && latestVerification.attempts?.[0]?.invariants?.length
+              ? latestVerification.attempts[0].invariants.map((inv, idx) => (
+                  <div
+                    key={inv.id || idx}
+                    className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border border-[#E8E4DC] hover:border-[#D5CEC5] bg-white transition-colors gap-3"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div
+                        className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
+                          inv.status === "PASSED"
+                            ? "bg-[#EAF5EE] text-[#1D7A46]"
+                            : "bg-[#FDF2F2] text-[#991B1B]"
+                        }`}
+                      >
+                        <span className="material-symbols-outlined text-[16px]">
+                          {inv.status === "PASSED" ? "check" : "close"}
+                        </span>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-[#191513]">
+                          {inv.name || inv.description}
+                        </p>
+                        <p className="font-mono text-[11px] text-[#6B635B] mt-0.5">
+                          Observed: {inv.actual} • Expected: {inv.expected}
+                        </p>
+                      </div>
+                    </div>
 
-                <div className="flex items-center gap-3 shrink-0 sm:self-center self-end">
-                  <span className="font-mono text-xs text-[#6B635B]">
-                    Conf: {check.confidence}
-                  </span>
-                  <span className="px-2.5 py-1 rounded-full text-xs font-bold font-mono bg-[#EAF5EE] text-[#1D7A46] border border-[#CDE5D5]">
-                    {check.status}
-                  </span>
-                </div>
-              </div>
-            ))}
+                    <div className="flex items-center gap-3 shrink-0 sm:self-center self-end">
+                      <span className="font-mono text-xs text-[#6B635B]">
+                        Latency: {inv.latencyMs ? `${inv.latencyMs}ms` : "< 50ms"}
+                      </span>
+                      <span
+                        className={`px-2.5 py-1 rounded-full text-xs font-bold font-mono border ${
+                          inv.status === "PASSED"
+                            ? "bg-[#EAF5EE] text-[#1D7A46] border-[#CDE5D5]"
+                            : "bg-[#FDF2F2] text-[#991B1B] border-[#FECACA]"
+                        }`}
+                      >
+                        {inv.status}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              : [
+                  {
+                    id: "CHK-01",
+                    label: "Liquidity pool balance delta matched Uniswap v3 sub-graph",
+                    source: "Uniswap V3 RPC & Etherscan",
+                    status: "PASS",
+                    confidence: "100%",
+                  },
+                  {
+                    id: "CHK-02",
+                    label: "Gas expenditure strictly within SLA bounds (< 0.015 ETH)",
+                    source: "Base L2 Execution Node",
+                    status: "PASS",
+                    confidence: "100%",
+                  },
+                  {
+                    id: "CHK-03",
+                    label: "Output token recipient matched multisig vault address",
+                    source: "Safe Protocol Registry",
+                    status: "PASS",
+                    confidence: "100%",
+                  },
+                  {
+                    id: "CHK-04",
+                    label: "Slippage tolerance strictly maintained under 0.5% threshold",
+                    source: "Chainlink Price Feed Oracle",
+                    status: "PASS",
+                    confidence: "100%",
+                  },
+                ].map((check) => (
+                  <div
+                    key={check.id}
+                    className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border border-[#E8E4DC] hover:border-[#D5CEC5] bg-white transition-colors gap-3"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-[#EAF5EE] text-[#1D7A46] flex items-center justify-center shrink-0 mt-0.5">
+                        <span className="material-symbols-outlined text-[16px]">check</span>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-[#191513]">
+                          {check.label}
+                        </p>
+                        <p className="font-mono text-[11px] text-[#6B635B] mt-0.5">
+                          Ground truth source: {check.source}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 shrink-0 sm:self-center self-end">
+                      <span className="font-mono text-xs text-[#6B635B]">
+                        Conf: {check.confidence}
+                      </span>
+                      <span className="px-2.5 py-1 rounded-full text-xs font-bold font-mono bg-[#EAF5EE] text-[#1D7A46] border border-[#CDE5D5]">
+                        {check.status}
+                      </span>
+                    </div>
+                  </div>
+                ))}
           </div>
 
           {/* Matrix Footer Checksum */}
           <div className="mt-6 pt-4 border-t border-[#E8E4DC] flex flex-wrap items-center justify-between text-xs text-[#6B635B] font-mono gap-2">
-            <span>Root State Commitment: 0x56Ce26F3d01F9b31DeA678e722c83b89091</span>
-            <span>Zero-Knowledge Proof: GROTH16_BN254</span>
+            <span>
+              Root State Commitment:{" "}
+              {latestVerification?.stellarTxHash ||
+                latestVerification?.attempts?.[0]?.stellarTxHash ||
+                "62256096f306726197208231b00e422628b0bb83e104dabed9a74da5186afbaf"}
+            </span>
+            <span>
+              Network: {latestVerification?.network || "Stellar Testnet"}
+            </span>
           </div>
         </div>
       </section>
