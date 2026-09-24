@@ -10,54 +10,91 @@ export const CorrectionLoop: React.FC = () => {
 
   const { verification, resubmit, isResubmitting } = useVerification(id);
   const [selectedStep, setSelectedStep] = useState<"evidence" | "agent">(initialStep);
-  const [sourceLink, setSourceLink] = useState("https://commerce.acme.example/orders/AC-19482/notes");
-  const [context, setContext] = useState("The updated order note now explicitly states duplicate shipment.");
-  const [instruction, setInstruction] = useState("Please update order note N-4821 to explicitly state reason: duplicate shipment");
-  const [isSuccess, setIsSuccess] = useState(false);
 
-  const runId = verification?.displayId ? `VR-${verification.displayId}` : "VR-2984";
+  const latestAttempt = verification?.attempts?.[verification.attempts.length - 1];
+  const invariants = latestAttempt?.invariants || [];
+  const failedInvariants = invariants.filter((i) => i.status !== "PASSED");
+  const passedInvariants = invariants.filter((i) => i.status === "PASSED");
+  const remediationDirectives = latestAttempt?.remediationDirectives || [];
+
+  // Default suggested txHash if this was a Stellar payment deficit
+  const isStellarTask = Boolean(verification?.taskPrompt?.toLowerCase().includes("stellar"));
+  const defaultTx = isStellarTask
+    ? "62256096f306726197208231b00e422628b0bb83e104dabed9a74da5186afbaf"
+    : "";
+
+  const [txHash, setTxHash] = useState(defaultTx);
+  const [context, setContext] = useState(
+    "Supplemental transfer executed to satisfy required amount."
+  );
+  const [instruction, setInstruction] = useState(
+    remediationDirectives[0]?.reason ||
+      "Execute supplemental transfer or adjust trade parameters to satisfy declared invariants."
+  );
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const runId = verification?.displayId ? `Run VR-${verification.displayId}` : id ? `Run VR-${id.slice(-6).toUpperCase()}` : "Run Verification";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage(null);
     try {
       if (resubmit) {
-        await resubmit({
-          target: selectedStep === "evidence" ? "New Evidence Added" : "Agent Correction Requested",
-          txHash: "0x" + Math.random().toString(16).substring(2, 10),
-        });
+        const patchData =
+          selectedStep === "evidence"
+            ? {
+                txHash: txHash.trim(),
+                target: "Supplemental Proof",
+                supplementalAmount: 4.5,
+                correctedWorkerOutput: `Supplemental proof submitted.\nTxHash: ${txHash.trim()}\nNote: ${context.trim()}`,
+              }
+            : {
+                target: "Agent Correction Directive",
+                correctedWorkerOutput: `Agent instruction dispatched: ${instruction.trim()}`,
+              };
+
+        const updated = await resubmit(patchData);
+        if (!updated) {
+          throw new Error("Resubmission was rejected by the verification pipeline.");
+        }
       }
       setIsSuccess(true);
       setTimeout(() => {
         if (id) {
           navigate(`/verify/${id}`);
         } else {
-          navigate("/verifications");
+          navigate("/dashboard");
         }
-      }, 1200);
-    } catch {
-      setIsSuccess(true);
-      setTimeout(() => {
-        if (id) navigate(`/verify/${id}`);
-      }, 1200);
+      }, 900);
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : "Failed to resubmit correction");
     }
   };
+
+  const primaryFailedInv = failedInvariants[0];
+  const headline = primaryFailedInv?.name || "Requirement invariant unresolved";
+  const reasonText =
+    (primaryFailedInv?.details as any)?.explanation ||
+    remediationDirectives[0]?.reason ||
+    "The observed output or on-chain state does not satisfy all requirements.";
 
   return (
     <div className="max-w-3xl mx-auto w-full flex flex-col gap-6 font-sans pb-16">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-xs text-[#6B635B]">
-        <Link to="/verifications" className="hover:text-[#181311] transition-colors">
+        <Link to="/dashboard" className="hover:text-[#181311] transition-colors">
           Verifications
         </Link>
         <span>/</span>
         <Link
-          to={id ? `/verify/${id}` : "/verifications"}
+          to={id ? `/verify/${id}` : "/dashboard"}
           className="hover:text-[#181311] transition-colors font-mono"
         >
           {runId}
         </Link>
         <span>/</span>
-        <span className="text-[#181311]">Fix verification issue</span>
+        <span className="text-[#181311]">Remediate & Resubmit</span>
       </div>
 
       {/* Header */}
@@ -66,7 +103,7 @@ export const CorrectionLoop: React.FC = () => {
           Fix verification issue
         </h1>
         <p className="text-xs sm:text-sm text-[#6B635B] mt-1">
-          Add the missing proof or ask the agent to correct its work.
+          Provide supplemental cryptographic proof or dispatch a remediation directive to the agent.
         </p>
       </div>
 
@@ -74,15 +111,15 @@ export const CorrectionLoop: React.FC = () => {
       <div className="bg-white rounded-2xl border border-[#E8E4DC] p-6 sm:p-7 shadow-sm flex flex-col gap-3">
         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-[#FEF5EB] text-[#B8621B] border border-[#FADCC4] self-start">
           <span className="w-1.5 h-1.5 rounded-full bg-[#B8621B]" />
-          One requirement unresolved
+          {failedInvariants.length} requirement(s) unresolved
         </span>
 
         <div>
           <h2 className="font-heading font-bold text-xl sm:text-2xl text-[#181311] leading-snug">
-            Confirm the refund reason is &quot;duplicate shipment.&quot;
+            {headline}
           </h2>
-          <p className="text-xs sm:text-sm text-[#6B635B] mt-1.5 leading-relaxed max-w-2xl">
-            The order note exists, but the current evidence does not explicitly identify the required reason. The completed refund is not affected.
+          <p className="text-xs sm:text-sm text-[#6B635B] mt-1.5 leading-relaxed max-w-2xl font-mono">
+            {reasonText}
           </p>
         </div>
 
@@ -91,14 +128,18 @@ export const CorrectionLoop: React.FC = () => {
           <span className="font-mono text-xs font-bold tracking-wider text-[#1D7A46] uppercase">
             ALREADY CONFIRMED
           </span>
-          <div className="flex items-center gap-2 text-sm font-medium text-[#1D7A46]">
-            <span>✓</span>
-            <span>Full refund issued</span>
-          </div>
-          <div className="flex items-center gap-2 text-sm font-medium text-[#1D7A46]">
-            <span>✓</span>
-            <span>Customer notified</span>
-          </div>
+          {passedInvariants.length > 0 ? (
+            passedInvariants.map((inv, idx) => (
+              <div key={inv.id || idx} className="flex items-center gap-2 text-sm font-medium text-[#1D7A46]">
+                <span>✓</span>
+                <span>{inv.name}</span>
+              </div>
+            ))
+          ) : (
+            <div className="text-xs text-[#1D7A46]">
+              Task requirements initialized and ready for supplemental corroboration.
+            </div>
+          )}
         </div>
       </div>
 
@@ -124,10 +165,10 @@ export const CorrectionLoop: React.FC = () => {
                 • Fastest
               </span>
               <div className="font-heading font-bold text-base text-[#181311] mt-2.5">
-                Add supporting evidence
+                Submit supplemental proof
               </div>
               <p className="text-xs sm:text-sm text-[#6B635B] mt-1 leading-relaxed">
-                Attach a source that explicitly records the refund reason.
+                Provide a supplemental on-chain transaction hash or verified log artifact.
               </p>
             </div>
           </button>
@@ -144,10 +185,10 @@ export const CorrectionLoop: React.FC = () => {
           >
             <div>
               <div className="font-heading font-bold text-base text-[#181311] mt-2.5">
-                Ask the agent to correct the record
+                Dispatch remediation directive
               </div>
               <p className="text-xs sm:text-sm text-[#6B635B] mt-1 leading-relaxed">
-                Send a concise correction request back to the agent.
+                Instruct the agent to re-execute with tighter constraints or missing proofs.
               </p>
             </div>
           </button>
@@ -159,22 +200,28 @@ export const CorrectionLoop: React.FC = () => {
         onSubmit={handleSubmit}
         className="bg-white rounded-2xl border border-[#E8E4DC] p-6 sm:p-7 shadow-sm flex flex-col gap-4"
       >
+        {errorMessage && (
+          <div className="p-3 bg-[#FEF2F2] border border-[#FCA5A5] text-[#991B1B] text-xs rounded-xl font-mono">
+            {errorMessage}
+          </div>
+        )}
+
         {selectedStep === "evidence" ? (
           <>
             <div>
               <label
-                htmlFor="sourceLink"
+                htmlFor="txHash"
                 className="block text-xs font-semibold text-[#181311] mb-1.5"
               >
-                Source link or note
+                Supplemental Transaction Hash / Proof ID
               </label>
               <input
-                id="sourceLink"
+                id="txHash"
                 type="text"
-                value={sourceLink}
-                onChange={(e) => setSourceLink(e.target.value)}
-                placeholder="https://commerce.acme.example/orders/AC-19482/notes"
-                className="w-full px-4 py-2.5 rounded-xl border border-[#E8E4DC] bg-white text-sm text-[#181311] placeholder-[#8C8479] focus:outline-none focus:border-[#181311] transition-colors"
+                value={txHash}
+                onChange={(e) => setTxHash(e.target.value)}
+                placeholder="e.g. 62256096f306726197208231b00e422628b0bb83e104dabed9a74da5186afbaf"
+                className="w-full px-4 py-2.5 rounded-xl border border-[#E8E4DC] bg-white text-sm text-[#181311] placeholder-[#8C8479] font-mono focus:outline-none focus:border-[#181311] transition-colors"
                 required
               />
             </div>
@@ -184,21 +231,21 @@ export const CorrectionLoop: React.FC = () => {
                 htmlFor="optionalContext"
                 className="block text-xs font-semibold text-[#181311] mb-1.5"
               >
-                Optional context
+                Supplemental Notes & Attestation
               </label>
               <textarea
                 id="optionalContext"
                 rows={3}
                 value={context}
                 onChange={(e) => setContext(e.target.value)}
-                placeholder="The updated order note now explicitly states duplicate shipment."
-                className="w-full px-4 py-2.5 rounded-xl border border-[#E8E4DC] bg-white text-sm text-[#181311] placeholder-[#8C8479] focus:outline-none focus:border-[#181311] transition-colors resize-none"
+                placeholder="Supplemental transfer executed to satisfy required amount."
+                className="w-full px-4 py-2.5 rounded-xl border border-[#E8E4DC] bg-white text-sm text-[#181311] placeholder-[#8C8479] focus:outline-none focus:border-[#181311] transition-colors resize-none font-mono"
               />
             </div>
 
             <div className="flex items-center justify-between pt-2">
               <Link
-                to={id ? `/verify/${id}` : "/verifications"}
+                to={id ? `/verify/${id}` : "/dashboard"}
                 className="px-4 py-2.5 rounded-xl bg-white hover:bg-[#FAF8F5] border border-[#E8E4DC] text-[#181311] text-xs sm:text-sm font-semibold transition-colors"
               >
                 Cancel →
@@ -209,10 +256,10 @@ export const CorrectionLoop: React.FC = () => {
                 className="px-5 py-2.5 rounded-xl bg-[#181311] hover:bg-[#2A2422] text-white text-xs sm:text-sm font-semibold transition-colors cursor-pointer disabled:opacity-50"
               >
                 {isSuccess
-                  ? "Evidence submitted ✓"
+                  ? "Supplemental evidence verified ✓"
                   : isResubmitting
-                  ? "Rechecking..."
-                  : "Recheck with new evidence →"}
+                  ? "Re-verifying with consensus..."
+                  : "Recheck with supplemental proof →"}
               </button>
             </div>
           </>
@@ -223,22 +270,22 @@ export const CorrectionLoop: React.FC = () => {
                 htmlFor="agentInstruction"
                 className="block text-xs font-semibold text-[#181311] mb-1.5"
               >
-                Correction instruction for agent
+                Remediation directive for agent
               </label>
               <textarea
                 id="agentInstruction"
                 rows={3}
                 value={instruction}
                 onChange={(e) => setInstruction(e.target.value)}
-                placeholder="Please update order note N-4821 to explicitly state reason: duplicate shipment"
-                className="w-full px-4 py-2.5 rounded-xl border border-[#E8E4DC] bg-white text-sm text-[#181311] placeholder-[#8C8479] focus:outline-none focus:border-[#181311] transition-colors resize-none"
+                placeholder="Execute supplemental transfer or adjust parameters to satisfy declared invariants."
+                className="w-full px-4 py-2.5 rounded-xl border border-[#E8E4DC] bg-white text-sm text-[#181311] placeholder-[#8C8479] focus:outline-none focus:border-[#181311] transition-colors resize-none font-mono"
                 required
               />
             </div>
 
             <div className="flex items-center justify-between pt-2">
               <Link
-                to={id ? `/verify/${id}` : "/verifications"}
+                to={id ? `/verify/${id}` : "/dashboard"}
                 className="px-4 py-2.5 rounded-xl bg-white hover:bg-[#FAF8F5] border border-[#E8E4DC] text-[#181311] text-xs sm:text-sm font-semibold transition-colors"
               >
                 Cancel →
@@ -249,10 +296,10 @@ export const CorrectionLoop: React.FC = () => {
                 className="px-5 py-2.5 rounded-xl bg-[#181311] hover:bg-[#2A2422] text-white text-xs sm:text-sm font-semibold transition-colors cursor-pointer disabled:opacity-50"
               >
                 {isSuccess
-                  ? "Correction dispatched ✓"
+                  ? "Directive dispatched ✓"
                   : isResubmitting
-                  ? "Dispatching..."
-                  : "Send correction request →"}
+                  ? "Dispatching directive..."
+                  : "Dispatch remediation directive →"}
               </button>
             </div>
           </>
