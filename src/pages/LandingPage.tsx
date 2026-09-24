@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { TELEGRAM_BOT_URL, GITHUB_REPO_URL } from "../config/env";
 import { useAuth } from "../context/AuthContext";
+import { useVerificationsList } from "../hooks/useVerification";
+import { RequirementInvariant } from "../types/requirement";
 
 export const LandingPage: React.FC = () => {
   const navigate = useNavigate();
@@ -10,6 +12,10 @@ export const LandingPage: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeStage, setActiveStage] = useState<number>(0);
+
+  const { verifications } = useVerificationsList();
+  const latestVerification = verifications.length > 0 ? verifications[0] : null;
+  const isPassed = latestVerification ? latestVerification.status === "PASSED" : true;
 
   useEffect(() => {
     if ((location.state as any)?.openAuth) {
@@ -559,7 +565,7 @@ export const LandingPage: React.FC = () => {
           {/* Matrix Checks List */}
           <div className="space-y-3 font-sans">
             {latestVerification && latestVerification.attempts?.[0]?.invariants?.length
-              ? latestVerification.attempts[0].invariants.map((inv, idx) => (
+              ? latestVerification.attempts[0].invariants.map((inv: RequirementInvariant, idx: number) => (
                   <div
                     key={inv.id || idx}
                     className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border border-[#E8E4DC] hover:border-[#D5CEC5] bg-white transition-colors gap-3"

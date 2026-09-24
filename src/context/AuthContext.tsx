@@ -115,7 +115,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // 1. Initial session check
     supabase.auth
       .getSession()
-      .then(async ({ data: { session } }) => {
+      .then(async ({ data }: any) => {
+        const session = data?.session;
         if (!isMounted) return;
         if (session?.user) {
           try {
@@ -157,7 +158,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // 2. Auth state subscription
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event: any, session: any) => {
       if (!isMounted) return;
       if (session?.user) {
         const profile = await supabaseAuthService.syncUserProfile(session.user);
